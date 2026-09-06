@@ -20,15 +20,19 @@ export function AuthProvider({ children }) {
         const savedToken = localStorage.getItem('pc_token');
         if (savedToken) {
           try {
+            const controller = new AbortController();
+            const tid = setTimeout(() => controller.abort(), 2500);
             const res = await fetch(`${API_BASE}/api/v1/merchants/session`, {
-              headers: { 'Authorization': `Bearer ${savedToken}` }
+              headers: { 'Authorization': `Bearer ${savedToken}` },
+              signal: controller.signal
             });
+            clearTimeout(tid);
             const data = await res.json();
-            if (data.authenticated && data.shop) {
+            if (data && data.authenticated && data.shop) {
               setMerchant(data.shop);
             }
           } catch (e) {
-            console.warn('Merchant session check error:', e);
+            // Ignore session check error
           }
         }
 
@@ -36,15 +40,19 @@ export function AuthProvider({ children }) {
         const savedAdminToken = localStorage.getItem('pc_admin_token');
         if (savedAdminToken) {
           try {
+            const controller = new AbortController();
+            const tid = setTimeout(() => controller.abort(), 2500);
             const res = await fetch(`${API_BASE}/api/v1/admin/session`, {
-              headers: { 'Authorization': `Bearer ${savedAdminToken}` }
+              headers: { 'Authorization': `Bearer ${savedAdminToken}` },
+              signal: controller.signal
             });
+            clearTimeout(tid);
             const data = await res.json();
-            if (data.authenticated && data.admin) {
+            if (data && data.authenticated && data.admin) {
               setAdmin(data.admin);
             }
           } catch (e) {
-            console.warn('Admin session check error:', e);
+            // Ignore admin check error
           }
         }
       } finally {

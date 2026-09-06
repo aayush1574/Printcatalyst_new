@@ -39,48 +39,73 @@ export function SocketProvider({ children }) {
 
   useEffect(() => {
     let ws;
+    let isCancelled = false;
+
     const connectWS = () => {
-      const wsUrl = getWsUrl();
-      ws = new WebSocket(wsUrl);
-
-      ws.onopen = () => {
-        setConnected(true);
-        if (merchant) {
-          ws.send(JSON.stringify({
-            type: 'REGISTER_MERCHANT',
-            shopId: merchant.id
-          }));
+      if (isCancelled) return;
+      try {
+        const wsUrl = getWsUrl();
+        if (!wsUrl || (!wsUrl.startsWith('ws://') && !wsUrl.startsWith('wss://'))) {
+          return;
         }
-      };
 
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          setLatestEvent(data);
-          if (data.type === 'NEW_ORDER') {
-            playOrderChime();
+        ws = new WebSocket(wsUrl);
+
+        ws.onopen = () => {
+          if (isCancelled) return;
+          setConnected(true);
+          if (merchant) {
+            ws.send(JSON.stringify({
+              type: 'REGISTER_MERCHANT',
+              shopId: merchant.id
+            }));
           }
-        } catch (e) {
-          console.error('WS parse error:', e);
-        }
-      };
+        };
 
-      ws.onclose = () => {
-        setConnected(false);
-        reconnectTimeout.current = setTimeout(connectWS, 3000);
-      };
+        ws.onmessage = (event) => {
+          if (isCancelled) return;
+          try {
+            const data = JSON.parse(event.data);
+            setLatestEvent(data);
+            if (data.type === 'NEW_ORDER') {
+              playOrderChime();
+            }
+          } catch (e) {
+            // Ignore parse errors
+          }
+        };
 
-      ws.onerror = () => {
-        ws.close();
-      };
+        ws.onclose = () => {
+          if (isCancelled) return;
+          setConnected(false);
+          // Only attempt reconnect if merchant is logged in
+          if (merchant) {
+            reconnectTimeout.current = setTimeout(connectWS, 5000);
+          }
+        };
 
-      setSocket(ws);
+        ws.onerror = () => {
+          try {
+            ws.close();
+          } catch (e) {}
+        };
+
+        setSocket(ws);
+      } catch (e) {
+        // Suppress initial WS connection error on static frontend hosts without backend env
+      }
     };
 
-    connectWS();
+    // Only initiate WS if merchant is active or explicit backend url provided
+    if (merchant || import.meta.env.VITE_WS_URL || import.meta.env.VITE_API_URL) {
+      connectWS();
+    }
 
     return () => {
-      if (ws) ws.close();
+      isCancelled = true;
+      if (ws) {
+        try { ws.close(); } catch (e) {}
+      }
       if (reconnectTimeout.current) clearTimeout(reconnectTimeout.current);
     };
   }, [merchant?.id]);

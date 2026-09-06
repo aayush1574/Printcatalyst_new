@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Print Support - Complete Print Shop Automation Software Suite",
   "main": "server/server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "concurrently \"node server/server.js\" \"vite\"",
     "server": "node server/server.js",

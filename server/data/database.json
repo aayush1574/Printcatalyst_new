@@ -1,245 +1,50 @@
 {
-  "shops": [
-    {
-      "id": "shop_demo",
-      "slug": "printsupport-hub",
-      "name": "Print Support",
-      "ownerName": "Shop Admin",
-      "email": "admin@printsupport.in",
-      "phone": "+91 98765 43210",
-      "password": "password123",
-      "address": "Shop No. 1, Main Market",
-      "upiId": "merchant@upi",
-      "upiQrImage": "",
-      "autoPrintEnabled": true,
-      "instantReleaseOnPayment": true,
-      "whatsappAutomationEnabled": true,
-      "whatsappPhoneNumber": "+919876543210",
-      "whatsappSessionStatus": "CONNECTED",
-      "agentToken": "agt_tok_demo_88392019482",
-      "agentStatus": "ONLINE",
-      "agentLastHeartbeat": "2026-09-06T10:00:00.000Z",
-      "plan": "PRO",
-      "planExpiresAt": "2027-12-31T23:59:59.000Z",
-      "printCredits": 10000,
-      "createdAt": "2026-01-10T10:00:00.000Z"
-    }
-  ],
-  "pricing": {
-    "shop_demo": {
-      "currency": "INR",
-      "currencySymbol": "₹",
-      "minOrderAmount": 5,
-      "paperSizes": {
-        "A4": {
-          "name": "A4",
-          "active": true,
-          "baseMultiplier": 1
-        },
-        "A3": {
-          "name": "A3",
-          "active": true,
-          "baseMultiplier": 2
-        },
-        "Legal": {
-          "name": "Legal",
-          "active": true,
-          "baseMultiplier": 1.25
-        },
-        "Letter": {
-          "name": "Letter",
-          "active": true,
-          "baseMultiplier": 1
-        },
-        "Photo_4x6": {
-          "name": "Photo (4x6\")",
-          "active": true,
-          "baseMultiplier": 2.5
-        }
-      },
-      "rates": {
-        "A4": {
-          "monoSingle": 2,
-          "monoDuplex": 1.5,
-          "colorSingle": 8,
-          "colorDuplex": 7
-        },
-        "A3": {
-          "monoSingle": 5,
-          "monoDuplex": 4,
-          "colorSingle": 18,
-          "colorDuplex": 15
-        },
-        "Legal": {
-          "monoSingle": 3,
-          "monoDuplex": 2.5,
-          "colorSingle": 10,
-          "colorDuplex": 9
-        },
-        "Photo_4x6": {
-          "colorSingle": 15
-        }
-      },
-      "paperTypes": {
-        "standard_75gsm": {
-          "name": "Standard (75 GSM)",
-          "extraPerPage": 0,
-          "default": true
-        },
-        "bond_85gsm": {
-          "name": "Executive Bond (85 GSM)",
-          "extraPerPage": 1
-        },
-        "glossy_180gsm": {
-          "name": "Glossy / Photo (180 GSM)",
-          "extraPerPage": 8
-        },
-        "cardstock_250gsm": {
-          "name": "Heavy Cardstock (250 GSM)",
-          "extraPerPage": 12
-        }
-      },
-      "finishing": {
-        "none": {
-          "name": "No Finishing",
-          "price": 0
-        },
-        "stapling": {
-          "name": "Corner Staple",
-          "price": 2
-        },
-        "spiral_binding": {
-          "name": "Spiral Binding",
-          "price": 30
-        },
-        "hard_binding": {
-          "name": "Hard Bound Project Binding",
-          "price": 150
-        },
-        "lamination_a4": {
-          "name": "A4 Thermal Lamination",
-          "price": 25
-        },
-        "lamination_a3": {
-          "name": "A3 Thermal Lamination",
-          "price": 50
-        }
-      },
-      "urgentRushFee": 15,
-      "volumeDiscounts": [
-        {
-          "minPages": 25,
-          "maxPages": 50,
-          "discountPercent": 10
-        },
-        {
-          "minPages": 51,
-          "maxPages": 100,
-          "discountPercent": 15
-        },
-        {
-          "minPages": 101,
-          "maxPages": 9999,
-          "discountPercent": 25
-        }
-      ]
-    }
-  },
+  "shops": [],
+  "pricing": {},
   "printers": [],
   "orders": [],
-  "whatsappBot": {
-    "shop_demo": {
-      "botName": "Print Support Assistant",
-      "greetingMessage": "👋 Welcome to Print Support Hub!\n\nSend your PDF/Document or Image here to get instant print quotes and queue your job without waiting in counter line.",
-      "autoReplyEnabled": true,
-      "autoQuoteEnabled": true,
-      "instantPayLinkEnabled": true,
-      "qaPairs": [
-        {
-          "id": "qa_1",
-          "question": "What are your shop timings?",
-          "answer": "We are open Monday to Saturday from 9:00 AM to 9:30 PM, and Sunday from 10:00 AM to 6:00 PM."
-        },
-        {
-          "id": "qa_2",
-          "question": "Do you do spiral and hard binding?",
-          "answer": "Yes! Spiral binding and Hard Bound project golden-embossed binding are available."
-        },
-        {
-          "id": "qa_3",
-          "question": "Where is your shop located?",
-          "answer": "Please contact the shop owner or check the address listed in the header."
-        }
-      ],
-      "simulatedChats": []
-    }
-  },
-  "subscriptionPlans": [
+  "whatsappBot": {},
+  "plans": [
     {
-      "id": "starter",
-      "name": "Starter",
-      "monthlyPrice": 99,
-      "annualPrice": 990,
-      "orderLimit": 200,
-      "printerLimit": 1,
+      "id": "plan_starter",
+      "name": "Starter Solo",
+      "price": 499,
+      "interval": "month",
+      "printCredits": 500,
       "features": [
-        "1 Connected Printer Queue",
-        "Permanent Shop QR Portal",
-        "Up to 200 monthly orders",
-        "Live Desktop Agent Spooler",
-        "Basic Rate Matrix",
+        "Single Counter Terminal",
+        "Customer Self-Intake QR",
+        "Direct UPI Payments (0% fee)",
         "Standard Email Support"
       ]
     },
     {
-      "id": "growth",
-      "name": "Growth",
-      "monthlyPrice": 299,
-      "annualPrice": 2990,
-      "orderLimit": 1000,
-      "printerLimit": 3,
-      "popular": true,
+      "id": "plan_growth",
+      "name": "Growth Automation",
+      "price": 1299,
+      "interval": "month",
+      "isPopular": true,
+      "printCredits": 2500,
       "features": [
-        "Up to 3 Connected Printers",
-        "WhatsApp Document Intake Bot",
-        "Permanent Shop QR & Standee Generator",
-        "Up to 1,000 monthly orders",
-        "Intelligent Printer Routing (B&W/Color)",
-        "Document Studio Pre-flight Inspector",
-        "Priority Phone & Chat Support"
+        "Up to 3 Printers Automated",
+        "Desktop Print Spooler Agent",
+        "WhatsApp AI Quote & Order Bot",
+        "Real-time Ledger & Daily Tally",
+        "Priority Phone & WhatsApp Support"
       ]
     },
     {
-      "id": "pro",
-      "name": "Pro",
-      "monthlyPrice": 799,
-      "annualPrice": 7990,
-      "orderLimit": 5000,
-      "printerLimit": 10,
+      "id": "plan_enterprise",
+      "name": "Enterprise Multi-Shop",
+      "price": 2999,
+      "interval": "month",
+      "printCredits": 10000,
       "features": [
-        "Up to 10 Connected Printers",
-        "Advanced WhatsApp Bot with Custom QA",
-        "Auto-Print Instant Release Mode",
-        "Bulk Quantity Discount Rules",
-        "Multi-Staff Operator Logins",
-        "Financial Analytics & Excel Export",
-        "24/7 Dedicated Account Manager"
-      ]
-    },
-    {
-      "id": "scale",
-      "name": "Scale",
-      "monthlyPrice": 1499,
-      "annualPrice": 14990,
-      "orderLimit": 25000,
-      "printerLimit": 50,
-      "features": [
-        "Unlimited Connected Printers",
-        "Multiple Branch / Store Support",
-        "Custom Domain & Whitelabel Branding",
-        "Meta WhatsApp Official Cloud API",
-        "ERP & Billing POS Integration",
-        "Custom SLA & On-premise agent setup"
+        "Unlimited Spoolers & Printers",
+        "Multi-Counter Station Control",
+        "Intelligent Color/Mono Auto-Routing",
+        "Dedicated Cloud SLA & Custom Domain",
+        "On-site Setup & 24/7 VIP Hotline"
       ]
     }
   ],

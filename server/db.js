@@ -7,186 +7,137 @@ if (!fs.existsSync(DATA_DIR)) {
 }
 
 const DB_FILE = path.join(DATA_DIR, 'database.json');
+const BACKUP_FILE = path.join(DATA_DIR, 'database.backup.json');
 
-const defaultData = {
-  shops: [
+const DEFAULT_PRICING_TEMPLATE = {
+  currency: 'INR',
+  currencySymbol: '₹',
+  minOrderAmount: 5,
+  paperSizes: {
+    A4: { name: 'A4', active: true, baseMultiplier: 1.0 },
+    A3: { name: 'A3', active: true, baseMultiplier: 2.0 },
+    Legal: { name: 'Legal', active: true, baseMultiplier: 1.25 },
+    Letter: { name: 'Letter', active: true, baseMultiplier: 1.0 },
+    Photo_4x6: { name: 'Photo (4x6")', active: true, baseMultiplier: 2.5 }
+  },
+  rates: {
+    A4: {
+      monoSingle: 2.0,
+      monoDuplex: 1.5,
+      colorSingle: 8.0,
+      colorDuplex: 7.0
+    },
+    A3: {
+      monoSingle: 5.0,
+      monoDuplex: 4.0,
+      colorSingle: 18.0,
+      colorDuplex: 15.0
+    },
+    Legal: {
+      monoSingle: 3.0,
+      monoDuplex: 2.5,
+      colorSingle: 10.0,
+      colorDuplex: 9.0
+    },
+    Photo_4x6: {
+      colorSingle: 15.0
+    }
+  },
+  paperTypes: {
+    standard_75gsm: { name: 'Standard (75 GSM)', extraPerPage: 0.0, default: true },
+    bond_85gsm: { name: 'Executive Bond (85 GSM)', extraPerPage: 1.0 },
+    glossy_180gsm: { name: 'Glossy / Photo (180 GSM)', extraPerPage: 8.0 },
+    cardstock_250gsm: { name: 'Heavy Cardstock (250 GSM)', extraPerPage: 12.0 }
+  },
+  finishing: {
+    none: { name: 'No Finishing', price: 0 },
+    stapling: { name: 'Corner Staple', price: 2 },
+    spiral_binding: { name: 'Spiral Binding', price: 30 },
+    hard_binding: { name: 'Hard Bound Project Binding', price: 150 },
+    lamination_a4: { name: 'A4 Thermal Lamination', price: 25 },
+    lamination_a3: { name: 'A3 Thermal Lamination', price: 50 }
+  },
+  urgentRushFee: 15,
+  volumeDiscounts: [
+    { minPages: 25, maxPages: 50, discountPercent: 10 },
+    { minPages: 51, maxPages: 100, discountPercent: 15 },
+    { minPages: 101, maxPages: 9999, discountPercent: 25 }
+  ]
+};
+
+const DEFAULT_BOT_TEMPLATE = {
+  botName: 'Print Support Assistant',
+  greetingMessage: '👋 Welcome to our Print Hub!\n\nSend your PDF/Document or Image here to get instant print quotes and queue your job without waiting in counter line.',
+  autoReplyEnabled: true,
+  autoQuoteEnabled: true,
+  instantPayLinkEnabled: true,
+  qaPairs: [
     {
-      id: 'shop_demo',
-      slug: 'printsupport-hub',
-      name: 'Print Support',
-      ownerName: 'Rajesh Sharma',
-      email: 'rajesh@printsupport.in',
-      phone: '+91 98765 43210',
-      password: 'password123',
-      address: 'Shop No. 4, Opposite University North Gate, Delhi 110007',
-      upiId: 'printsupport@okaxis',
-      upiQrImage: '',
-      autoPrintEnabled: true,
-      instantReleaseOnPayment: true,
-      whatsappAutomationEnabled: true,
-      whatsappPhoneNumber: '+919876543210',
-      whatsappSessionStatus: 'CONNECTED',
-      agentToken: 'agt_tok_demo_88392019482',
-      agentStatus: 'ONLINE',
-      agentLastHeartbeat: new Date().toISOString(),
-      plan: 'PRO',
-      planExpiresAt: '2027-12-31T23:59:59.000Z',
-      printCredits: 9540,
-      createdAt: '2026-01-10T10:00:00.000Z'
+      id: 'qa_1',
+      question: 'What are your shop timings?',
+      answer: 'We are open Monday to Saturday from 9:00 AM to 9:30 PM, and Sunday from 10:00 AM to 6:00 PM.'
+    },
+    {
+      id: 'qa_2',
+      question: 'Do you do spiral and hard binding?',
+      answer: 'Yes! Spiral binding and Hard Bound project golden-embossed binding are available.'
+    },
+    {
+      id: 'qa_3',
+      question: 'Where is your shop located?',
+      answer: 'Please contact our store team or check our shop counter address.'
     }
   ],
-  pricing: {
-    shop_demo: {
-      currency: 'INR',
-      currencySymbol: '₹',
-      minOrderAmount: 5,
-      paperSizes: {
-        A4: { name: 'A4', active: true, baseMultiplier: 1.0 },
-        A3: { name: 'A3', active: true, baseMultiplier: 2.0 },
-        Legal: { name: 'Legal', active: true, baseMultiplier: 1.25 },
-        Letter: { name: 'Letter', active: true, baseMultiplier: 1.0 },
-        Photo_4x6: { name: 'Photo (4x6")', active: true, baseMultiplier: 2.5 }
-      },
-      rates: {
-        A4: {
-          monoSingle: 2.0,
-          monoDuplex: 1.5,
-          colorSingle: 8.0,
-          colorDuplex: 7.0
-        },
-        A3: {
-          monoSingle: 5.0,
-          monoDuplex: 4.0,
-          colorSingle: 18.0,
-          colorDuplex: 15.0
-        },
-        Legal: {
-          monoSingle: 3.0,
-          monoDuplex: 2.5,
-          colorSingle: 10.0,
-          colorDuplex: 9.0
-        },
-        Photo_4x6: {
-          colorSingle: 15.0
-        }
-      },
-      paperTypes: {
-        standard_75gsm: { name: 'Standard (75 GSM)', extraPerPage: 0.0, default: true },
-        bond_85gsm: { name: 'Executive Bond (85 GSM)', extraPerPage: 1.0 },
-        glossy_180gsm: { name: 'Glossy / Photo (180 GSM)', extraPerPage: 8.0 },
-        cardstock_250gsm: { name: 'Heavy Cardstock (250 GSM)', extraPerPage: 12.0 }
-      },
-      finishing: {
-        none: { name: 'No Finishing', price: 0 },
-        stapling: { name: 'Corner Staple', price: 2 },
-        spiral_binding: { name: 'Spiral Binding', price: 30 },
-        hard_binding: { name: 'Hard Bound Project Binding', price: 150 },
-        lamination_a4: { name: 'A4 Thermal Lamination', price: 25 },
-        lamination_a3: { name: 'A3 Thermal Lamination', price: 50 }
-      },
-      urgentRushFee: 15,
-      volumeDiscounts: [
-        { minPages: 25, maxPages: 50, discountPercent: 10 },
-        { minPages: 51, maxPages: 100, discountPercent: 15 },
-        { minPages: 101, maxPages: 9999, discountPercent: 25 }
-      ]
-    }
-  },
+  simulatedChats: []
+};
+
+const defaultData = {
+  shops: [],
+  pricing: {},
   printers: [],
   orders: [],
-  whatsappBot: {
-    shop_demo: {
-      botName: 'Print Support Assistant',
-      greetingMessage: '👋 Welcome to Print Support Hub!\n\nSend your PDF/Document or Image here to get instant print quotes and queue your job without waiting in counter line.',
-      autoReplyEnabled: true,
-      autoQuoteEnabled: true,
-      instantPayLinkEnabled: true,
-      qaPairs: [
-        {
-          id: 'qa_1',
-          question: 'What are your shop timings?',
-          answer: 'We are open Monday to Saturday from 9:00 AM to 9:30 PM, and Sunday from 10:00 AM to 6:00 PM.'
-        },
-        {
-          id: 'qa_2',
-          question: 'Do you do spiral and hard binding?',
-          answer: 'Yes! Spiral binding and Hard Bound project golden-embossed binding are available.'
-        },
-        {
-          id: 'qa_3',
-          question: 'Where is your shop located?',
-          answer: 'Please contact the shop owner or check the address listed in the header.'
-        }
-      ],
-      simulatedChats: []
-    }
-  },
-  subscriptionPlans: [
+  whatsappBot: {},
+  plans: [
     {
-      id: 'starter',
-      name: 'Starter',
-      monthlyPrice: 99,
-      annualPrice: 990,
-      orderLimit: 200,
-      printerLimit: 1,
+      id: 'plan_starter',
+      name: 'Starter Solo',
+      price: 499,
+      interval: 'month',
+      printCredits: 500,
       features: [
-        '1 Connected Printer Queue',
-        'Permanent Shop QR Portal',
-        'Up to 200 monthly orders',
-        'Live Desktop Agent Spooler',
-        'Basic Rate Matrix',
+        'Single Counter Terminal',
+        'Customer Self-Intake QR',
+        'Direct UPI Payments (0% fee)',
         'Standard Email Support'
       ]
     },
     {
-      id: 'growth',
-      name: 'Growth',
-      monthlyPrice: 299,
-      annualPrice: 2990,
-      orderLimit: 1000,
-      printerLimit: 3,
-      popular: true,
+      id: 'plan_growth',
+      name: 'Growth Automation',
+      price: 1299,
+      interval: 'month',
+      isPopular: true,
+      printCredits: 2500,
       features: [
-        'Up to 3 Connected Printers',
-        'WhatsApp Document Intake Bot',
-        'Permanent Shop QR & Standee Generator',
-        'Up to 1,000 monthly orders',
-        'Intelligent Printer Routing (B&W/Color)',
-        'Document Studio Pre-flight Inspector',
-        'Priority Phone & Chat Support'
+        'Up to 3 Printers Automated',
+        'Desktop Print Spooler Agent',
+        'WhatsApp AI Quote & Order Bot',
+        'Real-time Ledger & Daily Tally',
+        'Priority Phone & WhatsApp Support'
       ]
     },
     {
-      id: 'pro',
-      name: 'Pro',
-      monthlyPrice: 799,
-      annualPrice: 7990,
-      orderLimit: 5000,
-      printerLimit: 10,
+      id: 'plan_enterprise',
+      name: 'Enterprise Multi-Shop',
+      price: 2999,
+      interval: 'month',
+      printCredits: 10000,
       features: [
-        'Up to 10 Connected Printers',
-        'Advanced WhatsApp Bot with Custom QA',
-        'Auto-Print Instant Release Mode',
-        'Bulk Quantity Discount Rules',
-        'Multi-Staff Operator Logins',
-        'Financial Analytics & Excel Export',
-        '24/7 Dedicated Account Manager'
-      ]
-    },
-    {
-      id: 'scale',
-      name: 'Scale',
-      monthlyPrice: 1499,
-      annualPrice: 14990,
-      orderLimit: 25000,
-      printerLimit: 50,
-      features: [
-        'Unlimited Connected Printers',
-        'Multiple Branch / Store Support',
-        'Custom Domain & Whitelabel Branding',
-        'Meta WhatsApp Official Cloud API',
-        'ERP & Billing POS Integration',
-        'Custom SLA & On-premise agent setup'
+        'Unlimited Spoolers & Printers',
+        'Multi-Counter Station Control',
+        'Intelligent Color/Mono Auto-Routing',
+        'Dedicated Cloud SLA & Custom Domain',
+        'On-site Setup & 24/7 VIP Hotline'
       ]
     }
   ],
@@ -202,10 +153,33 @@ class Database {
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            ...defaultData,
+            ...parsed,
+            shops: Array.isArray(parsed.shops) ? parsed.shops : []
+          };
+        }
       }
     } catch (e) {
-      console.error('Error loading DB, using defaults:', e.message);
+      console.warn('⚠️ [DB] Could not load main database file, attempting backup restore:', e.message);
+      try {
+        if (fs.existsSync(BACKUP_FILE)) {
+          const rawBackup = fs.readFileSync(BACKUP_FILE, 'utf8');
+          const parsedBackup = JSON.parse(rawBackup);
+          if (parsedBackup && typeof parsedBackup === 'object') {
+            console.log('✅ [DB] Successfully recovered database from backup.');
+            return {
+              ...defaultData,
+              ...parsedBackup,
+              shops: Array.isArray(parsedBackup.shops) ? parsedBackup.shops : []
+            };
+          }
+        }
+      } catch (backupErr) {
+        console.error('⚠️ [DB] Backup restore error:', backupErr.message);
+      }
     }
     this.save(defaultData);
     return defaultData;
@@ -213,26 +187,36 @@ class Database {
 
   save(data = this.data) {
     try {
-      fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf8');
+      const serialized = JSON.stringify(data, null, 2);
+      fs.writeFileSync(DB_FILE, serialized, 'utf8');
+      // Always maintain persistent mirror backup
+      fs.writeFileSync(BACKUP_FILE, serialized, 'utf8');
     } catch (e) {
-      console.error('Error saving DB:', e.message);
+      console.error('⚠️ [DB] Error persisting database to disk:', e.message);
     }
   }
 
   getShops() { return this.data.shops; }
+  
   getShopById(id) { 
-    if (!id) return this.data.shops[0];
-    return this.data.shops.find(s => s.id === id) || this.data.shops.find(s => s.slug === id) || this.data.shops[0]; 
+    if (!id) return this.data.shops[0] || null;
+    return this.data.shops.find(s => s.id === id || s.slug === id) || this.data.shops[0] || null; 
   }
+  
   getShopBySlug(slug) { 
-    if (!slug) return this.data.shops[0];
-    return this.data.shops.find(s => s.slug === slug || (slug === 'catalyst-print-hub' && s.id === 'shop_demo') || (slug === 'printsupport-hub' && s.id === 'shop_demo')) || this.data.shops.find(s => s.id === slug) || this.data.shops[0]; 
+    if (!slug) return this.data.shops[0] || null;
+    return this.data.shops.find(s => s.slug === slug || s.id === slug) || this.data.shops[0] || null; 
   }
   
   addShop(shop) {
     this.data.shops.push(shop);
     if (!this.data.pricing[shop.id]) {
-      this.data.pricing[shop.id] = JSON.parse(JSON.stringify(this.data.pricing['shop_demo'] || {}));
+      this.data.pricing[shop.id] = JSON.parse(JSON.stringify(DEFAULT_PRICING_TEMPLATE));
+    }
+    if (!this.data.whatsappBot[shop.id]) {
+      const botConfig = JSON.parse(JSON.stringify(DEFAULT_BOT_TEMPLATE));
+      botConfig.greetingMessage = `👋 Welcome to ${shop.name}!\n\nSend your PDF/Document or Image here to get instant print quotes and queue your job without waiting in counter line.`;
+      this.data.whatsappBot[shop.id] = botConfig;
     }
     this.save();
     return shop;
@@ -259,7 +243,7 @@ class Database {
   }
 
   getPricing(shopId) {
-    return this.data.pricing[shopId] || this.data.pricing['shop_demo'];
+    return this.data.pricing[shopId] || DEFAULT_PRICING_TEMPLATE;
   }
 
   updatePricing(shopId, pricingData) {
@@ -341,7 +325,7 @@ class Database {
   }
 
   getSubscriptionPlans() {
-    return this.data.subscriptionPlans;
+    return this.data.plans || [];
   }
 
   getSupportEnquiries() {

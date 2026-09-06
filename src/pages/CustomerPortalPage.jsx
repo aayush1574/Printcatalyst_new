@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Printer, Upload, FileText, CheckCircle2, QrCode,
-  ShieldCheck, Smartphone, Layers, Check, Copy, ArrowRight, IndianRupee, RefreshCw
+  ShieldCheck, Check, Copy, ArrowRight, RefreshCw, Sparkles, FileUp, Zap
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { API_BASE } from '../config';
@@ -13,16 +13,12 @@ export default function CustomerPortalPage() {
   const [loading, setLoading] = useState(true);
 
   // Order configuration state
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
   const [files, setFiles] = useState([]);
   const [isUrgent, setIsUrgent] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState('UPI');
-
-  // Checkout & Submission State
   const [submitting, setSubmitting] = useState(false);
   const [placedOrder, setPlacedOrder] = useState(null);
   const [copiedUpi, setCopiedUpi] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -105,8 +101,8 @@ export default function CustomerPortalPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           shopId: shopData?.id || 'shop_demo',
-          customerName: customerName.trim() || 'Self-Service Customer',
-          customerPhone: customerPhone.trim() || '',
+          customerName: 'Self-Service Customer',
+          customerPhone: '',
           source: 'QR_PORTAL',
           paymentMethod: 'UPI',
           isUrgent,
@@ -117,7 +113,7 @@ export default function CustomerPortalPage() {
       const data = await res.json();
       if (data.success && data.order) {
         setPlacedOrder(data.order);
-        confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
+        confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 } });
       }
     } catch (e) {
       console.error('Order placement error:', e);
@@ -129,10 +125,10 @@ export default function CustomerPortalPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center text-slate-400">
-        <div className="flex items-center gap-3">
-          <RefreshCw className="w-6 h-6 text-indigo-500 animate-spin" />
-          <span>Connecting to Print Shop Portal...</span>
+      <div className="min-h-screen bg-[#070a13] flex items-center justify-center text-slate-400">
+        <div className="glass-card rounded-2xl p-6 flex items-center gap-3">
+          <RefreshCw className="w-6 h-6 text-indigo-400 animate-spin" />
+          <span className="text-sm font-semibold">Connecting to Print Shop Portal...</span>
         </div>
       </div>
     );
@@ -143,25 +139,28 @@ export default function CustomerPortalPage() {
   const upiQrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiPayString)}&margin=1`;
 
   return (
-    <div className="min-h-screen bg-[#0a0e17] text-slate-100 font-sans pb-16">
+    <div className="min-h-screen bg-[#070a13] text-slate-100 font-sans pb-16 bg-dot-grid relative overflow-hidden">
       
+      {/* Background Ambient Aura */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-indigo-600/15 blur-[120px] rounded-full pointer-events-none"></div>
+
       {/* Top Banner Header */}
-      <header className="bg-slate-900/90 border-b border-slate-800 sticky top-0 z-40 backdrop-blur-md">
-        <div className="max-w-4xl mx-auto px-4 py-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-600/30">
+      <header className="sticky top-0 z-40 px-3 sm:px-6 pt-3">
+        <div className="max-w-4xl mx-auto glass-pill rounded-2xl px-5 py-3.5 flex items-center justify-between border border-white/10 shadow-2xl">
+          <div className="flex items-center gap-3.5">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-600/30">
               <Printer className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-white leading-tight font-['Outfit']">
+              <h1 className="text-sm sm:text-base font-extrabold text-white leading-tight font-['Outfit']">
                 {shopData?.name}
               </h1>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-400 truncate max-w-xs sm:max-w-md">
                 Self-Service Document Print Portal · {shopData?.address}
               </p>
             </div>
           </div>
-          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             Printers Online
           </span>
@@ -169,28 +168,33 @@ export default function CustomerPortalPage() {
       </header>
 
       {/* Main Order Content */}
-      <main className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-4xl mx-auto px-4 py-8 space-y-6 relative z-10">
         
         {/* If Order Placed: Live Tracking Card */}
         {placedOrder ? (
-          <div className="bg-slate-900/90 border border-slate-700/80 rounded-2xl p-6 sm:p-8 shadow-2xl space-y-6 animate-fadeIn">
-            <div className="text-center space-y-2">
-              <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto mb-3">
+          <div className="glass-card rounded-3xl p-6 sm:p-10 shadow-2xl space-y-8 animate-fadeIn border-indigo-500/40">
+            <div className="text-center space-y-3">
+              <div className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto mb-2 shadow-lg shadow-emerald-500/20">
                 <CheckCircle2 className="w-9 h-9" />
               </div>
-              <h2 className="text-2xl font-bold text-white">Order Submitted Successfully!</h2>
-              <p className="text-sm text-slate-400">
-                Your print job has been placed in the shop queue.
+              <h2 className="text-2xl sm:text-3xl font-black text-white font-['Outfit']">Order Submitted Successfully!</h2>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+                Your print job has been securely queued and verified.
               </p>
-              <div className="inline-block px-5 py-2.5 bg-indigo-950/70 border-2 border-indigo-500/50 rounded-xl mt-3">
-                <span className="text-xs text-indigo-300 block font-semibold uppercase tracking-wider">Your Pickup Token</span>
-                <span className="text-2xl sm:text-3xl font-black font-mono text-white tracking-widest">{placedOrder.pickupToken}</span>
+              
+              {/* Pickup Plaque */}
+              <div className="inline-block px-6 py-3.5 bg-gradient-to-b from-indigo-950/90 to-slate-950 border-2 border-indigo-500/60 rounded-2xl mt-3 shadow-2xl">
+                <span className="text-[11px] text-indigo-300 block font-bold uppercase tracking-wider">Your Counter Pickup Token</span>
+                <span className="text-3xl sm:text-4xl font-black font-mono text-white tracking-widest">{placedOrder.pickupToken}</span>
               </div>
             </div>
 
             {/* Live Progress Bar */}
-            <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4">
-              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Live Job Status</h3>
+            <div className="glass-card p-5 rounded-2xl border border-white/10 space-y-4">
+              <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                Live Job Progress
+              </h3>
               <div className="grid grid-cols-4 gap-2 text-center text-xs">
                 <div className="flex flex-col items-center">
                   <div className="w-7 h-7 rounded-full bg-emerald-500 text-slate-950 font-bold flex items-center justify-center mb-1 text-[11px]">✓</div>
@@ -212,24 +216,24 @@ export default function CustomerPortalPage() {
             </div>
 
             {/* Direct Merchant Payment Box */}
-            <div className="bg-slate-950 p-6 rounded-xl border border-indigo-500/40 flex flex-col items-center text-center space-y-4">
+            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-indigo-500/40 flex flex-col items-center text-center space-y-4 shadow-2xl relative overflow-hidden">
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Direct Payment to Merchant (0% Platform Fee)</span>
+                <span>Direct Payment to Shop Merchant (0% Platform Fee)</span>
               </div>
               <h4 className="text-xl font-black text-white">Scan Merchant QR to Pay</h4>
-              <div className="p-3.5 bg-white rounded-2xl shadow-2xl border-4 border-indigo-500">
-                <img src={upiQrImgUrl} alt="Merchant Direct UPI QR" className="w-52 h-52 rounded-lg object-contain" />
+              <div className="p-4 bg-white rounded-3xl shadow-2xl border-4 border-indigo-500/80">
+                <img src={upiQrImgUrl} alt="Merchant Direct UPI QR" className="w-52 h-52 rounded-xl object-contain" />
               </div>
               <div className="space-y-1">
                 <p className="text-xs text-slate-300 font-semibold">
-                  Pay directly to: <span className="text-white">{shopData?.name}</span>
+                  Pay directly to: <span className="text-white font-bold">{shopData?.name}</span>
                 </p>
                 <p className="text-xs text-slate-400 max-w-sm">
-                  Open Google Pay, PhonePe, Paytm or BHIM UPI. Scan to pay the merchant directly.
+                  Open Google Pay, PhonePe, Paytm or BHIM UPI. Scan to pay the shop directly.
                 </p>
               </div>
-              <div className="flex items-center gap-2 text-xs font-mono text-slate-300 bg-slate-900 px-4 py-2 rounded-xl border border-slate-800">
+              <div className="flex items-center gap-2 text-xs font-mono text-slate-300 bg-slate-900/90 px-4 py-2.5 rounded-xl border border-white/10">
                 <span>Merchant UPI ID: <strong className="text-indigo-300">{shopData?.upiId}</strong></span>
                 <button
                   onClick={() => {
@@ -259,21 +263,40 @@ export default function CustomerPortalPage() {
           </div>
         ) : (
           <>
-            {/* Upload Documents */}
-            <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 space-y-4">
+            {/* Upload Documents Card */}
+            <div className="glass-card rounded-3xl p-6 sm:p-8 space-y-5 border-white/10 shadow-2xl">
               <div className="flex items-center justify-between">
-                <h2 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                  <Upload className="w-4 h-4 text-indigo-400" />
-                  Upload Documents
-                </h2>
-                <span className="text-[11px] text-slate-400">PDF, Word, PNG, JPG (up to 100MB)</span>
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center">
+                    <Upload className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider">
+                    Upload Documents to Print
+                  </h2>
+                </div>
+                <span className="text-[11px] font-semibold text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-white/5">
+                  PDF, Word, Images (up to 100MB)
+                </span>
               </div>
 
               {/* Drag Drop Zone */}
               <div
+                onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragging(false);
+                  if (e.dataTransfer.files) handleFileUpload(e.dataTransfer.files);
+                }}
                 onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-8 text-center cursor-pointer bg-slate-950/60 hover:bg-slate-950 transition-all group"
+                className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 relative overflow-hidden group ${
+                  isDragging
+                    ? 'border-indigo-400 bg-indigo-950/40 scale-[1.01]'
+                    : 'border-slate-700 hover:border-indigo-500 bg-slate-950/50 hover:bg-slate-950/80'
+                }`}
               >
+                <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-indigo-400 to-transparent absolute top-0 left-0 opacity-0 group-hover:opacity-100 group-hover:animate-laser-scan pointer-events-none"></div>
+
                 <input
                   type="file"
                   multiple
@@ -282,38 +305,46 @@ export default function CustomerPortalPage() {
                   className="hidden"
                   accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
                 />
-                <div className="w-12 h-12 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                  <Upload className="w-6 h-6" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600/30 to-cyan-500/30 text-indigo-400 flex items-center justify-center mx-auto mb-3.5 group-hover:scale-110 group-hover:text-white transition-all shadow-lg shadow-indigo-600/20">
+                  <FileUp className="w-7 h-7" />
                 </div>
-                <p className="text-sm font-semibold text-white">Tap to upload files or drag and drop here</p>
-                <p className="text-xs text-slate-500 mt-1">Files are securely processed and auto-spooled to shop printers</p>
+                <p className="text-base font-bold text-white">Tap to browse files or drag & drop here</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  Files are securely verified, scanned for orientation, and prepared for instant spooling.
+                </p>
               </div>
 
               {/* Uploaded File Config Cards */}
               {files.length > 0 && (
-                <div className="space-y-4 pt-2">
-                  <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                    Configured Documents ({files.length}) · Total {totalPages} Page(s)
-                  </h3>
+                <div className="space-y-4 pt-4 border-t border-white/10">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-extrabold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                      <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                      Configured Documents ({files.length})
+                    </h3>
+                    <span className="text-xs font-bold text-cyan-400 bg-cyan-950/60 px-3 py-1 rounded-full border border-cyan-500/30">
+                      Total {totalPages} Page(s)
+                    </span>
+                  </div>
 
                   {files.map((item) => (
                     <div
                       key={item.id}
-                      className="bg-slate-950 border border-slate-800 rounded-xl p-4.5 space-y-3.5 transition-all shadow-md"
+                      className="glass-card rounded-2xl p-5 space-y-4 transition-all hover:border-indigo-500/40 shadow-md"
                     >
-                      <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
+                      <div className="flex items-start justify-between gap-3 border-b border-white/5 pb-3">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-lg bg-indigo-900/40 text-indigo-400 flex items-center justify-center">
+                          <div className="w-10 h-10 rounded-xl bg-indigo-900/40 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
                             <FileText className="w-5 h-5" />
                           </div>
                           <div>
-                            <h4 className="text-xs sm:text-sm font-bold text-white truncate max-w-xs">{item.fileName}</h4>
+                            <h4 className="text-sm font-bold text-white truncate max-w-xs">{item.fileName}</h4>
                             <p className="text-[11px] text-slate-400">{item.fileSize} · {item.pageCount} page(s)</p>
                           </div>
                         </div>
                         <button
                           onClick={() => removeItem(item.id)}
-                          className="text-xs text-rose-400 hover:text-rose-300 font-medium px-2 py-1 rounded bg-slate-900"
+                          className="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-colors"
                         >
                           Remove
                         </button>
@@ -328,7 +359,7 @@ export default function CustomerPortalPage() {
                           <select
                             value={item.colorMode}
                             onChange={(e) => updateItem(item.id, { colorMode: e.target.value })}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
+                            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
                           >
                             <option value="BLACK_AND_WHITE">Black & White (B&W)</option>
                             <option value="COLOR">Full Color</option>
@@ -341,7 +372,7 @@ export default function CustomerPortalPage() {
                           <select
                             value={item.duplex}
                             onChange={(e) => updateItem(item.id, { duplex: e.target.value })}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
+                            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
                           >
                             <option value="SINGLE_SIDED">Single Sided</option>
                             <option value="DOUBLE_SIDED">Double Sided (Back-to-Back)</option>
@@ -354,7 +385,7 @@ export default function CustomerPortalPage() {
                           <select
                             value={item.paperSize}
                             onChange={(e) => updateItem(item.id, { paperSize: e.target.value })}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
+                            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
                           >
                             <option value="A4">A4 (Standard)</option>
                             <option value="A3">A3 (Large)</option>
@@ -372,20 +403,20 @@ export default function CustomerPortalPage() {
                             max="500"
                             value={item.copies}
                             onChange={(e) => updateItem(item.id, { copies: Math.max(1, parseInt(e.target.value) || 1) })}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
+                            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
                           />
                         </div>
 
                       </div>
 
                       {/* Finishing & Paper GSM */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-1 border-t border-slate-900">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-2 border-t border-white/5">
                         <div>
-                          <label className="text-slate-400 block mb-1 font-medium">Paper GSM Quality</label>
+                          <label className="text-slate-400 block mb-1 font-medium">Paper Quality</label>
                           <select
                             value={item.paperType}
                             onChange={(e) => updateItem(item.id, { paperType: e.target.value })}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
+                            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
                           >
                             <option value="standard_75gsm">Standard 75 GSM Paper</option>
                             <option value="bond_85gsm">Executive Bond 85 GSM</option>
@@ -395,11 +426,11 @@ export default function CustomerPortalPage() {
                         </div>
 
                         <div>
-                          <label className="text-slate-400 block mb-1 font-medium">Finishing / Binding</label>
+                          <label className="text-slate-400 block mb-1 font-medium">Finishing & Binding</label>
                           <select
                             value={item.finishing}
                             onChange={(e) => updateItem(item.id, { finishing: e.target.value })}
-                            className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
+                            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
                           >
                             <option value="none">No Finishing</option>
                             <option value="stapling">Corner Staple</option>
@@ -423,7 +454,7 @@ export default function CustomerPortalPage() {
                   type="button"
                   onClick={handlePlaceOrder}
                   disabled={submitting}
-                  className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-98 disabled:opacity-50"
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-sm shadow-2xl shadow-indigo-600/40 flex items-center justify-center gap-2.5 transition-all hover:scale-[1.01] active:scale-98 disabled:opacity-50 border border-indigo-400/30"
                 >
                   <Printer className="w-5 h-5" />
                   <span>{submitting ? 'Placing Order in Queue...' : `Submit Print Order (${totalPages} Pages)`}</span>

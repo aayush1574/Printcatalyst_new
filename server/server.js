@@ -549,7 +549,6 @@ app.post('/api/v1/jobs', async (req, res) => {
     res.status(500).json({ success: false, message: 'Server error processing order: ' + err.message });
   }
 });
-});
 
 app.get('/api/v1/jobs/:id', (req, res) => {
   const order = db.getOrderById(req.params.id);

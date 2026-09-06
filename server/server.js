@@ -1,0 +1,776 @@
+const express = require('express');
+const http = require('http');
+const path = require('path');
+const fs = require('fs');
+const cors = require('cors');
+const multer = require('multer');
+const { WebSocketServer, WebSocket } = require('ws');
+const QRCode = require('qrcode');
+const db = require('./db');
+
+const app = express();
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
+
+const PORT = process.env.PORT || 5000;
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+// Multer storage setup
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname) || '.pdf';
+    cb(null, file.fieldname + '-' + uniqueSuffix + ext);
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
+});
+
+app.use(cors());
+app.use(express.json());
+app.use('/uploads', express.static(UPLOADS_DIR));
+
+// Track connected WebSocket clients
+const clients = new Map(); // ws -> { type: 'MERCHANT' | 'AGENT' | 'CUSTOMER', shopId, orderId }
+
+function broadcastToShop(shopId, payload) {
+  const msg = JSON.stringify(payload);
+  for (const [clientWs, meta] of clients.entries()) {
+    if (clientWs.readyState === WebSocket.OPEN && (!meta.shopId || meta.shopId === shopId)) {
+      clientWs.send(msg);
+    }
+  }
+}
+
+function broadcastToAgent(shopId, payload) {
+  const msg = JSON.stringify(payload);
+  for (const [clientWs, meta] of clients.entries()) {
+    if (clientWs.readyState === WebSocket.OPEN && meta.type === 'AGENT' && meta.shopId === shopId) {
+      clientWs.send(msg);
+    }
+  }
+}
+
+wss.on('connection', (ws, req) => {
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message.toString());
+      if (data.type === 'REGISTER_MERCHANT') {
+        clients.set(ws, { type: 'MERCHANT', shopId: data.shopId || 'shop_demo' });
+        ws.send(JSON.stringify({ type: 'REGISTERED', message: 'Merchant connected to live feed' }));
+      } else if (data.type === 'REGISTER_AGENT') {
+        clients.set(ws, { type: 'AGENT', shopId: data.shopId || 'shop_demo', agentToken: data.agentToken });
+        db.updateShop(data.shopId || 'shop_demo', {
+          agentStatus: 'ONLINE',
+          agentLastHeartbeat: new Date().toISOString()
+        });
+        broadcastToShop(data.shopId || 'shop_demo', {
+          type: 'AGENT_STATUS_CHANGE',
+          status: 'ONLINE'
+        });
+        ws.send(JSON.stringify({ type: 'AGENT_AUTHENTICATED', message: 'Desktop Agent linked successfully' }));
+      } else if (data.type === 'AGENT_JOB_STATUS') {
+        // Agent reports print progress: SPOOLING -> PRINTING -> COMPLETED
+        const { orderId, status, error, pagesPrinted } = data;
+        if (orderId) {
+          const order = db.getOrderById(orderId);
+          if (order) {
+            const updatedLogs = [...(order.logs || []), {
+              timestamp: new Date().toISOString(),
+              text: `Desktop Agent: ${status} ${error ? `(Error: ${error})` : ''}`
+            }];
+            const updated = db.updateOrder(orderId, {
+              status: status === 'SUCCESS' ? 'COMPLETED' : (status === 'PRINTING' ? 'PRINTING' : 'IN_SPOOL'),
+              logs: updatedLogs
+            });
+            broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: updated });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('WS Error parsing message:', e);
+    }
+  });
+
+  ws.on('close', () => {
+    const meta = clients.get(ws);
+    if (meta && meta.type === 'AGENT') {
+      db.updateShop(meta.shopId, {
+        agentStatus: 'OFFLINE',
+        agentLastHeartbeat: new Date().toISOString()
+      });
+      broadcastToShop(meta.shopId, {
+        type: 'AGENT_STATUS_CHANGE',
+        status: 'OFFLINE'
+      });
+    }
+    clients.delete(ws);
+  });
+});
+
+// ==================== API ROUTES ====================
+
+// 1. Auth & Session
+app.post('/api/v1/merchants/login', (req, res) => {
+  const { email, password } = req.body;
+  const shops = db.getShops();
+  const shop = shops.find(s => s.email === email || s.phone === email || email === 'demo' || email === 'rajesh@printcatalyst.in');
+  if (shop) {
+    return res.json({
+      success: true,
+      token: 'pc_auth_token_' + shop.id,
+      shop: {
+        id: shop.id,
+        name: shop.name,
+        slug: shop.slug,
+        ownerName: shop.ownerName,
+        email: shop.email,
+        phone: shop.phone,
+        plan: shop.plan,
+        agentToken: shop.agentToken
+      }
+    });
+  }
+  return res.status(401).json({ success: false, message: 'Invalid credentials' });
+});
+
+app.post('/api/v1/merchants/register', (req, res) => {
+  const { shopName, ownerName, email, phone, password, address, upiId } = req.body;
+  const id = 'shop_' + Date.now();
+  const slug = (shopName || 'shop').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const agentToken = 'agt_tok_' + Math.random().toString(36).substring(2, 15);
+  
+  const newShop = {
+    id,
+    slug,
+    name: shopName || 'My Print Shop',
+    ownerName: ownerName || 'Shop Owner',
+    email: email || '',
+    phone: phone || '',
+    password: password || '123456',
+    address: address || '',
+    upiId: upiId || 'merchant@upi',
+    autoPrintEnabled: true,
+    instantReleaseOnPayment: true,
+    whatsappAutomationEnabled: true,
+    whatsappPhoneNumber: phone || '',
+    whatsappSessionStatus: 'CONNECTED',
+    agentToken,
+    agentStatus: 'OFFLINE',
+    plan: 'GROWTH',
+    planExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    printCredits: 1000,
+    createdAt: new Date().toISOString()
+  };
+
+  db.data.shops.push(newShop);
+  db.data.pricing[id] = JSON.parse(JSON.stringify(db.data.pricing['shop_demo']));
+  db.save();
+
+  res.json({
+    success: true,
+    token: 'pc_auth_token_' + id,
+    shop: newShop
+  });
+});
+
+app.get('/api/v1/merchants/session', (req, res) => {
+  const shop = db.getShopById('shop_demo');
+  res.json({
+    authenticated: true,
+    shop
+  });
+});
+
+app.get('/api/v1/merchants/profile', (req, res) => {
+  const shop = db.getShopById('shop_demo');
+  res.json(shop);
+});
+
+app.put('/api/v1/merchants/profile', (req, res) => {
+  const updated = db.updateShop('shop_demo', req.body);
+  res.json({ success: true, shop: updated });
+});
+
+// 2. Public Shop & Portal Info
+app.get('/api/v1/portal/shop/:slugOrId', async (req, res) => {
+  const { slugOrId } = req.params;
+  let shop = db.getShopBySlug(slugOrId) || db.getShopById(slugOrId);
+  if (!shop) {
+    shop = db.getShopById('shop_demo');
+  }
+
+  const pricing = db.getPricing(shop.id);
+  const portalUrl = `${req.protocol}://${req.get('host')}/portal/${shop.slug}`;
+  let qrCodeDataUrl = '';
+  try {
+    qrCodeDataUrl = await QRCode.toDataURL(portalUrl, { width: 350, margin: 2 });
+  } catch (e) {
+    console.error('QR Gen error:', e);
+  }
+
+  res.json({
+    shop: {
+      id: shop.id,
+      slug: shop.slug,
+      name: shop.name,
+      ownerName: shop.ownerName,
+      address: shop.address,
+      phone: shop.phone,
+      upiId: shop.upiId,
+      autoPrintEnabled: shop.autoPrintEnabled
+    },
+    pricing,
+    portalUrl,
+    qrCodeDataUrl
+  });
+});
+
+// 3. Pricing Matrix API
+app.get('/api/v1/pricing/:shopId', (req, res) => {
+  const pricing = db.getPricing(req.params.shopId || 'shop_demo');
+  res.json(pricing);
+});
+
+app.put('/api/v1/pricing/:shopId', (req, res) => {
+  const updated = db.updatePricing(req.params.shopId || 'shop_demo', req.body);
+  res.json({ success: true, pricing: updated });
+});
+
+// 4. File Upload
+app.post('/api/v1/upload', upload.array('files', 10), (req, res) => {
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({ success: false, message: 'No files uploaded' });
+  }
+
+  const uploadedFiles = req.files.map(f => {
+    // Generate an estimated page count based on file size or mock PDF calculation
+    let estimatedPages = 1;
+    if (f.mimetype === 'application/pdf') {
+      estimatedPages = Math.max(1, Math.min(200, Math.round(f.size / (100 * 1024))));
+    } else if (f.mimetype.includes('image')) {
+      estimatedPages = 1;
+    }
+
+    return {
+      fileName: f.originalname,
+      fileSize: (f.size / (1024 * 1024)).toFixed(2) + ' MB',
+      fileUrl: `/uploads/${f.filename}`,
+      fileType: f.mimetype,
+      pageCount: estimatedPages
+    };
+  });
+
+  res.json({
+    success: true,
+    files: uploadedFiles
+  });
+});
+
+// 5. Orders API
+app.get('/api/v1/jobs', (req, res) => {
+  const shopId = req.query.shopId || 'shop_demo';
+  const orders = db.getOrders(shopId);
+  res.json({ orders });
+});
+
+app.post('/api/v1/jobs', async (req, res) => {
+  const {
+    shopId = 'shop_demo',
+    customerName,
+    customerPhone,
+    source = 'QR_PORTAL',
+    paymentMethod = 'UPI',
+    items = [],
+    isUrgent = false
+  } = req.body;
+
+  const shop = db.getShopById(shopId);
+  const pricing = db.getPricing(shopId);
+  const orderNum = Math.floor(1000 + Math.random() * 9000);
+  const orderId = `ORD-${orderNum}`;
+  const pickupToken = `CAT-${orderNum.toString().slice(-3)}`;
+
+  // Calculate detailed pricing
+  let totalAmount = 0;
+  let totalPages = 0;
+
+  const processedItems = items.map((item, idx) => {
+    const pageCount = item.pageCount || 1;
+    const copies = item.copies || 1;
+    const paperSize = item.paperSize || 'A4';
+    const colorMode = item.colorMode || 'BLACK_AND_WHITE';
+    const duplex = item.duplex || 'SINGLE_SIDED';
+    const paperType = item.paperType || 'standard_75gsm';
+    const finishing = item.finishing || 'none';
+
+    // Parse page range
+    let activePages = pageCount;
+    if (item.pageRange && item.pageRange !== 'ALL') {
+      const ranges = item.pageRange.split(',').map(r => r.trim());
+      let count = 0;
+      for (const r of ranges) {
+        if (r.includes('-')) {
+          const [start, end] = r.split('-').map(Number);
+          if (!isNaN(start) && !isNaN(end)) count += Math.max(1, end - start + 1);
+        } else if (!isNaN(Number(r))) {
+          count += 1;
+        }
+      }
+      activePages = Math.min(pageCount, Math.max(1, count));
+    }
+
+    const rates = pricing.rates[paperSize] || pricing.rates['A4'];
+    let ratePerPage = 2.0;
+    if (colorMode === 'COLOR') {
+      ratePerPage = duplex === 'DOUBLE_SIDED' ? (rates.colorDuplex || 7.0) : (rates.colorSingle || 8.0);
+    } else {
+      ratePerPage = duplex === 'DOUBLE_SIDED' ? (rates.monoDuplex || 1.5) : (rates.monoSingle || 2.0);
+    }
+
+    const paperTypeExtra = (pricing.paperTypes[paperType] && pricing.paperTypes[paperType].extraPerPage) || 0;
+    const finishingPrice = (pricing.finishing[finishing] && pricing.finishing[finishing].price) || 0;
+
+    const computedPages = activePages * copies;
+    totalPages += computedPages;
+
+    const itemSubtotal = (computedPages * (ratePerPage + paperTypeExtra)) + finishingPrice;
+    totalAmount += itemSubtotal;
+
+    return {
+      ...item,
+      id: `item_${idx + 1}`,
+      computedPages,
+      subtotal: parseFloat(itemSubtotal.toFixed(2))
+    };
+  });
+
+  if (isUrgent) {
+    totalAmount += (pricing.urgentRushFee || 15);
+  }
+
+  // Check volume discount
+  let discountApplied = 0;
+  for (const tier of (pricing.volumeDiscounts || [])) {
+    if (totalPages >= tier.minPages && totalPages <= tier.maxPages) {
+      discountApplied = (totalAmount * tier.discountPercent) / 100;
+      break;
+    }
+  }
+
+  const finalAmount = Math.max(pricing.minOrderAmount || 5, parseFloat((totalAmount - discountApplied).toFixed(2)));
+
+  // Auto assign intelligent printer
+  const printers = db.getPrinters(shopId);
+  const requiresColor = items.some(i => i.colorMode === 'COLOR');
+  const assignedPrinter = printers.find(p => requiresColor ? p.supportsColor : (p.isDefaultMono || p.supportsColor)) || printers[0];
+
+  const newOrder = {
+    id: orderId,
+    shopId,
+    customerName: customerName || 'Walk-in Customer',
+    customerPhone: customerPhone || '+91 99999 99999',
+    source,
+    status: (paymentMethod === 'UPI' && shop && shop.instantReleaseOnPayment) ? 'READY_TO_PRINT' : 'PENDING_APPROVAL',
+    paymentStatus: paymentMethod === 'UPI' ? 'PAID' : 'PENDING',
+    paymentMethod,
+    upiRef: paymentMethod === 'UPI' ? `UPI-${Date.now().toString().slice(-9)}` : null,
+    totalAmount: parseFloat(totalAmount.toFixed(2)),
+    discountApplied: parseFloat(discountApplied.toFixed(2)),
+    finalAmount,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    pickupToken,
+    items: processedItems,
+    assignedPrinterId: assignedPrinter ? assignedPrinter.id : null,
+    assignedPrinterName: assignedPrinter ? assignedPrinter.name : 'Default Printer',
+    logs: [
+      { timestamp: new Date().toISOString(), text: `Order created via ${source}` },
+      ...(paymentMethod === 'UPI' ? [{ timestamp: new Date().toISOString(), text: `UPI Payment of ₹${finalAmount} verified` }] : [])
+    ]
+  };
+
+  db.addOrder(newOrder);
+
+  // Auto print if shop has auto print enabled
+  if (shop && shop.autoPrintEnabled && newOrder.paymentStatus === 'PAID') {
+    broadcastToAgent(shopId, {
+      type: 'DISPATCH_PRINT_JOB',
+      order: newOrder,
+      targetPrinter: assignedPrinter
+    });
+  }
+
+  broadcastToShop(shopId, {
+    type: 'NEW_ORDER',
+    order: newOrder
+  });
+
+  res.json({
+    success: true,
+    order: newOrder
+  });
+});
+
+app.get('/api/v1/jobs/:id', (req, res) => {
+  const order = db.getOrderById(req.params.id);
+  if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+  res.json(order);
+});
+
+// Release job to local printer queue
+app.post('/api/v1/jobs/release/:id', (req, res) => {
+  const order = db.getOrderById(req.params.id);
+  if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+  const { targetPrinterId } = req.body;
+  const printers = db.getPrinters(order.shopId);
+  const targetPrinter = targetPrinterId ? printers.find(p => p.id === targetPrinterId) : printers.find(p => p.id === order.assignedPrinterId) || printers[0];
+
+  const updatedLogs = [
+    ...(order.logs || []),
+    { timestamp: new Date().toISOString(), text: `Released to printer: ${targetPrinter ? targetPrinter.name : 'Default Spooler'}` }
+  ];
+
+  const updated = db.updateOrder(order.id, {
+    status: 'IN_SPOOL',
+    assignedPrinterId: targetPrinter ? targetPrinter.id : order.assignedPrinterId,
+    assignedPrinterName: targetPrinter ? targetPrinter.name : order.assignedPrinterName,
+    logs: updatedLogs
+  });
+
+  // Broadcast to Desktop Agent
+  broadcastToAgent(order.shopId, {
+    type: 'DISPATCH_PRINT_JOB',
+    order: updated,
+    targetPrinter
+  });
+
+  // Simulate print finishing after 4 seconds if agent is in demo mock mode
+  setTimeout(() => {
+    const fresh = db.getOrderById(order.id);
+    if (fresh && fresh.status === 'IN_SPOOL') {
+      const finished = db.updateOrder(order.id, {
+        status: 'PRINTING',
+        logs: [...(fresh.logs || []), { timestamp: new Date().toISOString(), text: 'Printer spooling active - pages outputting' }]
+      });
+      broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: finished });
+
+      setTimeout(() => {
+        const done = db.updateOrder(order.id, {
+          status: 'COMPLETED',
+          logs: [...(finished.logs || []), { timestamp: new Date().toISOString(), text: 'Physical print completed successfully' }]
+        });
+        broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: done });
+      }, 3500);
+    }
+  }, 2000);
+
+  broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: updated });
+  res.json({ success: true, order: updated });
+});
+
+// Reject or cancel order
+app.post('/api/v1/jobs/reject/:id', (req, res) => {
+  const { reason = 'Merchant rejected order' } = req.body;
+  const order = db.getOrderById(req.params.id);
+  if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
+
+  const updatedLogs = [
+    ...(order.logs || []),
+    { timestamp: new Date().toISOString(), text: `Order cancelled/rejected: ${reason}` }
+  ];
+
+  const updated = db.updateOrder(order.id, {
+    status: 'CANCELLED',
+    logs: updatedLogs
+  });
+
+  broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: updated });
+  res.json({ success: true, order: updated });
+});
+
+// 6. Printers & Routing Hub API
+app.get('/api/v1/printers/list', (req, res) => {
+  const shopId = req.query.shopId || 'shop_demo';
+  const printers = db.getPrinters(shopId);
+  res.json(printers);
+});
+
+app.post('/api/v1/printers/add', (req, res) => {
+  const shopId = req.body.shopId || 'shop_demo';
+  const newPrinter = {
+    id: 'prn_' + Date.now(),
+    shopId,
+    name: req.body.name || 'New Printer',
+    type: req.body.type || 'MONO_LASER',
+    connection: req.body.connection || 'LOCAL_USB',
+    status: 'IDLE',
+    isDefaultMono: req.body.isDefaultMono || false,
+    isDefaultColor: req.body.isDefaultColor || false,
+    supportsColor: req.body.supportsColor || false,
+    supportsDuplex: req.body.supportsDuplex !== undefined ? req.body.supportsDuplex : true,
+    supportedSizes: req.body.supportedSizes || ['A4'],
+    supportedMedia: req.body.supportedMedia || ['standard_75gsm'],
+    trayCount: req.body.trayCount || 1,
+    paperLevel: '100%',
+    tonerBlack: '100%',
+    totalJobsPrinted: 0
+  };
+
+  const added = db.addPrinter(newPrinter);
+  broadcastToShop(shopId, { type: 'PRINTERS_UPDATED', printers: db.getPrinters(shopId) });
+  res.json({ success: true, printer: added });
+});
+
+app.put('/api/v1/printers/:id', (req, res) => {
+  const updated = db.updatePrinter(req.params.id, req.body);
+  if (updated) {
+    broadcastToShop(updated.shopId, { type: 'PRINTERS_UPDATED', printers: db.getPrinters(updated.shopId) });
+    return res.json({ success: true, printer: updated });
+  }
+  res.status(404).json({ success: false, message: 'Printer not found' });
+});
+
+app.delete('/api/v1/printers/:id', (req, res) => {
+  const printer = db.getPrinterById(req.params.id);
+  if (printer) {
+    db.deletePrinter(req.params.id);
+    broadcastToShop(printer.shopId, { type: 'PRINTERS_UPDATED', printers: db.getPrinters(printer.shopId) });
+    return res.json({ success: true });
+  }
+  res.status(404).json({ success: false, message: 'Printer not found' });
+});
+
+// Test print endpoint
+app.post('/api/v1/test-print', (req, res) => {
+  const { printerId, shopId = 'shop_demo' } = req.body;
+  const printer = db.getPrinterById(printerId);
+  
+  broadcastToAgent(shopId, {
+    type: 'DISPATCH_TEST_PRINT',
+    printerId,
+    printerName: printer ? printer.name : 'Test Printer',
+    timestamp: new Date().toISOString()
+  });
+
+  res.json({
+    success: true,
+    message: `Test print sent to ${printer ? printer.name : 'selected printer'}`
+  });
+});
+
+// 7. WhatsApp Automation & Bot Simulator API
+app.get('/api/v1/whatsapp/automation', (req, res) => {
+  const bot = db.getWhatsAppBot('shop_demo');
+  res.json(bot);
+});
+
+app.put('/api/v1/whatsapp/automation', (req, res) => {
+  const updated = db.updateWhatsAppBot('shop_demo', req.body);
+  res.json({ success: true, bot: updated });
+});
+
+app.post('/api/v1/whatsapp/simulate-incoming', (req, res) => {
+  const { customerPhone = '+91 98765 11223', customerName = 'Walk-in WhatsApp User', messageText, fileName, filePages = 6, colorMode = 'BLACK_AND_WHITE' } = req.body;
+  const bot = db.getWhatsAppBot('shop_demo');
+  const shop = db.getShopById('shop_demo');
+  const pricing = db.getPricing('shop_demo');
+
+  let replyText = '';
+  let createdOrder = null;
+
+  if (fileName) {
+    // Calculate auto quote
+    const rates = pricing.rates['A4'];
+    const rate = colorMode === 'COLOR' ? rates.colorSingle : rates.monoSingle;
+    const subtotal = filePages * rate;
+
+    replyText = `📄 Received *${fileName}* (${filePages} pages).\n\n⚙️ Configured: *${colorMode === 'COLOR' ? 'Color' : 'Black & White'} Single-Sided on A4 Paper*.\n💰 Estimated Total: *₹${subtotal.toFixed(2)}*\n\nOrder created automatically! Pick up token generated. Tap link to pay or pay at shop counter.`;
+
+    // Create WhatsApp order in DB
+    const orderNum = Math.floor(1000 + Math.random() * 9000);
+    createdOrder = {
+      id: `ORD-${orderNum}`,
+      shopId: 'shop_demo',
+      customerName,
+      customerPhone,
+      source: 'WHATSAPP_BOT',
+      status: 'PENDING_APPROVAL',
+      paymentStatus: 'PENDING',
+      paymentMethod: 'CASH',
+      totalAmount: subtotal,
+      discountApplied: 0,
+      finalAmount: subtotal,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      pickupToken: `CAT-${orderNum.toString().slice(-3)}`,
+      items: [
+        {
+          id: 'item_wa_1',
+          fileName,
+          fileSize: '3.4 MB',
+          fileUrl: '/uploads/sample_wa_doc.pdf',
+          fileType: 'application/pdf',
+          pageCount: filePages,
+          copies: 1,
+          colorMode,
+          duplex: 'SINGLE_SIDED',
+          paperSize: 'A4',
+          paperType: 'standard_75gsm',
+          pageRange: 'ALL',
+          orientation: 'PORTRAIT',
+          finishing: 'none',
+          isUrgent: false,
+          computedPages: filePages,
+          subtotal
+        }
+      ],
+      assignedPrinterId: colorMode === 'COLOR' ? 'prn_1' : 'prn_2',
+      assignedPrinterName: colorMode === 'COLOR' ? 'Canon imageRUNNER ADVANCE C3530' : 'HP LaserJet Pro MFP M428fdw',
+      logs: [
+        { timestamp: new Date().toISOString(), text: 'Document received via WhatsApp bot intake' },
+        { timestamp: new Date().toISOString(), text: `Automated quotation ₹${subtotal.toFixed(2)} delivered to customer` }
+      ]
+    };
+
+    db.addOrder(createdOrder);
+    broadcastToShop('shop_demo', { type: 'NEW_ORDER', order: createdOrder });
+  } else {
+    // Check QA pairs
+    const matchedQA = bot.qaPairs.find(qa => 
+      messageText.toLowerCase().includes(qa.question.toLowerCase().slice(0, 8)) ||
+      (messageText.toLowerCase().includes('time') && qa.question.toLowerCase().includes('timing')) ||
+      (messageText.toLowerCase().includes('bind') && qa.question.toLowerCase().includes('binding')) ||
+      (messageText.toLowerCase().includes('locat') && qa.question.toLowerCase().includes('located')) ||
+      (messageText.toLowerCase().includes('address') && qa.question.toLowerCase().includes('located'))
+    );
+
+    if (matchedQA) {
+      replyText = `🤖 *Catalyst Assistant*:\n\n${matchedQA.answer}`;
+    } else {
+      replyText = `🤖 *Catalyst Assistant*:\n\n${bot.greetingMessage}`;
+    }
+  }
+
+  // Update simulated chat thread
+  let chat = bot.simulatedChats.find(c => c.customerPhone === customerPhone);
+  if (!chat) {
+    chat = {
+      id: 'chat_' + Date.now(),
+      customerPhone,
+      customerName,
+      unreadCount: 0,
+      lastMessageAt: new Date().toISOString(),
+      messages: []
+    };
+    bot.simulatedChats.unshift(chat);
+  }
+
+  chat.lastMessageAt = new Date().toISOString();
+  chat.messages.push({
+    id: 'm_' + Date.now(),
+    sender: 'customer',
+    text: fileName ? `📎 ${fileName} (${filePages} pages)` : messageText,
+    timestamp: new Date().toISOString()
+  });
+
+  chat.messages.push({
+    id: 'm_' + (Date.now() + 1),
+    sender: 'bot',
+    text: replyText,
+    timestamp: new Date().toISOString()
+  });
+
+  db.updateWhatsAppBot('shop_demo', { simulatedChats: bot.simulatedChats });
+
+  broadcastToShop('shop_demo', {
+    type: 'WHATSAPP_MESSAGE',
+    chat,
+    createdOrder
+  });
+
+  res.json({
+    success: true,
+    replyText,
+    createdOrder,
+    chat
+  });
+});
+
+// 8. Desktop Agent Download & Verification
+app.get('/api/v1/agent/script', (req, res) => {
+  const agentPath = path.join(__dirname, 'agent-client', 'print-agent.js');
+  if (fs.existsSync(agentPath)) {
+    res.download(agentPath, 'printcatalyst-agent.js');
+  } else {
+    res.status(404).send('Agent script not found');
+  }
+});
+
+// 9. Super Admin & Platform API
+app.get('/api/v1/admin/overview', (req, res) => {
+  const shops = db.getShops();
+  const orders = db.getOrders();
+  const printers = db.getPrinters();
+  
+  const totalRevenue = orders.reduce((sum, o) => sum + (o.finalAmount || 0), 0);
+  const totalPagesPrinted = orders.reduce((sum, o) => sum + (o.items || []).reduce((acc, i) => acc + (i.computedPages || 0), 0), 0);
+
+  res.json({
+    totalShops: shops.length,
+    activePrinters: printers.length,
+    totalOrders: orders.length,
+    totalRevenue,
+    totalPagesPrinted,
+    recentOrders: orders.slice(0, 10),
+    shops,
+    plans: db.getSubscriptionPlans()
+  });
+});
+
+app.get('/api/v1/subscriptions/plans', (req, res) => {
+  res.json(db.getSubscriptionPlans());
+});
+
+app.post('/api/v1/support/enquiries', (req, res) => {
+  const { name, email, phone, subject, message } = req.body;
+  const enquiry = {
+    id: 'enq_' + Date.now(),
+    name,
+    email,
+    phone,
+    subject: subject || 'General Enquiry',
+    message,
+    status: 'OPEN',
+    createdAt: new Date().toISOString()
+  };
+  db.addSupportEnquiry(enquiry);
+  res.json({ success: true, enquiry });
+});
+
+app.get('/api/v1/support/enquiries', (req, res) => {
+  res.json(db.getSupportEnquiries());
+});
+
+// Serve frontend build in production
+const DIST_DIR = path.join(__dirname, '../dist');
+if (fs.existsSync(DIST_DIR)) {
+  app.use(express.static(DIST_DIR));
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(DIST_DIR, 'index.html'));
+  });
+}
+
+server.listen(PORT, () => {
+  console.log(`Print Catalyst Backend Server running on port ${PORT}`);
+});
+

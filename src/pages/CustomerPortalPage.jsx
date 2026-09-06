@@ -209,10 +209,6 @@ export default function CustomerPortalPage() {
     );
   }
 
-  // Merchant direct UPI payment QR string
-  const upiPayString = `upi://pay?pa=${shopData?.upiId || 'printsupport@okaxis'}&pn=${encodeURIComponent(shopData?.name || 'Print Shop')}&tn=${placedOrder?.id || 'PrintOrder'}`;
-  const upiQrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiPayString)}&margin=1`;
-
   return (
     <div className="min-h-screen bg-[#070a13] text-slate-100 font-sans pb-16 bg-dot-grid relative overflow-hidden">
       
@@ -254,13 +250,13 @@ export default function CustomerPortalPage() {
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-white font-['Outfit']">Order Submitted Successfully!</h2>
               <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
-                Your print job has been securely queued and verified.
+                Your print job has been securely queued in the shop printer spooler.
               </p>
               
               {/* Pickup Plaque */}
-              <div className="inline-block px-6 py-3.5 bg-gradient-to-b from-indigo-950/90 to-slate-950 border-2 border-indigo-500/60 rounded-2xl mt-3 shadow-2xl">
+              <div className="inline-block px-8 py-4 bg-gradient-to-b from-indigo-950/90 to-slate-950 border-2 border-indigo-500/60 rounded-2xl mt-3 shadow-2xl">
                 <span className="text-[11px] text-indigo-300 block font-bold uppercase tracking-wider">Your Counter Pickup Token</span>
-                <span className="text-3xl sm:text-4xl font-black font-mono text-white tracking-widest">{placedOrder.pickupToken}</span>
+                <span className="text-4xl sm:text-5xl font-black font-mono text-white tracking-widest">{placedOrder.pickupToken}</span>
               </div>
             </div>
 
@@ -270,58 +266,38 @@ export default function CustomerPortalPage() {
                 <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                 Live Job Progress
               </h3>
-              <div className="grid grid-cols-4 gap-2 text-center text-xs">
+              <div className="grid grid-cols-3 gap-3 text-center text-xs">
                 <div className="flex flex-col items-center">
-                  <div className="w-7 h-7 rounded-full bg-emerald-500 text-slate-950 font-bold flex items-center justify-center mb-1 text-[11px]">✓</div>
+                  <div className="w-8 h-8 rounded-full bg-emerald-500 text-slate-950 font-bold flex items-center justify-center mb-1 text-xs">✓</div>
                   <span className="text-emerald-400 font-semibold">Submitted</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="w-7 h-7 rounded-full bg-emerald-500 text-slate-950 font-bold flex items-center justify-center mb-1 text-[11px]">2</div>
-                  <span className="text-slate-300">Direct Pay</span>
+                  <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center mb-1 text-xs animate-pulse">2</div>
+                  <span className="text-indigo-300 font-semibold">In Spool Queue</span>
                 </div>
                 <div className="flex flex-col items-center">
-                  <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center mb-1 text-[11px]">3</div>
-                  <span className="text-slate-300">In Spool</span>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="w-7 h-7 rounded-full bg-slate-800 text-slate-500 font-bold flex items-center justify-center mb-1 text-[11px]">4</div>
-                  <span className="text-slate-500">Printing</span>
+                  <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-500 font-bold flex items-center justify-center mb-1 text-xs">3</div>
+                  <span className="text-slate-500">Ready at Counter</span>
                 </div>
               </div>
             </div>
 
-            {/* Direct Merchant Payment Box */}
-            <div className="glass-card p-6 sm:p-8 rounded-3xl border border-indigo-500/40 flex flex-col items-center text-center space-y-4 shadow-2xl relative overflow-hidden">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Direct Payment to Shop Merchant (0% Platform Fee)</span>
+            {/* Counter Pickup & Payment Card */}
+            <div className="glass-card p-6 rounded-2xl border border-white/10 space-y-3">
+              <div className="flex items-center gap-2 text-indigo-400 font-bold text-sm">
+                <Printer className="w-4 h-4" />
+                <span>Counter Pickup Instructions</span>
               </div>
-              <h4 className="text-xl font-black text-white">Scan Merchant QR to Pay</h4>
-              <div className="p-4 bg-white rounded-3xl shadow-2xl border-4 border-indigo-500/80">
-                <img src={upiQrImgUrl} alt="Merchant Direct UPI QR" className="w-52 h-52 rounded-xl object-contain" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs text-slate-300 font-semibold">
-                  Pay directly to: <span className="text-white font-bold">{shopData?.name}</span>
-                </p>
-                <p className="text-xs text-slate-400 max-w-sm">
-                  Open Google Pay, PhonePe, Paytm or BHIM UPI. Scan to pay the shop directly.
-                </p>
-              </div>
-              <div className="flex items-center gap-2 text-xs font-mono text-slate-300 bg-slate-900/90 px-4 py-2.5 rounded-xl border border-white/10">
-                <span>Merchant UPI ID: <strong className="text-indigo-300">{shopData?.upiId}</strong></span>
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(shopData?.upiId);
-                    setCopiedUpi(true);
-                    setTimeout(() => setCopiedUpi(false), 2000);
-                  }}
-                  className="p-1 text-slate-400 hover:text-white"
-                  title="Copy UPI ID"
-                >
-                  {copiedUpi ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
-              </div>
+              <ul className="text-xs text-slate-300 space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 mt-1.5 flex-shrink-0"></span>
+                  <span>Show your token <strong className="text-white font-mono">{placedOrder.pickupToken}</strong> at the counter to collect your prints.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 mt-1.5 flex-shrink-0"></span>
+                  <span>Pay directly to the shopkeeper at the counter via Cash or UPI when picking up.</span>
+                </li>
+              </ul>
             </div>
 
             <div className="text-center pt-2">
@@ -330,7 +306,7 @@ export default function CustomerPortalPage() {
                   setPlacedOrder(null);
                   setFiles([]);
                 }}
-                className="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors"
+                className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30"
               >
                 + Submit Another Print Order
               </button>

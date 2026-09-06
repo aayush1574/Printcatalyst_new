@@ -1,5 +1,5 @@
 /**
- * Print Catalyst Desktop Bridge Agent
+ * Print Support Desktop Bridge Agent
  * -----------------------------------
  * Runs as a lightweight local daemon on the print shop's Windows, Mac, or Linux computer.
  * Automatically discovers installed printers, connects to the cloud queue via WebSockets,
@@ -17,7 +17,7 @@ const SHOP_ID = process.env.CATALYST_SHOP_ID || 'shop_demo';
 const AGENT_TOKEN = process.env.CATALYST_AGENT_TOKEN || 'agt_tok_demo_88392019482';
 
 console.log('====================================================');
-console.log('   PRINT CATALYST - DESKTOP PRINT AGENT v1.4.2     ');
+console.log('   PRINT SUPPORT - DESKTOP PRINT AGENT v1.4.2     ');
 console.log('====================================================');
 console.log(`[INIT] Host OS: ${os.type()} ${os.release()} (${os.arch()})`);
 console.log(`[INIT] Connecting to: ${SERVER_URL}`);
@@ -98,7 +98,7 @@ function connect() {
   const ws = new WebSocket(SERVER_URL);
 
   ws.on('open', () => {
-    console.log('\n🟢 [AGENT] Successfully connected to Print Catalyst Cloud WebSocket!');
+    console.log('\n🟢 [AGENT] Successfully connected to Print Support Cloud WebSocket!');
     
     // Register agent
     ws.send(JSON.stringify({

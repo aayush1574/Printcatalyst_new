@@ -16,8 +16,8 @@ export default function FAQPage() {
       a: 'Yes. Each merchant receives a permanent shop QR that opens a secure document upload and print configuration flow.'
     },
     {
-      q: 'Does Print Catalyst work with existing printers?',
-      a: 'Print Catalyst routes orders through a local desktop agent to compatible printers (Canon, HP, Epson, Brother, Ricoh, Konica Minolta) already installed on the merchant computer.'
+      q: 'Does Print Support work with existing printers?',
+      a: 'Print Support routes orders through a local desktop agent to compatible printers (Canon, HP, Epson, Brother, Ricoh, Konica Minolta) already installed on the merchant computer.'
     },
     {
       q: 'Can merchants keep manual print approval?',
@@ -25,7 +25,7 @@ export default function FAQPage() {
     },
     {
       q: 'How does WhatsApp automation work?',
-      a: 'Customers forward their PDFs or photos to your shop number. Print Catalyst WhatsApp bot inspects the document page count, calculates the quote based on your rate card, and creates the job in your dashboard queue automatically.'
+      a: 'Customers forward their PDFs or photos to your shop number. Print Support WhatsApp bot inspects the document page count, calculates the quote based on your rate card, and creates the job in your dashboard queue automatically.'
     },
     {
       q: 'How do customers pay?',
@@ -40,12 +40,12 @@ export default function FAQPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 space-y-8">
         <header className="text-center space-y-3">
           <p className="text-xs font-extrabold uppercase tracking-widest text-indigo-400">
-            Print Catalyst · Knowledge Base
+            Print Support · Knowledge Base
           </p>
           <h1 className="text-3xl sm:text-4xl font-black text-white font-['Outfit']">
             Frequently Asked Questions
           </h1>
-          <p className="text-sm text-slate-400">Everything you need to know about Print Catalyst automation</p>
+          <p className="text-sm text-slate-400">Everything you need to know about Print Support automation</p>
         </header>
 
         <div className="space-y-4">

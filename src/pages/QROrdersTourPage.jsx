@@ -13,7 +13,7 @@ export default function QROrdersTourPage() {
         
         <header className="p-8 sm:p-12 rounded-3xl bg-slate-950 border border-cyan-900/40 shadow-2xl space-y-4">
           <p className="text-xs font-extrabold uppercase tracking-widest text-cyan-400">
-            Print Catalyst · QR Code Printing System
+            Print Support · QR Code Printing System
           </p>
           <h1 className="text-3xl sm:text-5xl font-black text-white font-['Outfit'] tracking-tight leading-tight">
             Counter QR Standees for Walk-in Customer Self-Upload

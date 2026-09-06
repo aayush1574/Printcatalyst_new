@@ -4,7 +4,7 @@ import { API_BASE } from '../config';
 
 export default function WhatsAppSimulatorModal({ botConfig, isOpen, onClose, onOrderCreated }) {
   const [messages, setMessages] = useState([
-    { id: '1', sender: 'bot', text: botConfig?.greetingMessage || '👋 Welcome to Catalyst Print Hub! Send your PDF or image for instant prints.', timestamp: '10:00 AM' }
+    { id: '1', sender: 'bot', text: botConfig?.greetingMessage || '👋 Welcome to Print Support Hub! Send your PDF or image for instant prints.', timestamp: '10:00 AM' }
   ]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
@@ -84,7 +84,7 @@ export default function WhatsAppSimulatorModal({ botConfig, isOpen, onClose, onO
             </div>
             <div>
               <h3 className="font-bold text-white text-sm flex items-center gap-1.5">
-                Catalyst WhatsApp Bot Engine
+                Print Support WhatsApp Bot Engine
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full border border-emerald-500/30">
                   ONLINE
                 </span>
@@ -156,7 +156,7 @@ export default function WhatsAppSimulatorModal({ botConfig, isOpen, onClose, onO
             <div className="flex justify-start">
               <div className="bg-[#202c33] text-slate-300 rounded-xl px-3.5 py-2 text-xs flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Catalyst Bot is typing auto-quote...</span>
+                <span>Print Support Bot is typing auto-quote...</span>
               </div>
             </div>
           )}

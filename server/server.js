@@ -127,7 +127,7 @@ app.get('/health', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache');
   res.status(200).json({
     status: 'ok',
-    service: 'Print Catalyst Backend API',
+    service: 'Print Support Backend API',
     uptimeSeconds: Math.floor(process.uptime()),
     timestamp: new Date().toISOString()
   });
@@ -747,9 +747,9 @@ app.post('/api/v1/whatsapp/simulate-incoming', (req, res) => {
     );
 
     if (matchedQA) {
-      replyText = `🤖 *Catalyst Assistant*:\n\n${matchedQA.answer}`;
+      replyText = `🤖 *Print Support Assistant*:\n\n${matchedQA.answer}`;
     } else {
-      replyText = `🤖 *Catalyst Assistant*:\n\n${bot.greetingMessage}`;
+      replyText = `🤖 *Print Support Assistant*:\n\n${bot.greetingMessage}`;
     }
   }
 
@@ -802,7 +802,7 @@ app.post('/api/v1/whatsapp/simulate-incoming', (req, res) => {
 app.get('/api/v1/agent/script', (req, res) => {
   const agentPath = path.join(__dirname, 'agent-client', 'print-agent.js');
   if (fs.existsSync(agentPath)) {
-    res.download(agentPath, 'printcatalyst-agent.js');
+    res.download(agentPath, 'printsupport-agent.js');
   } else {
     res.status(404).send('Agent script not found');
   }
@@ -812,7 +812,7 @@ app.get('/api/v1/agent/script', (req, res) => {
 app.post('/api/v1/admin/login', (req, res) => {
   const { username, password } = req.body;
   if (
-    (username === 'admin' || username === 'admin@printcatalyst.in' || username === 'root') &&
+    (username === 'admin' || username === 'admin@printsupport.in' || username === 'root') &&
     (password === 'admin123' || password === 'admin' || password === '123456')
   ) {
     return res.json({
@@ -820,7 +820,7 @@ app.post('/api/v1/admin/login', (req, res) => {
       token: 'pc_admin_secret_token_root',
       admin: {
         username: 'Platform Master Admin',
-        email: 'admin@printcatalyst.in',
+        email: 'admin@printsupport.in',
         role: 'SUPER_ADMIN'
       }
     });
@@ -835,7 +835,7 @@ app.get('/api/v1/admin/session', (req, res) => {
       authenticated: true,
       admin: {
         username: 'Platform Master Admin',
-        email: 'admin@printcatalyst.in',
+        email: 'admin@printsupport.in',
         role: 'SUPER_ADMIN'
       }
     });
@@ -980,6 +980,6 @@ if (fs.existsSync(DIST_DIR)) {
 }
 
 server.listen(PORT, () => {
-  console.log(`Print Catalyst Backend Server running on port ${PORT}`);
+  console.log(`Print Support Backend Server running on port ${PORT}`);
 });
 

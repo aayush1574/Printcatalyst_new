@@ -12,7 +12,7 @@ export function OrderManagementPage() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12 lg:py-16 space-y-12">
         <header className="p-8 sm:p-12 rounded-3xl bg-slate-950 border border-slate-800 shadow-2xl space-y-4">
           <p className="text-xs font-extrabold uppercase tracking-widest text-indigo-400">
-            Print Catalyst · Print Order Management
+            Print Support · Print Order Management
           </p>
           <h1 className="text-3xl sm:text-5xl font-black text-white font-['Outfit'] tracking-tight leading-tight">
             Centralize Walk-in, QR & WhatsApp Orders in One Feed
@@ -61,7 +61,7 @@ export function PrinterRoutingPage() {
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12 lg:py-16 space-y-12">
         <header className="p-8 sm:p-12 rounded-3xl bg-slate-950 border border-slate-800 shadow-2xl space-y-4">
           <p className="text-xs font-extrabold uppercase tracking-widest text-indigo-400">
-            Print Catalyst · Automatic Printer Routing
+            Print Support · Automatic Printer Routing
           </p>
           <h1 className="text-3xl sm:text-5xl font-black text-white font-['Outfit'] tracking-tight leading-tight">
             Intelligent Multi-Machine Print Job Routing

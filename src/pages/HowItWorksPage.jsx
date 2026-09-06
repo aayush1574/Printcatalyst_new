@@ -13,10 +13,10 @@ export default function HowItWorksPage() {
         
         <header className="p-8 sm:p-12 rounded-3xl bg-slate-950 border border-slate-800 shadow-2xl space-y-4">
           <p className="text-xs font-extrabold uppercase tracking-widest text-indigo-400">
-            Print Catalyst · How Print Shop Automation Works
+            Print Support · How Print Shop Automation Works
           </p>
           <h1 className="text-3xl sm:text-5xl font-black text-white font-['Outfit'] tracking-tight leading-tight">
-            How Print Catalyst works from upload to printer
+            How Print Support works from upload to printer
           </h1>
           <p className="text-base sm:text-lg text-slate-400 leading-relaxed max-w-3xl">
             See how QR and WhatsApp documents move through customer print settings, pricing, payment confirmation, printer routing and fulfilment.
@@ -28,7 +28,7 @@ export default function HowItWorksPage() {
             <span className="text-xs font-mono font-bold text-indigo-400 uppercase tracking-widest">Step 01</span>
             <h2 className="text-xl font-bold text-white">1. Structured Document Intake</h2>
             <p className="text-slate-400 leading-relaxed text-xs sm:text-sm">
-              Print Catalyst brings customer files, print preferences, prices, payment state and printer delivery into one traceable merchant workflow. It is designed for print shops, photocopy centres, stationery stores and document-service counters that want to reduce repetitive handling while retaining operational control.
+              Print Support brings customer files, print preferences, prices, payment state and printer delivery into one traceable merchant workflow. It is designed for print shops, photocopy centres, stationery stores and document-service counters that want to reduce repetitive handling while retaining operational control.
             </p>
           </div>
 

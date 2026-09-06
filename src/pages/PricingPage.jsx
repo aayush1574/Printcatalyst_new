@@ -13,13 +13,13 @@ export default function PricingPage() {
         
         <header className="text-center max-w-3xl mx-auto space-y-4">
           <p className="text-xs font-extrabold uppercase tracking-widest text-indigo-400">
-            Print Catalyst · Transparent Software Pricing
+            Print Support · Transparent Software Pricing
           </p>
           <h1 className="text-3xl sm:text-5xl font-black text-white font-['Outfit'] tracking-tight leading-tight">
             Print shop software pricing plans
           </h1>
           <p className="text-base text-slate-400 leading-relaxed">
-            Compare Print Catalyst plans for QR and WhatsApp orders, document tools, payment automation, staff access and connected printer workflows. Plans from ₹99/month.
+            Compare Print Support plans for QR and WhatsApp orders, document tools, payment automation, staff access and connected printer workflows. Plans from ₹99/month.
           </p>
         </header>
 

@@ -1,7 +1,7 @@
 {
-  "name": "printcatalyst-automation",
+  "name": "printsupport-automation",
   "version": "1.0.0",
-  "description": "Print Catalyst - Complete Print Shop Automation Software Suite",
+  "description": "Print Support - Complete Print Shop Automation Software Suite",
   "main": "server/server.js",
   "scripts": {
     "dev": "concurrently \"node server/server.js\" \"vite\"",

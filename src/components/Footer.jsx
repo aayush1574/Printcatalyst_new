@@ -14,7 +14,7 @@ export default function Footer() {
               <div className="w-9 h-9 rounded-lg bg-indigo-600 flex items-center justify-center text-white font-bold">
                 <Printer className="w-5 h-5" />
               </div>
-              <span className="text-xl font-bold font-['Outfit'] text-white">Print Catalyst</span>
+              <span className="text-xl font-bold font-['Outfit'] text-white">Print Support</span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
               The premier print shop automation software designed specifically for Indian Xerox centers, stationery stores, photocopy hubs, and high-volume document counters.
@@ -22,7 +22,7 @@ export default function Footer() {
             <div className="pt-2 flex flex-col gap-2 text-xs text-slate-400">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-indigo-400" />
-                <span>support@printcatalyst.in</span>
+                <span>support@printsupport.in</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-emerald-400" />
@@ -74,7 +74,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-slate-800/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} Print Catalyst (printcatalyst.in). Built for modern Indian print businesses.</p>
+          <p>© {new Date().getFullYear()} Print Support (printsupport.in). Built for modern Indian print businesses.</p>
           <div className="flex items-center gap-4">
             <span className="flex items-center gap-1 text-emerald-400">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>

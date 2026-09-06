@@ -112,7 +112,7 @@ export default function DocumentStudioModal({ order, printers, isOpen, onClose, 
                     <div className="h-2 w-5/6 bg-slate-300 rounded"></div>
                     <div className="h-2 w-4/5 bg-slate-300 rounded"></div>
                     <div className="my-2 p-1.5 rounded bg-indigo-50 border border-indigo-100 text-[8px] text-indigo-900 font-sans">
-                      {item.fileName} · Print Catalyst Verified
+                      {item.fileName} · Print Support Verified
                     </div>
                     <div className="h-2 w-full bg-slate-300 rounded"></div>
                     <div className="h-2 w-2/3 bg-slate-300 rounded"></div>
@@ -158,7 +158,7 @@ export default function DocumentStudioModal({ order, printers, isOpen, onClose, 
                 ))}
               </select>
               <p className="text-[11px] text-slate-400">
-                Print Catalyst intelligent router automatically recommends {order.assignedPrinterName}.
+                Print Support intelligent router automatically recommends {order.assignedPrinterName}.
               </p>
             </div>
 

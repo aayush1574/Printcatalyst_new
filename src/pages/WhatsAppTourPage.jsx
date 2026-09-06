@@ -13,7 +13,7 @@ export default function WhatsAppTourPage() {
         
         <header className="p-8 sm:p-12 rounded-3xl bg-slate-950 border border-emerald-900/40 shadow-2xl space-y-4">
           <p className="text-xs font-extrabold uppercase tracking-widest text-emerald-400">
-            Print Catalyst · WhatsApp Printing Software
+            Print Support · WhatsApp Printing Software
           </p>
           <h1 className="text-3xl sm:text-5xl font-black text-white font-['Outfit'] tracking-tight leading-tight">
             Automate WhatsApp document print orders without chat chaos

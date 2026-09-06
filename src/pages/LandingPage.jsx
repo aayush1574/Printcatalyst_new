@@ -114,7 +114,7 @@ export default function LandingPage() {
               <span>Live Architecture Flow</span>
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold text-white font-['Outfit']">
-              How Print Catalyst Works in Your Shop
+              How Print Support Works in Your Shop
             </h2>
             <p className="text-slate-400 text-sm sm:text-base mt-3">
               Click any step to inspect the automated data pipeline between customer smartphone, merchant dashboard, and physical tray.

@@ -5,7 +5,7 @@
       "slug": "catalyst-print-hub",
       "name": "Catalyst Print & Stationery Hub",
       "ownerName": "Shop Admin",
-      "email": "admin@printcatalyst.in",
+      "email": "admin@printsupport.in",
       "phone": "+91 98765 43210",
       "password": "password123",
       "address": "Shop No. 1, Main Market",
@@ -149,8 +149,8 @@
   "orders": [],
   "whatsappBot": {
     "shop_demo": {
-      "botName": "Catalyst Assistant",
-      "greetingMessage": "👋 Welcome to Catalyst Print Hub!\n\nSend your PDF/Document or Image here to get instant print quotes and queue your job without waiting in counter line.",
+      "botName": "Print Support Assistant",
+      "greetingMessage": "👋 Welcome to Print Support Hub!\n\nSend your PDF/Document or Image here to get instant print quotes and queue your job without waiting in counter line.",
       "autoReplyEnabled": true,
       "autoQuoteEnabled": true,
       "instantPayLinkEnabled": true,

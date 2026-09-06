@@ -14,7 +14,7 @@ export default function ProductTourPage() {
         {/* Hero Section */}
         <header className="p-8 sm:p-12 rounded-3xl bg-slate-950 border border-slate-800 shadow-2xl space-y-4">
           <p className="text-xs font-extrabold uppercase tracking-widest text-indigo-400">
-            Print Catalyst · Print Shop Automation Software India
+            Print Support · Print Shop Automation Software India
           </p>
           <h1 className="text-3xl sm:text-5xl font-black text-white font-['Outfit'] tracking-tight leading-tight">
             Print shop automation software that connects every order step
@@ -46,7 +46,7 @@ export default function ProductTourPage() {
           <div className="p-7 rounded-2xl bg-slate-950 border border-slate-800 space-y-2.5">
             <h2 className="text-lg font-bold text-white">Structured document intake</h2>
             <p className="text-slate-400 leading-relaxed text-xs sm:text-sm">
-              Print Catalyst brings customer files, print preferences, prices, payment state and printer delivery into one traceable merchant workflow. It is designed for print shops, photocopy centres, stationery stores and document-service counters that want to reduce repetitive handling while retaining operational control.
+              Print Support brings customer files, print preferences, prices, payment state and printer delivery into one traceable merchant workflow. It is designed for print shops, photocopy centres, stationery stores and document-service counters that want to reduce repetitive handling while retaining operational control.
             </p>
           </div>
 
@@ -83,7 +83,7 @@ export default function ProductTourPage() {
               </p>
             </div>
             <div>
-              <h3 className="font-bold text-indigo-300">Does Print Catalyst work with existing printers?</h3>
+              <h3 className="font-bold text-indigo-300">Does Print Support work with existing printers?</h3>
               <p className="text-slate-400 mt-1 text-xs sm:text-sm">
                 The desktop agent works with compatible installed printer queues (Canon, HP, Epson, Brother, Ricoh, Konica Minolta) after the required paper, colour, duplex and tray settings are verified.
               </p>

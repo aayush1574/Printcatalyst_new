@@ -245,7 +245,7 @@ export default function HolographicSpooler3D() {
               </div>
               <div>
                 <h3 className="text-base font-extrabold text-white font-['Outfit']">
-                  Catalyst Spooler Engine v2.4
+                  Print Support Spooler Engine v2.4
                 </h3>
                 <p className="text-xs text-cyan-300 font-medium">Automated Routing & Desktop Agent Bridge</p>
               </div>

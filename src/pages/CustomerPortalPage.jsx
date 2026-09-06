@@ -157,7 +157,7 @@ export default function CustomerPortalPage() {
   }
 
   // Merchant direct UPI payment QR string
-  const upiPayString = `upi://pay?pa=${shopData?.upiId || 'printcatalyst@okaxis'}&pn=${encodeURIComponent(shopData?.name || 'Print Shop')}&tn=${placedOrder?.id || 'PrintOrder'}`;
+  const upiPayString = `upi://pay?pa=${shopData?.upiId || 'printsupport@okaxis'}&pn=${encodeURIComponent(shopData?.name || 'Print Shop')}&tn=${placedOrder?.id || 'PrintOrder'}`;
   const upiQrImgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(upiPayString)}&margin=1`;
 
   return (
@@ -491,7 +491,7 @@ export default function CustomerPortalPage() {
 
       {/* Footer Info */}
       <footer className="text-center text-xs text-slate-500 pt-8">
-        Powered by <Link to="/" className="text-indigo-400 font-bold hover:underline">Print Catalyst</Link> · Automated Document Routing System
+        Powered by <Link to="/" className="text-indigo-400 font-bold hover:underline">Print Support</Link> · Automated Document Routing System
       </footer>
 
     </div>

@@ -230,7 +230,7 @@ export default function MerchantDashboardPage() {
                 <Printer className="w-4 h-4" />
               </div>
               <span className="font-bold text-white text-base tracking-tight hidden sm:inline font-['Outfit']">
-                Print Catalyst
+                Print Support
               </span>
             </Link>
 
@@ -797,7 +797,7 @@ export default function MerchantDashboardPage() {
               <div>
                 <h2 className="text-lg font-bold text-white flex items-center gap-2">
                   <Layers className="w-5 h-5 text-indigo-400" />
-                  Print Catalyst Desktop Bridge Agent
+                  Print Support Desktop Bridge Agent
                 </h2>
                 <p className="text-slate-400 text-xs">Lightweight background spooler daemon for Windows, Mac & Linux</p>
               </div>
@@ -821,7 +821,7 @@ export default function MerchantDashboardPage() {
 
                   <a
                     href={`${API_BASE}/api/v1/agent/script`}
-                    download="printcatalyst-agent.js"
+                    download="printsupport-agent.js"
                     className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center gap-2 shadow-md"
                   >
                     <Download className="w-4 h-4" />

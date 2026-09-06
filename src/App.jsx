@@ -54,7 +54,7 @@ export default function App() {
             <GuidePage
               title="How to Automate WhatsApp Print Orders"
               headline="Step-by-step guide to connecting your shop WhatsApp number and letting bot AI calculate instant quotes."
-              content={`1. Connecting Your Number: Pair your shop WhatsApp number with the Print Catalyst Bot engine in your Merchant Dashboard.
+              content={`1. Connecting Your Number: Pair your shop WhatsApp number with the Print Support Bot engine in your Merchant Dashboard.
 2. Auto File Intake: When walk-in or remote customers forward PDFs, Word documents or images, the bot immediately extracts page count and document dimensions.
 3. Structured Quote & Pay: Customer receives an instant breakdown with options for B&W vs Color and Single vs Duplex. Payment is routed directly to your shop UPI VPA.
 4. Auto Dispatch: The moment payment is verified, the job enters your active printer queue.`}
@@ -80,7 +80,7 @@ export default function App() {
             <GuidePage
               title="How to Prevent Mixed-Up Print Orders"
               headline="Using unique pickup tokens and automated separator sheets to streamline physical pickups."
-              content={`Print Catalyst assigns a 3-character unique pickup token (e.g. CAT-481) to every submitted order. The token is stamped on customer screens, in the merchant dashboard, and on the physical cover ticket, ensuring zero customer handover confusion.`}
+              content={`Print Support assigns a 3-character unique pickup token (e.g. CAT-481) to every submitted order. The token is stamped on customer screens, in the merchant dashboard, and on the physical cover ticket, ensuring zero customer handover confusion.`}
             />
           }
         />
@@ -91,7 +91,7 @@ export default function App() {
           element={
             <LegalPage
               title="Privacy Policy"
-              content={`Print Catalyst prioritizes the security and privacy of print shop owners and end-customers.
+              content={`Print Support prioritizes the security and privacy of print shop owners and end-customers.
 • Data Encryption: All uploaded customer documents are transferred using end-to-end SSL/TLS encryption.
 • Automated 24-Hour File Purging: Document files stored on the server for printing are automatically deleted 24 hours after completion.
 • Direct Merchant Payments: Customer UPI payments go 100% directly to the shop merchant's VPA.`}
@@ -104,9 +104,9 @@ export default function App() {
           element={
             <LegalPage
               title="Terms of Service"
-              content={`By accessing or using Print Catalyst software, you agree to these Terms of Service.
+              content={`By accessing or using Print Support software, you agree to these Terms of Service.
 • Merchants are responsible for configuring accurate rate matrix pricing and maintaining their physical printers.
-• Print Catalyst provides software automation, queue management, and desktop agent bridge services.`}
+• Print Support provides software automation, queue management, and desktop agent bridge services.`}
             />
           }
         />
@@ -116,7 +116,7 @@ export default function App() {
           element={
             <LegalPage
               title="Cancellation & Refund Policy"
-              content={`Print Catalyst subscriptions can be cancelled at any time from the merchant billing settings. Subscriptions remain active until the end of the billing period.`}
+              content={`Print Support subscriptions can be cancelled at any time from the merchant billing settings. Subscriptions remain active until the end of the billing period.`}
             />
           }
         />
@@ -126,7 +126,7 @@ export default function App() {
           element={
             <LegalPage
               title="Shipping & Delivery Policy"
-              content={`Print Catalyst software services and digital desktop agent downloads are delivered instantly online upon merchant registration.`}
+              content={`Print Support software services and digital desktop agent downloads are delivered instantly online upon merchant registration.`}
             />
           }
         />

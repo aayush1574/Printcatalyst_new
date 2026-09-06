@@ -9,7 +9,7 @@ export function GuidePage({ title, headline, content }) {
       <Navbar />
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 space-y-8">
         <header className="space-y-3">
-          <p className="text-xs font-bold uppercase tracking-widest text-indigo-400">Print Catalyst Guide</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-400">Print Support Guide</p>
           <h1 className="text-3xl sm:text-4xl font-extrabold text-white font-['Outfit']">{title}</h1>
           <p className="text-base text-slate-400 leading-relaxed">{headline}</p>
         </header>
@@ -56,7 +56,7 @@ export function ContactPage() {
       <Navbar />
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-12 lg:py-16 space-y-8 flex-1">
         <div className="text-center space-y-2">
-          <p className="text-xs font-bold uppercase tracking-widest text-indigo-400">Contact Print Catalyst</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-indigo-400">Contact Print Support</p>
           <h1 className="text-3xl sm:text-4xl font-black text-white font-['Outfit']">Get in Touch with Our Team</h1>
           <p className="text-xs sm:text-sm text-slate-400 max-w-lg mx-auto">
             Questions about onboarding, Desktop Agent setup, or custom multi-shop enterprise deployments? We're here to help.
@@ -69,7 +69,7 @@ export function ContactPage() {
             <div className="space-y-4 text-slate-300">
               <div className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-indigo-400" />
-                <span>support@printcatalyst.in</span>
+                <span>support@printsupport.in</span>
               </div>
               <div className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-emerald-400" />

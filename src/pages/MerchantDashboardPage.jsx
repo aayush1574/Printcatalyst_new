@@ -15,7 +15,7 @@ import PrinterSettingsModal from '../components/PrinterSettingsModal';
 import ManualOrderModal from '../components/ManualOrderModal';
 
 export default function MerchantDashboardPage() {
-  const { merchant, setMerchant } = useAuth();
+  const { merchant, setMerchant, token, logout } = useAuth();
   const { connected, latestEvent, playOrderChime } = useSocket();
 
   const [activeTab, setActiveTab] = useState('JOBS'); // JOBS | PRINTERS | STANDEE | AGENT | ANALYTICS | SETTINGS
@@ -24,6 +24,7 @@ export default function MerchantDashboardPage() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [loading, setLoading] = useState(true);
+  const [copiedPortalLink, setCopiedPortalLink] = useState(false);
 
   // Modals
   const [isStudioOpen, setIsStudioOpen] = useState(false);
@@ -34,10 +35,13 @@ export default function MerchantDashboardPage() {
   // Load initial shop data
   const loadDashboardData = async () => {
     try {
+      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+      const shopId = merchant?.id || 'shop_demo';
+
       const [ordersRes, printersRes, profileRes] = await Promise.all([
-        fetch(`${API_BASE}/api/v1/jobs?shopId=` + (merchant?.id || 'shop_demo')),
-        fetch(`${API_BASE}/api/v1/printers/list?shopId=` + (merchant?.id || 'shop_demo')),
-        fetch(`${API_BASE}/api/v1/merchants/profile`)
+        fetch(`${API_BASE}/api/v1/jobs?shopId=${shopId}`, { headers }),
+        fetch(`${API_BASE}/api/v1/printers/list?shopId=${shopId}`, { headers }),
+        fetch(`${API_BASE}/api/v1/merchants/profile`, { headers })
       ]);
 
       const [ordersData, printersData, profileData] = await Promise.all([
@@ -63,7 +67,7 @@ export default function MerchantDashboardPage() {
 
   useEffect(() => {
     loadDashboardData();
-  }, [merchant?.id]);
+  }, [merchant?.id, token]);
 
   // Handle live WebSocket updates
   useEffect(() => {
@@ -258,15 +262,39 @@ export default function MerchantDashboardPage() {
               <span className="hidden md:inline">QR Standee</span>
             </button>
 
-            {/* Customer Portal Link */}
-            <Link
-              to={`/portal/${merchant?.slug || 'catalyst-print-hub'}`}
-              target="_blank"
-              className="p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
-              title="Open Customer Self-Service Portal"
+            {/* Customer Portal Link & Copy Button */}
+            <div className="flex items-center gap-1.5 bg-slate-900 px-2 py-1 rounded-xl border border-slate-700/60">
+              <span className="text-[11px] text-indigo-300 font-mono hidden lg:inline">/portal/{merchant?.slug}</span>
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}/portal/${merchant?.slug || 'catalyst-print-hub'}`;
+                  navigator.clipboard.writeText(url);
+                  setCopiedPortalLink(true);
+                  setTimeout(() => setCopiedPortalLink(false), 2000);
+                }}
+                className="px-2 py-0.5 text-[10px] font-bold rounded bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white transition-colors"
+                title="Copy Shop Customer QR Portal URL"
+              >
+                {copiedPortalLink ? 'Copied!' : 'Copy Portal Link'}
+              </button>
+              <Link
+                to={`/portal/${merchant?.slug || 'catalyst-print-hub'}`}
+                target="_blank"
+                className="p-1 text-slate-300 hover:text-white transition-colors"
+                title="Open Customer Self-Service Portal"
+              >
+                <Eye className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            {/* Logout / Switch Shop */}
+            <button
+              onClick={logout}
+              className="p-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-rose-400 hover:bg-slate-800 border border-slate-800 transition-colors"
+              title="Sign Out / Switch Shop"
             >
-              <Eye className="w-4 h-4" />
-            </Link>
+              <LogOut className="w-4 h-4" />
+            </button>
 
           </div>
 
@@ -364,12 +392,21 @@ export default function MerchantDashboardPage() {
 
           {/* Bottom Help / User Profile */}
           <div className="px-3 pt-4 border-t border-slate-800/80 text-[11px] text-slate-400 hidden sm:block space-y-2">
-            <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-indigo-400" />
-              <span className="truncate">{merchant?.ownerName || 'Rajesh Sharma'}</span>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 truncate">
+                <User className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                <span className="truncate font-medium">{merchant?.ownerName || 'Shop Owner'}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="text-slate-500 hover:text-rose-400 transition-colors"
+                title="Log Out"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
             </div>
             <div className="text-[10px] text-slate-500 font-mono">
-              Agent v1.4.2 · Cloud Spooler Active
+              Shop: {merchant?.name}
             </div>
           </div>
         </aside>

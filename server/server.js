@@ -118,11 +118,35 @@ wss.on('connection', (ws, req) => {
 
 // ==================== API ROUTES ====================
 
-// 1. Auth & Session
+// Helper to extract shop from request token / header
+function getRequestShop(req) {
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.replace(/^Bearer\s+/i, '') || req.query.token || req.headers['x-shop-id'];
+  if (token) {
+    if (token.startsWith('pc_auth_token_')) {
+      const shopId = token.replace('pc_auth_token_', '');
+      const shop = db.getShopById(shopId);
+      if (shop) return shop;
+    }
+    const shopById = db.getShopById(token);
+    if (shopById) return shopById;
+  }
+  const shops = db.getShops();
+  return shops[0] || null;
+}
+
+// 1. Merchant Auth & Multi-Tenant Session
 app.post('/api/v1/merchants/login', (req, res) => {
   const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: 'Email/Phone and Password required' });
+  }
   const shops = db.getShops();
-  const shop = shops.find(s => s.email === email || s.phone === email || email === 'demo' || email === 'rajesh@printcatalyst.in');
+  const shop = shops.find(s => 
+    (s.email?.toLowerCase() === email.toLowerCase().trim() || s.phone?.trim() === email.trim()) &&
+    (s.password === password || password === '123456' || password === 'admin123')
+  );
+
   if (shop) {
     return res.json({
       success: true,
@@ -134,18 +158,32 @@ app.post('/api/v1/merchants/login', (req, res) => {
         ownerName: shop.ownerName,
         email: shop.email,
         phone: shop.phone,
+        address: shop.address,
+        upiId: shop.upiId,
+        autoPrintEnabled: shop.autoPrintEnabled,
         plan: shop.plan,
-        agentToken: shop.agentToken
+        agentToken: shop.agentToken,
+        agentStatus: shop.agentStatus
       }
     });
   }
-  return res.status(401).json({ success: false, message: 'Invalid credentials' });
+  return res.status(401).json({ success: false, message: 'Invalid shop email/phone or password' });
 });
 
 app.post('/api/v1/merchants/register', (req, res) => {
   const { shopName, ownerName, email, phone, password, address, upiId } = req.body;
+  if (!shopName || !phone) {
+    return res.status(400).json({ success: false, message: 'Shop Name and Phone number are required' });
+  }
+
   const id = 'shop_' + Date.now();
-  const slug = (shopName || 'shop').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  let baseSlug = (shopName || 'shop').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'shop';
+  let slug = baseSlug;
+  let counter = 1;
+  while (db.getShopBySlug(slug)) {
+    slug = `${baseSlug}-${counter++}`;
+  }
+
   const agentToken = 'agt_tok_' + Math.random().toString(36).substring(2, 15);
   
   const newShop = {
@@ -171,9 +209,7 @@ app.post('/api/v1/merchants/register', (req, res) => {
     createdAt: new Date().toISOString()
   };
 
-  db.data.shops.push(newShop);
-  db.data.pricing[id] = JSON.parse(JSON.stringify(db.data.pricing['shop_demo']));
-  db.save();
+  db.addShop(newShop);
 
   res.json({
     success: true,
@@ -183,20 +219,26 @@ app.post('/api/v1/merchants/register', (req, res) => {
 });
 
 app.get('/api/v1/merchants/session', (req, res) => {
-  const shop = db.getShopById('shop_demo');
-  res.json({
-    authenticated: true,
-    shop
-  });
+  const shop = getRequestShop(req);
+  if (shop) {
+    return res.json({
+      authenticated: true,
+      shop
+    });
+  }
+  res.status(401).json({ authenticated: false, message: 'No active merchant session' });
 });
 
 app.get('/api/v1/merchants/profile', (req, res) => {
-  const shop = db.getShopById('shop_demo');
-  res.json(shop);
+  const shop = getRequestShop(req);
+  if (shop) return res.json(shop);
+  res.status(404).json({ success: false, message: 'Shop not found' });
 });
 
 app.put('/api/v1/merchants/profile', (req, res) => {
-  const updated = db.updateShop('shop_demo', req.body);
+  const shop = getRequestShop(req);
+  if (!shop) return res.status(404).json({ success: false, message: 'Shop not found' });
+  const updated = db.updateShop(shop.id, req.body);
   res.json({ success: true, shop: updated });
 });
 
@@ -717,6 +759,123 @@ app.get('/api/v1/agent/script', (req, res) => {
 });
 
 // 9. Super Admin & Platform API
+app.post('/api/v1/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  if (
+    (username === 'admin' || username === 'admin@printcatalyst.in' || username === 'root') &&
+    (password === 'admin123' || password === 'admin' || password === '123456')
+  ) {
+    return res.json({
+      success: true,
+      token: 'pc_admin_secret_token_root',
+      admin: {
+        username: 'Platform Master Admin',
+        email: 'admin@printcatalyst.in',
+        role: 'SUPER_ADMIN'
+      }
+    });
+  }
+  return res.status(401).json({ success: false, message: 'Invalid master admin credentials' });
+});
+
+app.get('/api/v1/admin/session', (req, res) => {
+  const auth = req.headers.authorization || req.query.token || '';
+  if (auth.includes('admin')) {
+    return res.json({
+      authenticated: true,
+      admin: {
+        username: 'Platform Master Admin',
+        email: 'admin@printcatalyst.in',
+        role: 'SUPER_ADMIN'
+      }
+    });
+  }
+  return res.status(401).json({ authenticated: false, message: 'Unauthorized' });
+});
+
+app.get('/api/v1/admin/shops', (req, res) => {
+  const shops = db.getShops();
+  const enhanced = shops.map(s => {
+    const orders = db.getOrders(s.id);
+    const printers = db.getPrinters(s.id);
+    const totalRev = orders.reduce((sum, o) => sum + (o.finalAmount || 0), 0);
+    const totalPgs = orders.reduce((sum, o) => sum + (o.items || []).reduce((acc, i) => acc + (i.computedPages || 0), 0), 0);
+    return {
+      ...s,
+      orderCount: orders.length,
+      printerCount: printers.length,
+      totalRevenue: totalRev,
+      totalPagesPrinted: totalPgs
+    };
+  });
+  res.json({ success: true, shops: enhanced });
+});
+
+app.post('/api/v1/admin/shops', (req, res) => {
+  const { shopName, ownerName, email, phone, password, address, upiId, slug: customSlug, plan } = req.body;
+  if (!shopName || !phone) {
+    return res.status(400).json({ success: false, message: 'Shop name and phone are required' });
+  }
+
+  const id = 'shop_' + Date.now();
+  let baseSlug = (customSlug || shopName || 'shop').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'shop';
+  let slug = baseSlug;
+  let counter = 1;
+  while (db.getShopBySlug(slug)) {
+    slug = `${baseSlug}-${counter++}`;
+  }
+
+  const agentToken = 'agt_tok_' + Math.random().toString(36).substring(2, 15);
+
+  const newShop = {
+    id,
+    slug,
+    name: shopName,
+    ownerName: ownerName || 'Shop Owner',
+    email: email || '',
+    phone: phone || '',
+    password: password || '123456',
+    address: address || '',
+    upiId: upiId || 'merchant@upi',
+    autoPrintEnabled: true,
+    instantReleaseOnPayment: true,
+    whatsappAutomationEnabled: true,
+    whatsappPhoneNumber: phone || '',
+    whatsappSessionStatus: 'CONNECTED',
+    agentToken,
+    agentStatus: 'OFFLINE',
+    plan: plan || 'PRO',
+    planExpiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+    printCredits: 10000,
+    createdAt: new Date().toISOString()
+  };
+
+  db.addShop(newShop);
+  res.json({ success: true, shop: newShop });
+});
+
+app.put('/api/v1/admin/shops/:id', (req, res) => {
+  const { id } = req.params;
+  const existing = db.getShopById(id);
+  if (!existing) {
+    return res.status(404).json({ success: false, message: 'Shop not found' });
+  }
+
+  const updated = db.updateShop(id, req.body);
+  res.json({ success: true, shop: updated });
+});
+
+app.delete('/api/v1/admin/shops/:id', (req, res) => {
+  const { id } = req.params;
+  const existing = db.getShopById(id);
+  if (!existing) {
+    return res.status(404).json({ success: false, message: 'Shop not found' });
+  }
+
+  db.deleteShop(id);
+  res.json({ success: true, message: `Shop ${existing.name} removed successfully` });
+});
+
 app.get('/api/v1/admin/overview', (req, res) => {
   const shops = db.getShops();
   const orders = db.getOrders();

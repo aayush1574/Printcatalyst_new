@@ -223,6 +223,25 @@ class Database {
   getShopById(id) { return this.data.shops.find(s => s.id === id); }
   getShopBySlug(slug) { return this.data.shops.find(s => s.slug === slug); }
   
+  addShop(shop) {
+    this.data.shops.push(shop);
+    if (!this.data.pricing[shop.id]) {
+      this.data.pricing[shop.id] = JSON.parse(JSON.stringify(this.data.pricing['shop_demo'] || {}));
+    }
+    this.save();
+    return shop;
+  }
+
+  deleteShop(id) {
+    this.data.shops = this.data.shops.filter(s => s.id !== id);
+    delete this.data.pricing[id];
+    delete this.data.whatsappBot[id];
+    this.data.printers = this.data.printers.filter(p => p.shopId !== id);
+    this.data.orders = this.data.orders.filter(o => o.shopId !== id);
+    this.save();
+    return true;
+  }
+
   updateShop(id, updates) {
     const idx = this.data.shops.findIndex(s => s.id === id);
     if (idx !== -1) {

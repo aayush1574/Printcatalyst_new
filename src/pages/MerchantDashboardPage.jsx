@@ -998,22 +998,12 @@ export default function MerchantDashboardPage() {
 }
 
 function MerchantAuthGate() {
-  const [mode, setMode] = useState('LOGIN'); // LOGIN | REGISTER
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
-  const [regForm, setRegForm] = useState({
-    shopName: '',
-    ownerName: '',
-    phone: '',
-    email: '',
-    password: '',
-    address: '',
-    upiId: ''
-  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const { login, register } = useAuth();
+  const { login } = useAuth();
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -1022,17 +1012,6 @@ function MerchantAuthGate() {
     const res = await login(loginForm.email, loginForm.password);
     if (!res.success) {
       setError(res.message || 'Invalid shop email/phone or password');
-    }
-    setLoading(false);
-  };
-
-  const handleRegisterSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-    const res = await register(regForm);
-    if (!res.success) {
-      setError(res.message || 'Registration failed. Please check your details.');
     }
     setLoading(false);
   };
@@ -1063,48 +1042,31 @@ function MerchantAuthGate() {
 
       {/* Main Authentication Box */}
       <main className="flex-1 flex items-center justify-center p-4 py-12 relative z-10">
-        <div className="glass-card rounded-3xl p-6 sm:p-10 w-full max-w-xl shadow-2xl border-white/10 space-y-6">
+        <div className="glass-card rounded-3xl p-6 sm:p-10 w-full max-w-lg shadow-2xl border-white/10 space-y-6">
           
           {/* Badge & Title */}
           <div className="text-center space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-sm">
               <ShieldCheck className="w-3.5 h-3.5" />
-              Restricted Merchant Access
+              Authorized Shop Access
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white font-['Outfit']">
-              {mode === 'LOGIN' ? 'Shop Owner Sign In' : 'Register New Print Shop'}
+              Shop Owner Sign In
             </h1>
-            <p className="text-xs text-slate-400 max-w-md mx-auto">
-              {mode === 'LOGIN'
-                ? 'Authentication required. Sign in to access your print queues, hardware spooler agent, and pricing.'
-                : 'Create your shop account to automate WhatsApp and QR print orders in under 60 seconds.'}
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Sign in with your registered phone number or email to access your live print queues and hardware spooler.
             </p>
           </div>
 
-          {/* Mode Switcher Tabs */}
-          <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-bold">
-            <button
-              type="button"
-              onClick={() => { setMode('LOGIN'); setError(''); }}
-              className={`py-2.5 rounded-xl transition-all ${
-                mode === 'LOGIN'
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Sign In to Terminal
-            </button>
-            <button
-              type="button"
-              onClick={() => { setMode('REGISTER'); setError(''); }}
-              className={`py-2.5 rounded-xl transition-all ${
-                mode === 'REGISTER'
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Register New Shop
-            </button>
+          {/* Admin Provisioning Notice */}
+          <div className="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-800/60 text-indigo-300 text-xs flex items-start gap-2.5">
+            <Lock className="w-4 h-4 flex-shrink-0 mt-0.5 text-indigo-400" />
+            <div className="space-y-1">
+              <span className="font-bold text-white block">Protected Merchant Terminal</span>
+              <p className="text-slate-400 text-[11px] leading-relaxed">
+                Shop accounts are provisioned exclusively by the platform administrator. If you are a new shop, please contact your Super Admin for access credentials.
+              </p>
+            </div>
           </div>
 
           {/* Error Banner */}
@@ -1116,170 +1078,67 @@ function MerchantAuthGate() {
           )}
 
           {/* Sign In Form */}
-          {mode === 'LOGIN' ? (
-            <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="text-slate-300 block mb-1 font-semibold flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5 text-indigo-400" />
-                  Registered Email or Phone Number
-                </label>
+          <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
+            <div>
+              <label className="text-slate-300 block mb-1 font-semibold flex items-center gap-1.5">
+                <User className="w-3.5 h-3.5 text-indigo-400" />
+                Registered Email or Phone Number
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. 9876543210 or shop@printsupport.in"
+                value={loginForm.email}
+                onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="text-slate-300 block mb-1 font-semibold flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-indigo-400" />
+                Password
+              </label>
+              <input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="••••••••"
+                value={loginForm.password}
+                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
+                required
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+              <label className="flex items-center gap-2 cursor-pointer">
                 <input
-                  type="text"
-                  placeholder="e.g. 9876543210 or shop@printsupport.in"
-                  value={loginForm.email}
-                  onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
-                  required
+                  type="checkbox"
+                  checked={showPassword}
+                  onChange={(e) => setShowPassword(e.target.checked)}
+                  className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0"
                 />
-              </div>
+                <span>Show password</span>
+              </label>
+              <Link to="/admin" className="text-amber-400 hover:underline">
+                Super Admin Login →
+              </Link>
+            </div>
 
-              <div>
-                <label className="text-slate-300 block mb-1 font-semibold flex items-center gap-1.5">
-                  <Lock className="w-3.5 h-3.5 text-indigo-400" />
-                  Password
-                </label>
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={loginForm.password}
-                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={showPassword}
-                    onChange={(e) => setShowPassword(e.target.checked)}
-                    className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0"
-                  />
-                  <span>Show password</span>
-                </label>
-                <span className="text-indigo-400">Default: password123</span>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-98 disabled:opacity-50"
-              >
-                {loading ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <span>Unlock Merchant Terminal</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </>
-                )}
-              </button>
-            </form>
-          ) : (
-            /* Register Form */
-            <form onSubmit={handleRegisterSubmit} className="space-y-3.5 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="text-slate-300 block mb-1 font-semibold">Shop / Business Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Apex Print & Xerox"
-                    value={regForm.shopName}
-                    onChange={(e) => setRegForm({ ...regForm, shopName: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-300 block mb-1 font-semibold">Owner / Manager Name</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Rajesh Sharma"
-                    value={regForm.ownerName}
-                    onChange={(e) => setRegForm({ ...regForm, ownerName: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="text-slate-300 block mb-1 font-semibold">WhatsApp Number (Orders)</label>
-                  <input
-                    type="tel"
-                    placeholder="e.g. 9876543210"
-                    value={regForm.phone}
-                    onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-300 block mb-1 font-semibold">Shop Email Address</label>
-                  <input
-                    type="email"
-                    placeholder="e.g. owner@apexprint.in"
-                    value={regForm.email}
-                    onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="text-slate-300 block mb-1 font-semibold">Store Address / Counter Location</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Shop 4, Opp University Gate 2, Delhi"
-                  value={regForm.address}
-                  onChange={(e) => setRegForm({ ...regForm, address: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div>
-                  <label className="text-slate-300 block mb-1 font-semibold">Password</label>
-                  <input
-                    type="password"
-                    placeholder="Choose secure password"
-                    value={regForm.password}
-                    onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-slate-300 block mb-1 font-semibold">Shop UPI ID (Optional)</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. merchant@upi"
-                    value={regForm.upiId}
-                    onChange={(e) => setRegForm({ ...regForm, upiId: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-98 disabled:opacity-50 mt-2"
-              >
-                {loading ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <>
-                    <Sparkles className="w-4 h-4" />
-                    <span>Create & Activate Shop Terminal</span>
-                  </>
-                )}
-              </button>
-            </form>
-          )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-98 disabled:opacity-50"
+            >
+              {loading ? (
+                <RefreshCw className="w-4 h-4 animate-spin" />
+              ) : (
+                <>
+                  <span>Unlock Merchant Terminal</span>
+                  <ChevronRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
 
           {/* Footer Security Badges */}
           <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">

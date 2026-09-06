@@ -41,7 +41,7 @@ export default function PricingPage() {
               </ul>
             </div>
             <Link
-              to="/register"
+              to="/merchant"
               className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs text-center transition-colors block"
             >
               Choose Starter
@@ -65,7 +65,7 @@ export default function PricingPage() {
               </ul>
             </div>
             <Link
-              to="/register"
+              to="/merchant"
               className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs text-center transition-colors block shadow-md shadow-indigo-600/30"
             >
               Choose Growth
@@ -88,7 +88,7 @@ export default function PricingPage() {
               </ul>
             </div>
             <Link
-              to="/register"
+              to="/merchant"
               className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs text-center transition-colors block"
             >
               Choose Pro
@@ -110,7 +110,7 @@ export default function PricingPage() {
               </ul>
             </div>
             <Link
-              to="/register"
+              to="/merchant"
               className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs text-center transition-colors block"
             >
               Choose Scale

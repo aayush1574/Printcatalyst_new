@@ -207,8 +207,7 @@ function getRequestShop(req) {
     const shopById = db.getShopById(token);
     if (shopById) return shopById;
   }
-  const shops = db.getShops();
-  return shops[0] || null;
+  return null;
 }
 
 // 1. Merchant Auth & Multi-Tenant Session

@@ -34,9 +34,14 @@ export default function MerchantDashboardPage() {
 
   // Load initial shop data
   const loadDashboardData = async () => {
+    if (!token || !merchant?.id) {
+      setLoading(false);
+      return;
+    }
+
     try {
-      const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-      const shopId = merchant?.id || 'shop_demo';
+      const headers = { 'Authorization': `Bearer ${token}` };
+      const shopId = merchant.id;
 
       const controller = new AbortController();
       const tid = setTimeout(() => controller.abort(), 3500);
@@ -62,36 +67,14 @@ export default function MerchantDashboardPage() {
       if (Array.isArray(printersData)) {
         setPrinters(printersData);
       } else {
-        setPrinters([
-          { id: 'p_1', name: 'HP LaserJet Pro M404dn', type: 'BLACK_AND_WHITE', paperSize: 'A4', isDefault: true, isOnline: true },
-          { id: 'p_2', name: 'Canon imageRUNNER C3530i', type: 'COLOR', paperSize: 'A4', isDefault: false, isOnline: true },
-          { id: 'p_3', name: 'Epson EcoTank L805 Photo', type: 'COLOR', paperSize: 'A4', isDefault: false, isOnline: false }
-        ]);
+        setPrinters([]);
       }
 
       if (profileData && profileData.id) {
         setMerchant(profileData);
-      } else if (!merchant) {
-        setMerchant({
-          id: 'shop_demo',
-          name: 'Print Support',
-          ownerName: 'Aayush Sharma',
-          slug: 'printsupport-hub',
-          address: 'Shop No. 1, Main Market',
-          upiId: 'printsupport@okaxis',
-          phone: '+91 98765 43210',
-          agentStatus: 'ONLINE',
-          autoPrintEnabled: true
-        });
       }
     } catch (e) {
-      console.warn('Dashboard loaded in offline preview mode:', e);
-      if (printers.length === 0) {
-        setPrinters([
-          { id: 'p_1', name: 'HP LaserJet Pro M404dn', type: 'BLACK_AND_WHITE', paperSize: 'A4', isDefault: true, isOnline: true },
-          { id: 'p_2', name: 'Canon imageRUNNER C3530i', type: 'COLOR', paperSize: 'A4', isDefault: false, isOnline: true }
-        ]);
-      }
+      console.warn('Error loading merchant dashboard data:', e);
     } finally {
       setLoading(false);
     }
@@ -215,6 +198,11 @@ export default function MerchantDashboardPage() {
   });
 
   const isAgentOnline = merchant?.agentStatus === 'ONLINE';
+
+  // Strict Authentication Guard
+  if (!token || !merchant) {
+    return <MerchantAuthGate />;
+  }
 
   return (
     <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
@@ -1004,6 +992,308 @@ export default function MerchantDashboardPage() {
           }
         }}
       />
+
+    </div>
+  );
+}
+
+function MerchantAuthGate() {
+  const [mode, setMode] = useState('LOGIN'); // LOGIN | REGISTER
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
+  const [regForm, setRegForm] = useState({
+    shopName: '',
+    ownerName: '',
+    phone: '',
+    email: '',
+    password: '',
+    address: '',
+    upiId: ''
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const { login, register } = useAuth();
+
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    const res = await login(loginForm.email, loginForm.password);
+    if (!res.success) {
+      setError(res.message || 'Invalid shop email/phone or password');
+    }
+    setLoading(false);
+  };
+
+  const handleRegisterSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    const res = await register(regForm);
+    if (!res.success) {
+      setError(res.message || 'Registration failed. Please check your details.');
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className="min-h-screen bg-[#070a13] text-slate-100 flex flex-col font-sans bg-dot-grid relative overflow-hidden">
+      
+      {/* Ambient background glow */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[380px] bg-indigo-600/15 blur-[140px] rounded-full pointer-events-none"></div>
+
+      {/* Header bar */}
+      <header className="border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-6 py-4 flex items-center justify-between z-10">
+        <Link to="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 font-bold">
+            <Printer className="w-4 h-4" />
+          </div>
+          <span className="font-extrabold text-white text-base tracking-tight font-['Outfit']">
+            Print Support <span className="text-indigo-400 font-mono text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-950 border border-indigo-800 ml-1.5">PRO</span>
+          </span>
+        </Link>
+        <Link
+          to="/"
+          className="text-xs text-slate-400 hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-900 border border-slate-800 transition-colors"
+        >
+          ← Return to Website
+        </Link>
+      </header>
+
+      {/* Main Authentication Box */}
+      <main className="flex-1 flex items-center justify-center p-4 py-12 relative z-10">
+        <div className="glass-card rounded-3xl p-6 sm:p-10 w-full max-w-xl shadow-2xl border-white/10 space-y-6">
+          
+          {/* Badge & Title */}
+          <div className="text-center space-y-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 shadow-sm">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              Restricted Merchant Access
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white font-['Outfit']">
+              {mode === 'LOGIN' ? 'Shop Owner Sign In' : 'Register New Print Shop'}
+            </h1>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              {mode === 'LOGIN'
+                ? 'Authentication required. Sign in to access your print queues, hardware spooler agent, and pricing.'
+                : 'Create your shop account to automate WhatsApp and QR print orders in under 60 seconds.'}
+            </p>
+          </div>
+
+          {/* Mode Switcher Tabs */}
+          <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-950 border border-slate-800 text-xs font-bold">
+            <button
+              type="button"
+              onClick={() => { setMode('LOGIN'); setError(''); }}
+              className={`py-2.5 rounded-xl transition-all ${
+                mode === 'LOGIN'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Sign In to Terminal
+            </button>
+            <button
+              type="button"
+              onClick={() => { setMode('REGISTER'); setError(''); }}
+              className={`py-2.5 rounded-xl transition-all ${
+                mode === 'REGISTER'
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Register New Shop
+            </button>
+          </div>
+
+          {/* Error Banner */}
+          {error && (
+            <div className="p-3.5 rounded-xl bg-rose-950/70 border border-rose-800 text-rose-300 text-xs flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Sign In Form */}
+          {mode === 'LOGIN' ? (
+            <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="text-slate-300 block mb-1 font-semibold flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-indigo-400" />
+                  Registered Email or Phone Number
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 9876543210 or shop@printsupport.in"
+                  value={loginForm.email}
+                  onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-slate-300 block mb-1 font-semibold flex items-center gap-1.5">
+                  <Lock className="w-3.5 h-3.5 text-indigo-400" />
+                  Password
+                </label>
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={loginForm.password}
+                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500 transition-colors"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={showPassword}
+                    onChange={(e) => setShowPassword(e.target.checked)}
+                    className="rounded bg-slate-900 border-slate-700 text-indigo-600 focus:ring-0"
+                  />
+                  <span>Show password</span>
+                </label>
+                <span className="text-indigo-400">Default: password123</span>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-sm shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-98 disabled:opacity-50"
+              >
+                {loading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <span>Unlock Merchant Terminal</span>
+                    <ChevronRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          ) : (
+            /* Register Form */
+            <form onSubmit={handleRegisterSubmit} className="space-y-3.5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="text-slate-300 block mb-1 font-semibold">Shop / Business Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Apex Print & Xerox"
+                    value={regForm.shopName}
+                    onChange={(e) => setRegForm({ ...regForm, shopName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 block mb-1 font-semibold">Owner / Manager Name</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Rajesh Sharma"
+                    value={regForm.ownerName}
+                    onChange={(e) => setRegForm({ ...regForm, ownerName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="text-slate-300 block mb-1 font-semibold">WhatsApp Number (Orders)</label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. 9876543210"
+                    value={regForm.phone}
+                    onChange={(e) => setRegForm({ ...regForm, phone: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 block mb-1 font-semibold">Shop Email Address</label>
+                  <input
+                    type="email"
+                    placeholder="e.g. owner@apexprint.in"
+                    value={regForm.email}
+                    onChange={(e) => setRegForm({ ...regForm, email: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-slate-300 block mb-1 font-semibold">Store Address / Counter Location</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Shop 4, Opp University Gate 2, Delhi"
+                  value={regForm.address}
+                  onChange={(e) => setRegForm({ ...regForm, address: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label className="text-slate-300 block mb-1 font-semibold">Password</label>
+                  <input
+                    type="password"
+                    placeholder="Choose secure password"
+                    value={regForm.password}
+                    onChange={(e) => setRegForm({ ...regForm, password: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-slate-300 block mb-1 font-semibold">Shop UPI ID (Optional)</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. merchant@upi"
+                    value={regForm.upiId}
+                    onChange={(e) => setRegForm({ ...regForm, upiId: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-98 disabled:opacity-50 mt-2"
+              >
+                {loading ? (
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Create & Activate Shop Terminal</span>
+                  </>
+                )}
+              </button>
+            </form>
+          )}
+
+          {/* Footer Security Badges */}
+          <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 flex flex-wrap items-center justify-between gap-2">
+            <span className="flex items-center gap-1.5 text-slate-400">
+              <ShieldCheck className="w-4 h-4 text-indigo-400" />
+              256-bit Encrypted Multi-Tenant Session
+            </span>
+            <Link to="/portal/printsupport-hub" className="text-indigo-400 hover:underline">
+              Customer QR Demo →
+            </Link>
+          </div>
+
+        </div>
+      </main>
 
     </div>
   );

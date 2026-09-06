@@ -116,6 +116,56 @@ wss.on('connection', (ws, req) => {
   });
 });
 
+// ==================== HEALTH & UPTIME MONITOR ENDPOINTS ====================
+// Lightweight endpoints for UptimeRobot, cron jobs, and keep-alive pings
+app.get('/ping', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.status(200).send('pong');
+});
+
+app.get('/health', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.status(200).json({
+    status: 'ok',
+    service: 'Print Catalyst Backend API',
+    uptimeSeconds: Math.floor(process.uptime()),
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/api/v1/health', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.status(200).json({
+    status: 'online',
+    version: '1.0.0',
+    uptimeSeconds: Math.floor(process.uptime()),
+    activeShops: db.getShops().length,
+    activeWsClients: clients.size,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Built-in keep-alive auto-pinger for free cloud hosting (e.g. Render / Koyeb)
+const SELF_PING_URL = process.env.RENDER_EXTERNAL_URL || process.env.BACKEND_URL;
+if (SELF_PING_URL) {
+  const https = require('https');
+  const http = require('http');
+  const pingInterval = 8 * 60 * 1000; // Ping every 8 minutes (Render sleeps after 15 mins)
+  
+  console.log(`[Keep-Alive] Auto-pinger enabled for: ${SELF_PING_URL}`);
+  setInterval(() => {
+    try {
+      const targetUrl = `${SELF_PING_URL.replace(/\/$/, '')}/ping`;
+      const client = targetUrl.startsWith('https') ? https : http;
+      client.get(targetUrl, (res) => {
+        // Ping succeeded
+      }).on('error', (err) => {
+        console.warn(`[Keep-Alive] Ping notice: ${err.message}`);
+      });
+    } catch (e) {}
+  }, pingInterval);
+}
+
 // ==================== API ROUTES ====================
 
 // Helper to extract shop from request token / header

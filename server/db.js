@@ -91,11 +91,54 @@ const DEFAULT_BOT_TEMPLATE = {
   simulatedChats: []
 };
 
+const defaultPermanentShops = [
+  {
+    id: 'shop_main',
+    slug: 'printsupport-hub',
+    name: 'Print Support Main Hub',
+    ownerName: 'Store Manager',
+    email: 'shop@printsupport.in',
+    phone: '9876543210',
+    password: 'password123',
+    address: 'Shop 1, Ground Floor, Main Campus Market',
+    upiId: 'printsupport@upi',
+    autoPrintEnabled: true,
+    instantReleaseOnPayment: true,
+    whatsappAutomationEnabled: true,
+    whatsappPhoneNumber: '9876543210',
+    whatsappSessionStatus: 'CONNECTED',
+    agentToken: 'agt_tok_main_hub_01',
+    agentStatus: 'ONLINE',
+    plan: 'ENTERPRISE',
+    planExpiresAt: '2099-12-31T23:59:59.000Z',
+    printCredits: 999999,
+    createdAt: new Date().toISOString()
+  }
+];
+
 const defaultData = {
-  shops: [],
+  shops: defaultPermanentShops,
   pricing: {},
-  printers: [],
+  printers: [
+    {
+      id: 'prn_main_01',
+      shopId: 'shop_main',
+      name: 'Counter Master (B&W / Color)',
+      model: 'LaserJet Pro M428dw',
+      connectionType: 'USB_DIRECT',
+      status: 'ONLINE',
+      isDefaultMono: true,
+      supportsColor: true,
+      supportedSizes: ['A4', 'Legal', 'Letter', 'A3'],
+      autoCut: true,
+      ipAddress: '127.0.0.1'
+    }
+  ],
   orders: [],
+  counters: {
+    shop_main: 0,
+    global: 0
+  },
   whatsappBot: {},
   plans: [
     {
@@ -155,10 +198,15 @@ class Database {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed === 'object') {
+          const loadedShops = Array.isArray(parsed.shops) && parsed.shops.length > 0
+            ? parsed.shops
+            : defaultPermanentShops;
+            
           return {
             ...defaultData,
             ...parsed,
-            shops: Array.isArray(parsed.shops) ? parsed.shops : []
+            shops: loadedShops,
+            counters: parsed.counters || { global: 0 }
           };
         }
       }
@@ -170,10 +218,14 @@ class Database {
           const parsedBackup = JSON.parse(rawBackup);
           if (parsedBackup && typeof parsedBackup === 'object') {
             console.log('✅ [DB] Successfully recovered database from backup.');
+            const loadedShops = Array.isArray(parsedBackup.shops) && parsedBackup.shops.length > 0
+              ? parsedBackup.shops
+              : defaultPermanentShops;
             return {
               ...defaultData,
               ...parsedBackup,
-              shops: Array.isArray(parsedBackup.shops) ? parsedBackup.shops : []
+              shops: loadedShops,
+              counters: parsedBackup.counters || { global: 0 }
             };
           }
         }
@@ -189,27 +241,42 @@ class Database {
     try {
       const serialized = JSON.stringify(data, null, 2);
       fs.writeFileSync(DB_FILE, serialized, 'utf8');
-      // Always maintain persistent mirror backup
       fs.writeFileSync(BACKUP_FILE, serialized, 'utf8');
     } catch (e) {
       console.error('⚠️ [DB] Error persisting database to disk:', e.message);
     }
   }
 
-  getShops() { return this.data.shops; }
+  getShops() { return this.data.shops || []; }
   
   getShopById(id) { 
-    if (!id) return this.data.shops[0] || null;
-    return this.data.shops.find(s => s.id === id || s.slug === id) || this.data.shops[0] || null; 
+    if (!id) return (this.data.shops && this.data.shops[0]) || null;
+    return this.data.shops.find(s => s.id === id || s.slug === id) || null; 
   }
   
   getShopBySlug(slug) { 
-    if (!slug) return this.data.shops[0] || null;
-    return this.data.shops.find(s => s.slug === slug || s.id === slug) || this.data.shops[0] || null; 
+    if (!slug) return (this.data.shops && this.data.shops[0]) || null;
+    return this.data.shops.find(s => s.slug === slug || s.id === slug) || null; 
+  }
+
+  getNextOrderNumber(shopId) {
+    if (!this.data.counters) this.data.counters = {};
+    const key = shopId || 'global';
+    if (typeof this.data.counters[key] !== 'number') {
+      const existing = (this.data.orders || []).filter(o => !shopId || o.shopId === shopId);
+      this.data.counters[key] = existing.length;
+    }
+    this.data.counters[key] += 1;
+    this.save();
+    return this.data.counters[key];
   }
   
   addShop(shop) {
-    this.data.shops.push(shop);
+    if (!this.data.shops) this.data.shops = [];
+    const exists = this.data.shops.some(s => s.id === shop.id || s.slug === shop.slug);
+    if (!exists) {
+      this.data.shops.push(shop);
+    }
     if (!this.data.pricing[shop.id]) {
       this.data.pricing[shop.id] = JSON.parse(JSON.stringify(DEFAULT_PRICING_TEMPLATE));
     }
@@ -217,6 +284,22 @@ class Database {
       const botConfig = JSON.parse(JSON.stringify(DEFAULT_BOT_TEMPLATE));
       botConfig.greetingMessage = `👋 Welcome to ${shop.name}!\n\nSend your PDF/Document or Image here to get instant print quotes and queue your job without waiting in counter line.`;
       this.data.whatsappBot[shop.id] = botConfig;
+    }
+    // Add default printer for new shop
+    if (!this.data.printers.some(p => p.shopId === shop.id)) {
+      this.data.printers.push({
+        id: `prn_${shop.id}_1`,
+        shopId: shop.id,
+        name: 'Main Counter Printer',
+        model: 'Universal Document Spooler',
+        connectionType: 'USB_DIRECT',
+        status: 'ONLINE',
+        isDefaultMono: true,
+        supportsColor: true,
+        supportedSizes: ['A4', 'Legal', 'Letter'],
+        autoCut: true,
+        ipAddress: '127.0.0.1'
+      });
     }
     this.save();
     return shop;

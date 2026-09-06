@@ -420,9 +420,9 @@ app.post('/api/v1/jobs', async (req, res) => {
       finishing: {},
       volumeDiscounts: []
     };
-    const orderNum = Math.floor(1000 + Math.random() * 9000);
+    const orderNum = db.getNextOrderNumber(targetShopId);
     const orderId = `ORD-${orderNum}`;
-    const pickupToken = `PS-${orderNum.toString().slice(-3)}`;
+    const pickupToken = `${orderNum}`;
 
     // Calculate detailed pricing
     let totalAmount = 0;
@@ -718,10 +718,10 @@ app.post('/api/v1/whatsapp/simulate-incoming', (req, res) => {
     replyText = `📄 Received *${fileName}* (${filePages} pages).\n\n⚙️ Configured: *${colorMode === 'COLOR' ? 'Color' : 'Black & White'} Single-Sided on A4 Paper*.\n💰 Estimated Total: *₹${subtotal.toFixed(2)}*\n\nOrder created automatically! Pick up token generated. Tap link to pay or pay at shop counter.`;
 
     // Create WhatsApp order in DB
-    const orderNum = Math.floor(1000 + Math.random() * 9000);
+    const orderNum = db.getNextOrderNumber(targetShop.id);
     createdOrder = {
       id: `ORD-${orderNum}`,
-      shopId: 'shop_demo',
+      shopId: targetShop.id,
       customerName,
       customerPhone,
       source: 'WHATSAPP_BOT',
@@ -733,7 +733,7 @@ app.post('/api/v1/whatsapp/simulate-incoming', (req, res) => {
       finalAmount: subtotal,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      pickupToken: `CAT-${orderNum.toString().slice(-3)}`,
+      pickupToken: `${orderNum}`,
       items: [
         {
           id: 'item_wa_1',

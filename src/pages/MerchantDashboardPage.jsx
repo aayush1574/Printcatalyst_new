@@ -504,8 +504,8 @@ export default function MerchantDashboardPage() {
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex items-center gap-2.5">
-                              <span className="font-mono font-black text-white text-xs bg-slate-800 px-2 py-0.5 rounded border border-slate-700">
-                                {ord.pickupToken}
+                              <span className="font-mono font-black text-xs bg-indigo-950 text-indigo-300 px-2 py-0.5 rounded border border-indigo-800 shadow-sm">
+                                #{ord.pickupToken || ord.id.replace('ORD-', '')}
                               </span>
                               <div>
                                 <h4 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
@@ -578,9 +578,9 @@ export default function MerchantDashboardPage() {
                     {/* Header Details */}
                     <div className="border-b border-slate-800 pb-4">
                       <div className="flex items-center justify-between">
-                        <span className="font-mono text-xs text-indigo-400 font-bold">{selectedOrder.id}</span>
-                        <span className="font-mono font-black text-sm bg-indigo-950 text-indigo-300 px-2.5 py-0.5 rounded-lg border border-indigo-800">
-                          {selectedOrder.pickupToken}
+                        <span className="font-mono text-xs text-indigo-400 font-bold">Order #{selectedOrder.pickupToken || selectedOrder.id.replace('ORD-', '')}</span>
+                        <span className="font-mono font-black text-sm bg-indigo-950 text-indigo-300 px-3 py-0.5 rounded-lg border border-indigo-800">
+                          Token: {selectedOrder.pickupToken}
                         </span>
                       </div>
                       <h3 className="text-base font-bold text-white mt-1">{selectedOrder.customerName}</h3>

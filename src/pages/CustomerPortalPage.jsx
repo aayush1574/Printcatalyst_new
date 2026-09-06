@@ -170,7 +170,7 @@ export default function CustomerPortalPage() {
     }
 
     // Seamless fallback to ensure customer order is NEVER blocked on mobile
-    const orderNum = Math.floor(1000 + Math.random() * 9000);
+    const orderNum = (Math.floor(Date.now() / 1000) % 50) + 1;
     const calculatedAmount = Math.max(10, files.reduce((acc, i) => {
       const rate = i.colorMode === 'COLOR' ? (i.duplex === 'DOUBLE_SIDED' ? 7 : 8) : (i.duplex === 'DOUBLE_SIDED' ? 1.5 : 2);
       return acc + ((i.pageCount || 1) * (i.copies || 1) * rate);
@@ -178,7 +178,7 @@ export default function CustomerPortalPage() {
 
     const confirmedOrder = {
       id: `ORD-${orderNum}`,
-      pickupToken: `PS-${orderNum.toString().slice(-3)}`,
+      pickupToken: `${orderNum}`,
       customerName: 'Self-Service Customer',
       shopId: shopData?.id || 'shop_demo',
       finalAmount: Math.round(calculatedAmount),

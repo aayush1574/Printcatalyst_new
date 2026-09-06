@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Send, Paperclip, MessageSquare, Bot, Sparkles, CheckCheck, Clock, User } from 'lucide-react';
+import { API_BASE } from '../config';
 
 export default function WhatsAppSimulatorModal({ botConfig, isOpen, onClose, onOrderCreated }) {
   const [messages, setMessages] = useState([
@@ -25,7 +26,7 @@ export default function WhatsAppSimulatorModal({ botConfig, isOpen, onClose, onO
     setLoading(true);
 
     try {
-      const res = await fetch('/api/v1/whatsapp/simulate-incoming', {
+      const res = await fetch(`${API_BASE}/api/v1/whatsapp/simulate-incoming`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

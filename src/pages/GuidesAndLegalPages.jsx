@@ -43,7 +43,7 @@ export function ContactPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await fetch('/api/v1/support/enquiries', {
+    await fetch(`${API_BASE}/api/v1/support/enquiries`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(form)

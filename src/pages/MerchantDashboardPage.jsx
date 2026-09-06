@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { API_BASE } from '../config';
 import DocumentStudioModal from '../components/DocumentStudioModal';
 import StandeeGeneratorModal from '../components/StandeeGeneratorModal';
 import PrinterSettingsModal from '../components/PrinterSettingsModal';
@@ -34,9 +35,9 @@ export default function MerchantDashboardPage() {
   const loadDashboardData = async () => {
     try {
       const [ordersRes, printersRes, profileRes] = await Promise.all([
-        fetch('/api/v1/jobs?shopId=' + (merchant?.id || 'shop_demo')),
-        fetch('/api/v1/printers/list?shopId=' + (merchant?.id || 'shop_demo')),
-        fetch('/api/v1/merchants/profile')
+        fetch(`${API_BASE}/api/v1/jobs?shopId=` + (merchant?.id || 'shop_demo')),
+        fetch(`${API_BASE}/api/v1/printers/list?shopId=` + (merchant?.id || 'shop_demo')),
+        fetch(`${API_BASE}/api/v1/merchants/profile`)
       ]);
 
       const [ordersData, printersData, profileData] = await Promise.all([
@@ -89,7 +90,7 @@ export default function MerchantDashboardPage() {
   // Release Order to printer
   const handleReleaseOrder = async (orderId, targetPrinterId) => {
     try {
-      const res = await fetch(`/api/v1/jobs/release/${orderId}`, {
+      const res = await fetch(`${API_BASE}/api/v1/jobs/release/${orderId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetPrinterId })
@@ -108,7 +109,7 @@ export default function MerchantDashboardPage() {
   const handleRejectOrder = async (orderId) => {
     if (!window.confirm('Cancel/Reject this print order?')) return;
     try {
-      const res = await fetch(`/api/v1/jobs/reject/${orderId}`, {
+      const res = await fetch(`${API_BASE}/api/v1/jobs/reject/${orderId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: 'Merchant cancelled from dashboard' })
@@ -127,7 +128,7 @@ export default function MerchantDashboardPage() {
   const handleToggleAutoPrint = async () => {
     const updated = !merchant.autoPrintEnabled;
     setMerchant((prev) => ({ ...prev, autoPrintEnabled: updated }));
-    await fetch('/api/v1/merchants/profile', {
+    await fetch(`${API_BASE}/api/v1/merchants/profile`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ autoPrintEnabled: updated })
@@ -137,13 +138,13 @@ export default function MerchantDashboardPage() {
   // Save Printer
   const handleSavePrinter = async (printerData) => {
     if (printers.some((p) => p.id === printerData.id)) {
-      await fetch(`/api/v1/printers/${printerData.id}`, {
+      await fetch(`${API_BASE}/api/v1/printers/${printerData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(printerData)
       });
     } else {
-      await fetch('/api/v1/printers/add', {
+      await fetch(`${API_BASE}/api/v1/printers/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(printerData)
@@ -154,13 +155,13 @@ export default function MerchantDashboardPage() {
 
   // Delete Printer
   const handleDeletePrinter = async (printerId) => {
-    await fetch(`/api/v1/printers/${printerId}`, { method: 'DELETE' });
+    await fetch(`${API_BASE}/api/v1/printers/${printerId}`, { method: 'DELETE' });
     loadDashboardData();
   };
 
   // Test Print
   const handleTestPrint = async (printerId) => {
-    await fetch('/api/v1/test-print', {
+    await fetch(`${API_BASE}/api/v1/test-print`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ printerId, shopId: merchant?.id })
@@ -750,7 +751,7 @@ export default function MerchantDashboardPage() {
                   </div>
 
                   <a
-                    href="/api/v1/agent/script"
+                    href={`${API_BASE}/api/v1/agent/script`}
                     download="printcatalyst-agent.js"
                     className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center gap-2 shadow-md"
                   >
@@ -874,7 +875,7 @@ export default function MerchantDashboardPage() {
 
                 <button
                   onClick={async () => {
-                    await fetch('/api/v1/merchants/profile', {
+                    await fetch(`${API_BASE}/api/v1/merchants/profile`, {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify(merchant)
@@ -922,7 +923,7 @@ export default function MerchantDashboardPage() {
         isOpen={isManualOrderOpen}
         onClose={() => setIsManualOrderOpen(false)}
         onCreateOrder={async (orderPayload) => {
-          const res = await fetch('/api/v1/jobs', {
+          const res = await fetch(`${API_BASE}/api/v1/jobs`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(orderPayload)

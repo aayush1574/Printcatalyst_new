@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_BASE } from '../config';
 
 const AuthContext = createContext(null);
 
@@ -8,10 +9,10 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check or load default demo session
+    // Check or load default session
     const loadSession = async () => {
       try {
-        const res = await fetch('/api/v1/merchants/session');
+        const res = await fetch(`${API_BASE}/api/v1/merchants/session`);
         const data = await res.json();
         if (data.authenticated && data.shop) {
           setMerchant(data.shop);
@@ -21,21 +22,21 @@ export function AuthProvider({ children }) {
             id: 'shop_demo',
             slug: 'catalyst-print-hub',
             name: 'Catalyst Print & Stationery Hub',
-            ownerName: 'Rajesh Sharma',
-            email: 'rajesh@printcatalyst.in',
+            ownerName: 'Shop Admin',
+            email: 'admin@printcatalyst.in',
             phone: '+91 98765 43210',
             plan: 'PRO',
             agentToken: 'agt_tok_demo_88392019482'
           });
         }
       } catch (e) {
-        console.warn('Backend not ready yet, using default demo session', e);
+        console.warn('Backend not ready yet, using default session', e);
         setMerchant({
           id: 'shop_demo',
           slug: 'catalyst-print-hub',
           name: 'Catalyst Print & Stationery Hub',
-          ownerName: 'Rajesh Sharma',
-          email: 'rajesh@printcatalyst.in',
+          ownerName: 'Shop Admin',
+          email: 'admin@printcatalyst.in',
           phone: '+91 98765 43210',
           plan: 'PRO',
           agentToken: 'agt_tok_demo_88392019482'
@@ -49,7 +50,7 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     try {
-      const res = await fetch('/api/v1/merchants/login', {
+      const res = await fetch(`${API_BASE}/api/v1/merchants/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -69,7 +70,7 @@ export function AuthProvider({ children }) {
 
   const register = async (formData) => {
     try {
-      const res = await fetch('/api/v1/merchants/register', {
+      const res = await fetch(`${API_BASE}/api/v1/merchants/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)

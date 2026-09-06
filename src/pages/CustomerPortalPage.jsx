@@ -5,6 +5,7 @@ import {
   ShieldCheck, Smartphone, Layers, Check, Copy, ArrowRight, IndianRupee, RefreshCw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { API_BASE } from '../config';
 
 export default function CustomerPortalPage() {
   const { shopId = 'catalyst-print-hub' } = useParams();
@@ -28,7 +29,7 @@ export default function CustomerPortalPage() {
   useEffect(() => {
     const fetchShopInfo = async () => {
       try {
-        const res = await fetch(`/api/v1/portal/shop/${shopId}`);
+        const res = await fetch(`${API_BASE}/api/v1/portal/shop/${shopId}`);
         const data = await res.json();
         setShopData(data.shop);
       } catch (e) {
@@ -48,7 +49,7 @@ export default function CustomerPortalPage() {
     }
 
     try {
-      const res = await fetch('/api/v1/upload', {
+      const res = await fetch(`${API_BASE}/api/v1/upload`, {
         method: 'POST',
         body: formData
       });
@@ -58,7 +59,7 @@ export default function CustomerPortalPage() {
           id: 'item_' + Date.now() + '_' + i,
           fileName: f.fileName,
           fileSize: f.fileSize,
-          fileUrl: f.fileUrl,
+          fileUrl: f.fileUrl.startsWith('http') ? f.fileUrl : `${API_BASE}${f.fileUrl}`,
           fileType: f.fileType,
           pageCount: f.pageCount || 1,
           copies: 1,
@@ -99,7 +100,7 @@ export default function CustomerPortalPage() {
 
     setSubmitting(true);
     try {
-      const res = await fetch('/api/v1/jobs', {
+      const res = await fetch(`${API_BASE}/api/v1/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { useAuth } from './AuthContext';
+import { getWsUrl } from '../config';
 
 const SocketContext = createContext(null);
 
@@ -39,9 +40,8 @@ export function SocketProvider({ children }) {
   useEffect(() => {
     let ws;
     const connectWS = () => {
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const host = window.location.host;
-      ws = new WebSocket(`${protocol}//${host}`);
+      const wsUrl = getWsUrl();
+      ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
         setConnected(true);

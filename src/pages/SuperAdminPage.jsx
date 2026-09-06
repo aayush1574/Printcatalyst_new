@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Shield, Users, Printer, IndianRupee, Layers, FileText, CheckCircle, Database, Server, RefreshCw } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import { API_BASE } from '../config';
 
 export default function SuperAdminPage() {
   const [data, setData] = useState(null);
@@ -10,7 +11,7 @@ export default function SuperAdminPage() {
 
   const fetchOverview = async () => {
     try {
-      const res = await fetch('/api/v1/admin/overview');
+      const res = await fetch(`${API_BASE}/api/v1/admin/overview`);
       const json = await res.json();
       setData(json);
     } catch (e) {
@@ -162,7 +163,7 @@ export default function SuperAdminPage() {
               Print Catalyst Native Bridge Agent v1.4.2 compatible with Windows 10/11 x64, macOS Apple Silicon/Intel, and Linux CUPS.
             </p>
             <a
-              href="/api/v1/agent/script"
+              href={`${API_BASE}/api/v1/agent/script`}
               download
               className="inline-flex items-center gap-2 text-indigo-400 font-bold hover:underline"
             >

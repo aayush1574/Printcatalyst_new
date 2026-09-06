@@ -32,7 +32,7 @@ export default function ProductTourPage() {
               <ArrowRight className="w-4 h-4" />
             </Link>
             <Link
-              to="/portal/catalyst-print-hub"
+              to="/portal/printsupport-hub"
               className="px-6 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold text-sm border border-slate-700 flex items-center gap-2"
             >
               <QrCode className="w-4 h-4 text-cyan-400" />

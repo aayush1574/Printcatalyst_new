@@ -54,7 +54,7 @@ export default function Footer() {
               <li><Link to="/faq" className="hover:text-white transition-colors">Frequently Asked Questions</Link></li>
               <li><Link to="/guides/prevent-mixed-print-orders" className="hover:text-white transition-colors">Prevent Mixed Print Orders</Link></li>
               <li><Link to="/merchant" className="hover:text-indigo-400 font-semibold transition-colors">Merchant Dashboard</Link></li>
-              <li><Link to="/portal/catalyst-print-hub" className="hover:text-cyan-400 transition-colors">Customer QR Portal</Link></li>
+              <li><Link to="/portal/printsupport-hub" className="hover:text-cyan-400 transition-colors">Customer QR Portal</Link></li>
             </ul>
           </div>
 

@@ -74,11 +74,11 @@ export default function MerchantDashboardPage() {
       } else if (!merchant) {
         setMerchant({
           id: 'shop_demo',
-          name: 'Catalyst Print Hub',
+          name: 'Print Support',
           ownerName: 'Aayush Sharma',
-          slug: 'catalyst-print-hub',
-          address: 'Main University Road, Campus Gate 2',
-          upiId: 'catalystprint@upi',
+          slug: 'printsupport-hub',
+          address: 'Shop No. 1, Main Market',
+          upiId: 'printsupport@okaxis',
           phone: '+91 98765 43210',
           agentStatus: 'ONLINE',
           autoPrintEnabled: true
@@ -238,7 +238,7 @@ export default function MerchantDashboardPage() {
 
             <div>
               <h2 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
-                {merchant?.name || 'Catalyst Print Hub'}
+                {merchant?.name || 'Print Support'}
               </h2>
             </div>
           </div>
@@ -299,7 +299,7 @@ export default function MerchantDashboardPage() {
               <span className="text-[11px] text-indigo-300 font-mono hidden lg:inline">/portal/{merchant?.slug}</span>
               <button
                 onClick={() => {
-                  const url = `${window.location.origin}/portal/${merchant?.slug || 'catalyst-print-hub'}`;
+                  const url = `${window.location.origin}/portal/${merchant?.slug || 'printsupport-hub'}`;
                   navigator.clipboard.writeText(url);
                   setCopiedPortalLink(true);
                   setTimeout(() => setCopiedPortalLink(false), 2000);
@@ -310,7 +310,7 @@ export default function MerchantDashboardPage() {
                 {copiedPortalLink ? 'Copied!' : 'Copy Portal Link'}
               </button>
               <Link
-                to={`/portal/${merchant?.slug || 'catalyst-print-hub'}`}
+                to={`/portal/${merchant?.slug || 'printsupport-hub'}`}
                 target="_blank"
                 className="p-1 text-slate-300 hover:text-white transition-colors"
                 title="Open Customer Self-Service Portal"

@@ -68,7 +68,7 @@ export default function LandingPage() {
             </Link>
 
             <Link
-              to="/portal/catalyst-print-hub"
+              to="/portal/printsupport-hub"
               className="w-full sm:w-auto px-8 py-4 rounded-2xl glass-card hover:border-cyan-500/40 text-white font-bold text-base flex items-center justify-center gap-2.5 transition-all hover:scale-105 shadow-xl"
             >
               <QrCode className="w-5 h-5 text-cyan-400" />

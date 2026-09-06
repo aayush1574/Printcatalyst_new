@@ -137,9 +137,9 @@ export default function StandeeGeneratorModal({ shop, isOpen, onClose }) {
 
               {/* Shop Name */}
               <h2 className="text-xl font-black tracking-tight text-slate-900 leading-tight">
-                {shop.name}
+                {shop.name || 'Print Support'}
               </h2>
-              <p className="text-[11px] text-slate-500 font-medium mt-0.5">{shop.address}</p>
+              <p className="text-[11px] text-slate-500 font-medium mt-0.5">{shop.address || 'Shop No. 1, Main Market'}</p>
 
               {/* Headline */}
               <div className="my-3 py-1 px-3 bg-slate-100 rounded-lg w-full">
@@ -158,7 +158,7 @@ export default function StandeeGeneratorModal({ shop, isOpen, onClose }) {
                   className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[9px] font-black text-white uppercase tracking-wider shadow"
                   style={{ backgroundColor: accentColor }}
                 >
-                  SCAN WITH CAMERA OR UPI
+                  SCAN WITH CAMERA
                 </div>
               </div>
 
@@ -178,10 +178,10 @@ export default function StandeeGeneratorModal({ shop, isOpen, onClose }) {
                 </div>
               </div>
 
-              {/* Footer WhatsApp info & UPI */}
-              <div className="w-full mt-3 pt-2 border-t text-[10px] text-slate-500 flex justify-between items-center">
-                <span>💬 WhatsApp: {shop.phone}</span>
-                <span className="font-mono text-[9px] font-bold text-slate-700">UPI: {shop.upiId}</span>
+              {/* Footer WhatsApp info */}
+              <div className="w-full mt-3 pt-2 border-t text-[10px] text-slate-500 flex justify-between items-center font-medium">
+                <span>💬 WhatsApp: {shop.phone || '+91 98765 43210'}</span>
+                <span className="font-semibold text-slate-700">Print Support</span>
               </div>
             </div>
 

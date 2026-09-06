@@ -12,8 +12,8 @@ const defaultData = {
   shops: [
     {
       id: 'shop_demo',
-      slug: 'catalyst-print-hub',
-      name: 'Catalyst Print & Stationery Hub',
+      slug: 'printsupport-hub',
+      name: 'Print Support',
       ownerName: 'Rajesh Sharma',
       email: 'rajesh@printsupport.in',
       phone: '+91 98765 43210',
@@ -220,8 +220,14 @@ class Database {
   }
 
   getShops() { return this.data.shops; }
-  getShopById(id) { return this.data.shops.find(s => s.id === id); }
-  getShopBySlug(slug) { return this.data.shops.find(s => s.slug === slug); }
+  getShopById(id) { 
+    if (!id) return this.data.shops[0];
+    return this.data.shops.find(s => s.id === id) || this.data.shops.find(s => s.slug === id) || this.data.shops[0]; 
+  }
+  getShopBySlug(slug) { 
+    if (!slug) return this.data.shops[0];
+    return this.data.shops.find(s => s.slug === slug || (slug === 'catalyst-print-hub' && s.id === 'shop_demo') || (slug === 'printsupport-hub' && s.id === 'shop_demo')) || this.data.shops.find(s => s.id === slug) || this.data.shops[0]; 
+  }
   
   addShop(shop) {
     this.data.shops.push(shop);

@@ -12,9 +12,9 @@ const os = require('os');
 const fs = require('fs');
 const path = require('path');
 
-const SERVER_URL = process.env.CATALYST_SERVER_URL || 'ws://localhost:5000';
-const SHOP_ID = process.env.CATALYST_SHOP_ID || 'shop_demo';
-const AGENT_TOKEN = process.env.CATALYST_AGENT_TOKEN || 'agt_tok_demo_88392019482';
+const SERVER_URL = process.env.PRINTSUPPORT_SERVER_URL || process.env.CATALYST_SERVER_URL || 'ws://localhost:5000';
+const SHOP_ID = process.env.PRINTSUPPORT_SHOP_ID || process.env.CATALYST_SHOP_ID || 'shop_demo';
+const AGENT_TOKEN = process.env.PRINTSUPPORT_AGENT_TOKEN || process.env.CATALYST_AGENT_TOKEN || 'agt_tok_demo_88392019482';
 
 console.log('====================================================');
 console.log('   PRINT SUPPORT - DESKTOP PRINT AGENT v1.4.2     ');

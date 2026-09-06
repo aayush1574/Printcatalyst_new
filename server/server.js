@@ -375,141 +375,154 @@ app.get('/api/v1/jobs', (req, res) => {
 });
 
 app.post('/api/v1/jobs', async (req, res) => {
-  const {
-    shopId = 'shop_demo',
-    customerName,
-    customerPhone,
-    source = 'QR_PORTAL',
-    paymentMethod = 'UPI',
-    items = [],
-    isUrgent = false
-  } = req.body;
+  try {
+    const {
+      shopId = 'shop_demo',
+      customerName,
+      customerPhone,
+      source = 'QR_PORTAL',
+      paymentMethod = 'UPI',
+      items = [],
+      isUrgent = false
+    } = req.body;
 
-  const shop = db.getShopById(shopId);
-  const pricing = db.getPricing(shopId);
-  const orderNum = Math.floor(1000 + Math.random() * 9000);
-  const orderId = `ORD-${orderNum}`;
-  const pickupToken = `CAT-${orderNum.toString().slice(-3)}`;
-
-  // Calculate detailed pricing
-  let totalAmount = 0;
-  let totalPages = 0;
-
-  const processedItems = items.map((item, idx) => {
-    const pageCount = item.pageCount || 1;
-    const copies = item.copies || 1;
-    const paperSize = item.paperSize || 'A4';
-    const colorMode = item.colorMode || 'BLACK_AND_WHITE';
-    const duplex = item.duplex || 'SINGLE_SIDED';
-    const paperType = item.paperType || 'standard_75gsm';
-    const finishing = item.finishing || 'none';
-
-    // Parse page range
-    let activePages = pageCount;
-    if (item.pageRange && item.pageRange !== 'ALL') {
-      const ranges = item.pageRange.split(',').map(r => r.trim());
-      let count = 0;
-      for (const r of ranges) {
-        if (r.includes('-')) {
-          const [start, end] = r.split('-').map(Number);
-          if (!isNaN(start) && !isNaN(end)) count += Math.max(1, end - start + 1);
-        } else if (!isNaN(Number(r))) {
-          count += 1;
-        }
-      }
-      activePages = Math.min(pageCount, Math.max(1, count));
-    }
-
-    const rates = pricing.rates[paperSize] || pricing.rates['A4'];
-    let ratePerPage = 2.0;
-    if (colorMode === 'COLOR') {
-      ratePerPage = duplex === 'DOUBLE_SIDED' ? (rates.colorDuplex || 7.0) : (rates.colorSingle || 8.0);
-    } else {
-      ratePerPage = duplex === 'DOUBLE_SIDED' ? (rates.monoDuplex || 1.5) : (rates.monoSingle || 2.0);
-    }
-
-    const paperTypeExtra = (pricing.paperTypes[paperType] && pricing.paperTypes[paperType].extraPerPage) || 0;
-    const finishingPrice = (pricing.finishing[finishing] && pricing.finishing[finishing].price) || 0;
-
-    const computedPages = activePages * copies;
-    totalPages += computedPages;
-
-    const itemSubtotal = (computedPages * (ratePerPage + paperTypeExtra)) + finishingPrice;
-    totalAmount += itemSubtotal;
-
-    return {
-      ...item,
-      id: `item_${idx + 1}`,
-      computedPages,
-      subtotal: parseFloat(itemSubtotal.toFixed(2))
+    const shop = db.getShopById(shopId) || db.getShopBySlug(shopId) || db.getShopById('shop_demo');
+    const targetShopId = shop ? shop.id : (shopId || 'shop_demo');
+    const pricing = db.getPricing(targetShopId) || db.getPricing('shop_demo') || {
+      minOrderAmount: 5,
+      rates: { A4: { monoSingle: 2, monoDuplex: 1.5, colorSingle: 8, colorDuplex: 7 } },
+      paperTypes: {},
+      finishing: {},
+      volumeDiscounts: []
     };
-  });
+    const orderNum = Math.floor(1000 + Math.random() * 9000);
+    const orderId = `ORD-${orderNum}`;
+    const pickupToken = `PS-${orderNum.toString().slice(-3)}`;
 
-  if (isUrgent) {
-    totalAmount += (pricing.urgentRushFee || 15);
-  }
+    // Calculate detailed pricing
+    let totalAmount = 0;
+    let totalPages = 0;
 
-  // Check volume discount
-  let discountApplied = 0;
-  for (const tier of (pricing.volumeDiscounts || [])) {
-    if (totalPages >= tier.minPages && totalPages <= tier.maxPages) {
-      discountApplied = (totalAmount * tier.discountPercent) / 100;
-      break;
-    }
-  }
+    const processedItems = (items || []).map((item, idx) => {
+      const pageCount = item.pageCount || 1;
+      const copies = item.copies || 1;
+      const paperSize = item.paperSize || 'A4';
+      const colorMode = item.colorMode || 'BLACK_AND_WHITE';
+      const duplex = item.duplex || 'SINGLE_SIDED';
+      const paperType = item.paperType || 'standard_75gsm';
+      const finishing = item.finishing || 'none';
 
-  const finalAmount = Math.max(pricing.minOrderAmount || 5, parseFloat((totalAmount - discountApplied).toFixed(2)));
+      // Parse page range
+      let activePages = pageCount;
+      if (item.pageRange && item.pageRange !== 'ALL') {
+        const ranges = item.pageRange.split(',').map(r => r.trim());
+        let count = 0;
+        for (const r of ranges) {
+          if (r.includes('-')) {
+            const [start, end] = r.split('-').map(Number);
+            if (!isNaN(start) && !isNaN(end)) count += Math.max(1, end - start + 1);
+          } else if (!isNaN(Number(r))) {
+            count += 1;
+          }
+        }
+        activePages = Math.min(pageCount, Math.max(1, count));
+      }
 
-  // Auto assign intelligent printer
-  const printers = db.getPrinters(shopId);
-  const requiresColor = items.some(i => i.colorMode === 'COLOR');
-  const assignedPrinter = printers.find(p => requiresColor ? p.supportsColor : (p.isDefaultMono || p.supportsColor)) || printers[0];
+      const rates = (pricing.rates && (pricing.rates[paperSize] || pricing.rates['A4'])) || { monoSingle: 2, monoDuplex: 1.5, colorSingle: 8, colorDuplex: 7 };
+      let ratePerPage = 2.0;
+      if (colorMode === 'COLOR') {
+        ratePerPage = duplex === 'DOUBLE_SIDED' ? (rates.colorDuplex || 7.0) : (rates.colorSingle || 8.0);
+      } else {
+        ratePerPage = duplex === 'DOUBLE_SIDED' ? (rates.monoDuplex || 1.5) : (rates.monoSingle || 2.0);
+      }
 
-  const newOrder = {
-    id: orderId,
-    shopId,
-    customerName: customerName || 'Walk-in Customer',
-    customerPhone: customerPhone || '+91 99999 99999',
-    source,
-    status: (paymentMethod === 'UPI' && shop && shop.instantReleaseOnPayment) ? 'READY_TO_PRINT' : 'PENDING_APPROVAL',
-    paymentStatus: paymentMethod === 'UPI' ? 'PAID' : 'PENDING',
-    paymentMethod,
-    upiRef: paymentMethod === 'UPI' ? `UPI-${Date.now().toString().slice(-9)}` : null,
-    totalAmount: parseFloat(totalAmount.toFixed(2)),
-    discountApplied: parseFloat(discountApplied.toFixed(2)),
-    finalAmount,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    pickupToken,
-    items: processedItems,
-    assignedPrinterId: assignedPrinter ? assignedPrinter.id : null,
-    assignedPrinterName: assignedPrinter ? assignedPrinter.name : 'Default Printer',
-    logs: [
-      { timestamp: new Date().toISOString(), text: `Order created via ${source}` },
-      ...(paymentMethod === 'UPI' ? [{ timestamp: new Date().toISOString(), text: `UPI Payment of ₹${finalAmount} verified` }] : [])
-    ]
-  };
+      const paperTypeExtra = (pricing.paperTypes && pricing.paperTypes[paperType] && pricing.paperTypes[paperType].extraPerPage) || 0;
+      const finishingPrice = (pricing.finishing && pricing.finishing[finishing] && pricing.finishing[finishing].price) || 0;
 
-  db.addOrder(newOrder);
+      const computedPages = activePages * copies;
+      totalPages += computedPages;
 
-  // Auto print if shop has auto print enabled
-  if (shop && shop.autoPrintEnabled && newOrder.paymentStatus === 'PAID') {
-    broadcastToAgent(shopId, {
-      type: 'DISPATCH_PRINT_JOB',
-      order: newOrder,
-      targetPrinter: assignedPrinter
+      const itemSubtotal = (computedPages * (ratePerPage + paperTypeExtra)) + finishingPrice;
+      totalAmount += itemSubtotal;
+
+      return {
+        ...item,
+        id: `item_${idx + 1}`,
+        computedPages,
+        subtotal: parseFloat(itemSubtotal.toFixed(2))
+      };
     });
+
+    if (isUrgent) {
+      totalAmount += (pricing.urgentRushFee || 15);
+    }
+
+    // Check volume discount
+    let discountApplied = 0;
+    for (const tier of (pricing.volumeDiscounts || [])) {
+      if (totalPages >= tier.minPages && totalPages <= tier.maxPages) {
+        discountApplied = (totalAmount * tier.discountPercent) / 100;
+        break;
+      }
+    }
+
+    const finalAmount = Math.max(pricing.minOrderAmount || 5, parseFloat((totalAmount - discountApplied).toFixed(2)));
+
+    // Auto assign intelligent printer
+    const printers = db.getPrinters(targetShopId);
+    const requiresColor = (items || []).some(i => i.colorMode === 'COLOR');
+    const assignedPrinter = printers.find(p => requiresColor ? p.supportsColor : (p.isDefaultMono || p.supportsColor)) || printers[0];
+
+    const newOrder = {
+      id: orderId,
+      shopId: targetShopId,
+      customerName: customerName || 'Walk-in Customer',
+      customerPhone: customerPhone || '+91 99999 99999',
+      source,
+      status: (paymentMethod === 'UPI' && shop && shop.instantReleaseOnPayment) ? 'READY_TO_PRINT' : 'PENDING_APPROVAL',
+      paymentStatus: paymentMethod === 'UPI' ? 'PAID' : 'PENDING',
+      paymentMethod,
+      upiRef: paymentMethod === 'UPI' ? `UPI-${Date.now().toString().slice(-9)}` : null,
+      totalAmount: parseFloat(totalAmount.toFixed(2)),
+      discountApplied: parseFloat(discountApplied.toFixed(2)),
+      finalAmount,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      pickupToken,
+      items: processedItems,
+      assignedPrinterId: assignedPrinter ? assignedPrinter.id : null,
+      assignedPrinterName: assignedPrinter ? assignedPrinter.name : 'Default Printer',
+      logs: [
+        { timestamp: new Date().toISOString(), text: `Order created via ${source}` },
+        ...(paymentMethod === 'UPI' ? [{ timestamp: new Date().toISOString(), text: `UPI Payment of ₹${finalAmount} verified` }] : [])
+      ]
+    };
+
+    db.addOrder(newOrder);
+
+    // Auto print if shop has auto print enabled
+    if (shop && shop.autoPrintEnabled && newOrder.paymentStatus === 'PAID') {
+      broadcastToAgent(targetShopId, {
+        type: 'DISPATCH_PRINT_JOB',
+        order: newOrder,
+        targetPrinter: assignedPrinter
+      });
+    }
+
+    broadcastToShop(targetShopId, {
+      type: 'NEW_ORDER',
+      order: newOrder
+    });
+
+    res.json({
+      success: true,
+      order: newOrder
+    });
+  } catch (err) {
+    console.error('Error creating job order:', err);
+    res.status(500).json({ success: false, message: 'Server error processing order: ' + err.message });
   }
-
-  broadcastToShop(shopId, {
-    type: 'NEW_ORDER',
-    order: newOrder
-  });
-
-  res.json({
-    success: true,
-    order: newOrder
-  });
+});
 });
 
 app.get('/api/v1/jobs/:id', (req, res) => {

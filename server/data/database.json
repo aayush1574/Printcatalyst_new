@@ -2,8 +2,8 @@
   "shops": [
     {
       "id": "shop_demo",
-      "slug": "catalyst-print-hub",
-      "name": "Catalyst Print & Stationery Hub",
+      "slug": "printsupport-hub",
+      "name": "Print Support",
       "ownerName": "Shop Admin",
       "email": "admin@printsupport.in",
       "phone": "+91 98765 43210",

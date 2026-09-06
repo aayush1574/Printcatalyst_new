@@ -24,7 +24,7 @@ export default function QROrdersTourPage() {
 
           <div className="pt-4 flex flex-wrap gap-4">
             <Link
-              to="/portal/catalyst-print-hub"
+              to="/portal/printsupport-hub"
               className="px-6 py-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-sm shadow-lg shadow-cyan-600/30 flex items-center gap-2"
             >
               <QrCode className="w-4 h-4" />

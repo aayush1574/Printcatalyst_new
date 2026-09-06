@@ -38,34 +38,58 @@ app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
 
+// Global Process Exception Protection (prevents Render crash on unexpected async errors)
+process.on('uncaughtException', (err) => {
+  console.error('⚠️ [PROCESS] Caught uncaughtException:', err.message || err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('⚠️ [PROCESS] Caught unhandledRejection:', reason);
+});
+
 // Track connected WebSocket clients
 const clients = new Map(); // ws -> { type: 'MERCHANT' | 'AGENT' | 'CUSTOMER', shopId, orderId }
 
 function broadcastToShop(shopId, payload) {
-  const msg = JSON.stringify(payload);
-  for (const [clientWs, meta] of clients.entries()) {
-    if (clientWs.readyState === WebSocket.OPEN && (!meta.shopId || meta.shopId === shopId)) {
-      clientWs.send(msg);
+  try {
+    const msg = JSON.stringify(payload);
+    for (const [clientWs, meta] of clients.entries()) {
+      if (clientWs.readyState === WebSocket.OPEN && (!meta.shopId || meta.shopId === shopId)) {
+        try { clientWs.send(msg); } catch (e) {}
+      }
     }
+  } catch (err) {
+    console.error('Broadcast error:', err.message);
   }
 }
 
 function broadcastToAgent(shopId, payload) {
-  const msg = JSON.stringify(payload);
-  for (const [clientWs, meta] of clients.entries()) {
-    if (clientWs.readyState === WebSocket.OPEN && meta.type === 'AGENT' && meta.shopId === shopId) {
-      clientWs.send(msg);
+  try {
+    const msg = JSON.stringify(payload);
+    for (const [clientWs, meta] of clients.entries()) {
+      if (clientWs.readyState === WebSocket.OPEN && meta.type === 'AGENT' && meta.shopId === shopId) {
+        try { clientWs.send(msg); } catch (e) {}
+      }
     }
+  } catch (err) {
+    console.error('Agent broadcast error:', err.message);
   }
 }
 
+wss.on('error', (err) => {
+  console.warn('⚠️ [WSS Server Error]:', err.message);
+});
+
 wss.on('connection', (ws, req) => {
+  ws.on('error', (err) => {
+    console.warn('⚠️ [WS Client Socket Error]:', err.message);
+  });
+
   ws.on('message', (message) => {
     try {
       const data = JSON.parse(message.toString());
       if (data.type === 'REGISTER_MERCHANT') {
         clients.set(ws, { type: 'MERCHANT', shopId: data.shopId || 'shop_demo' });
-        ws.send(JSON.stringify({ type: 'REGISTERED', message: 'Merchant connected to live feed' }));
+        try { ws.send(JSON.stringify({ type: 'REGISTERED', message: 'Merchant connected to live feed' })); } catch (e) {}
       } else if (data.type === 'REGISTER_AGENT') {
         clients.set(ws, { type: 'AGENT', shopId: data.shopId || 'shop_demo', agentToken: data.agentToken });
         db.updateShop(data.shopId || 'shop_demo', {
@@ -76,7 +100,7 @@ wss.on('connection', (ws, req) => {
           type: 'AGENT_STATUS_CHANGE',
           status: 'ONLINE'
         });
-        ws.send(JSON.stringify({ type: 'AGENT_AUTHENTICATED', message: 'Desktop Agent linked successfully' }));
+        try { ws.send(JSON.stringify({ type: 'AGENT_AUTHENTICATED', message: 'Desktop Agent linked successfully' })); } catch (e) {}
       } else if (data.type === 'AGENT_JOB_STATUS') {
         // Agent reports print progress: SPOOLING -> PRINTING -> COMPLETED
         const { orderId, status, error, pagesPrinted } = data;
@@ -103,14 +127,16 @@ wss.on('connection', (ws, req) => {
   ws.on('close', () => {
     const meta = clients.get(ws);
     if (meta && meta.type === 'AGENT') {
-      db.updateShop(meta.shopId, {
-        agentStatus: 'OFFLINE',
-        agentLastHeartbeat: new Date().toISOString()
-      });
-      broadcastToShop(meta.shopId, {
-        type: 'AGENT_STATUS_CHANGE',
-        status: 'OFFLINE'
-      });
+      try {
+        db.updateShop(meta.shopId, {
+          agentStatus: 'OFFLINE',
+          agentLastHeartbeat: new Date().toISOString()
+        });
+        broadcastToShop(meta.shopId, {
+          type: 'AGENT_STATUS_CHANGE',
+          status: 'OFFLINE'
+        });
+      } catch (e) {}
     }
     clients.delete(ws);
   });
@@ -992,7 +1018,8 @@ if (fs.existsSync(DIST_DIR)) {
   });
 }
 
-server.listen(PORT, () => {
-  console.log(`Print Support Backend Server running on port ${PORT}`);
+const HOST = '0.0.0.0';
+server.listen(PORT, HOST, () => {
+  console.log(`Print Support Backend Server running on http://${HOST}:${PORT}`);
 });
 

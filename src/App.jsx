@@ -1,31 +1,27 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
+import ProductTourPage from './pages/ProductTourPage';
+import WhatsAppTourPage from './pages/WhatsAppTourPage';
+import QROrdersTourPage from './pages/QROrdersTourPage';
+import HowItWorksPage from './pages/HowItWorksPage';
+import PricingPage from './pages/PricingPage';
+import FAQPage from './pages/FAQPage';
+import { LoginPage, RegisterPage } from './pages/AuthPages';
+import { OrderManagementPage, PrinterRoutingPage } from './pages/FeaturePages';
+import { GuidePage, LegalPage, ContactPage } from './pages/GuidesAndLegalPages';
 
-// Lazy load pages for instant loading
-const ProductTourPage = lazy(() => import('./pages/ProductTourPage'));
-const WhatsAppTourPage = lazy(() => import('./pages/WhatsAppTourPage'));
-const QROrdersTourPage = lazy(() => import('./pages/QROrdersTourPage'));
-const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
-const PricingPage = lazy(() => import('./pages/PricingPage'));
-const FAQPage = lazy(() => import('./pages/FAQPage'));
+// Code-split heavy interactive dashboards
 const MerchantDashboardPage = lazy(() => import('./pages/MerchantDashboardPage'));
 const CustomerPortalPage = lazy(() => import('./pages/CustomerPortalPage'));
 const SuperAdminPage = lazy(() => import('./pages/SuperAdminPage'));
-const LoginPage = lazy(() => import('./pages/AuthPages').then(m => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import('./pages/AuthPages').then(m => ({ default: m.RegisterPage })));
-const OrderManagementPage = lazy(() => import('./pages/FeaturePages').then(m => ({ default: m.OrderManagementPage })));
-const PrinterRoutingPage = lazy(() => import('./pages/FeaturePages').then(m => ({ default: m.PrinterRoutingPage })));
-const ContactPage = lazy(() => import('./pages/GuidesAndLegalPages').then(m => ({ default: m.ContactPage })));
-const GuidePage = lazy(() => import('./pages/GuidesAndLegalPages').then(m => ({ default: m.GuidePage })));
-const LegalPage = lazy(() => import('./pages/GuidesAndLegalPages').then(m => ({ default: m.LegalPage })));
 
 function PageLoader() {
   return (
     <div className="min-h-screen bg-[#070a13] flex items-center justify-center text-slate-400">
       <div className="p-4 rounded-2xl bg-slate-900/80 border border-white/10 flex items-center gap-3 shadow-2xl backdrop-blur-md">
         <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-xs font-semibold text-slate-300">Loading Print Catalyst...</span>
+        <span className="text-xs font-semibold text-slate-300">Loading Workspace...</span>
       </div>
     </div>
   );

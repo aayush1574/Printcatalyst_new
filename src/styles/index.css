@@ -40,26 +40,72 @@ body {
   backface-visibility: hidden;
 }
 
+/* 3D Z-Axis Translations */
+.translate-z-10 {
+  transform: translateZ(10px);
+}
+.translate-z-20 {
+  transform: translateZ(20px);
+}
+.translate-z-30 {
+  transform: translateZ(30px);
+}
+.translate-z-40 {
+  transform: translateZ(40px);
+}
+.-translate-z-10 {
+  transform: translateZ(-10px);
+}
+.-translate-z-20 {
+  transform: translateZ(-20px);
+}
+
+/* 3D Isometric Rotations */
+.rotate-y-3 {
+  transform: rotateY(3deg);
+}
+.-rotate-y-3 {
+  transform: rotateY(-3deg);
+}
+.rotate-y-6 {
+  transform: rotateY(6deg);
+}
+.-rotate-y-6 {
+  transform: rotateY(-6deg);
+}
+.rotate-x-6 {
+  transform: rotateX(6deg);
+}
+.-rotate-x-6 {
+  transform: rotateX(-6deg);
+}
+
+.isometric-stage {
+  transform: rotateX(45deg) rotateZ(-25deg);
+  transform-style: preserve-3d;
+}
+
 /* Antigravity Floating Glass Card System */
 .glass-card {
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 
-    0 20px 50px -10px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
-    0 1px 0 rgba(255, 255, 255, 0.15) inset;
+    0 25px 60px -15px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 1px 0 rgba(255, 255, 255, 0.2) inset;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
+  will-change: transform;
 }
 
 .glass-card-hover:hover {
-  transform: translateY(-6px) scale(1.01);
-  border-color: rgba(129, 140, 248, 0.4);
+  transform: translateY(-8px) scale(1.015);
+  border-color: rgba(129, 140, 248, 0.5);
   box-shadow: 
-    0 30px 60px -12px rgba(0, 0, 0, 0.6),
-    0 0 30px rgba(99, 102, 241, 0.2),
-    0 1px 0 rgba(255, 255, 255, 0.25) inset;
+    0 35px 70px -15px rgba(0, 0, 0, 0.7),
+    0 0 40px rgba(99, 102, 241, 0.25),
+    0 1px 0 rgba(255, 255, 255, 0.3) inset;
 }
 
 .glass-pill {

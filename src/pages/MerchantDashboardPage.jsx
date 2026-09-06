@@ -4,7 +4,7 @@ import {
   Printer, LayoutDashboard, QrCode, Settings, Sliders,
   TrendingUp, Download, Plus, CheckCircle, Clock, AlertTriangle,
   Play, RefreshCw, Smartphone, Layers, Eye, FileText, Check, ShieldCheck, ChevronRight,
-  Wifi, WifiOff, Sparkles, User, HelpCircle, Volume2
+  Wifi, WifiOff, Sparkles, User, HelpCircle, Volume2, LogOut
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';

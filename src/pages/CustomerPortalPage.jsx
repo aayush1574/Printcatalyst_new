@@ -250,7 +250,7 @@ export default function CustomerPortalPage() {
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-white font-['Outfit']">Order Submitted Successfully!</h2>
               <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
-                Your print job has been securely queued in the shop printer spooler.
+                Your print job has been securely sent to the shop printer.
               </p>
               
               {/* Pickup Plaque */}
@@ -273,7 +273,7 @@ export default function CustomerPortalPage() {
                 </div>
                 <div className="flex flex-col items-center">
                   <div className="w-8 h-8 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center mb-1 text-xs animate-pulse">2</div>
-                  <span className="text-indigo-300 font-semibold">In Spool Queue</span>
+                  <span className="text-indigo-300 font-semibold">Printing</span>
                 </div>
                 <div className="flex flex-col items-center">
                   <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-500 font-bold flex items-center justify-center mb-1 text-xs">3</div>

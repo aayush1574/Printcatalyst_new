@@ -203,14 +203,14 @@ export default function DocumentStudioModal({ order, printers, isOpen, onClose, 
               </div>
             </div>
 
-            {/* Release Action CTA */}
+            {/* Direct Print Action CTA */}
             <button
               onClick={handleRelease}
               disabled={releasing}
               className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50"
             >
               <Printer className="w-5 h-5" />
-              <span>{releasing ? 'Dispatching to Spooler...' : 'Release to Printer Spool'}</span>
+              <span>{releasing ? 'Sending to Printer...' : 'Print Document Now'}</span>
             </button>
 
           </div>

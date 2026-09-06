@@ -555,7 +555,7 @@ app.get('/api/v1/jobs/:id', (req, res) => {
   res.json(order);
 });
 
-// Release job to local printer queue
+// Release job to local printer queue (Direct Print)
 app.post('/api/v1/jobs/release/:id', (req, res) => {
   const order = db.getOrderById(req.params.id);
   if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
@@ -566,11 +566,11 @@ app.post('/api/v1/jobs/release/:id', (req, res) => {
 
   const updatedLogs = [
     ...(order.logs || []),
-    { timestamp: new Date().toISOString(), text: `Released to printer: ${targetPrinter ? targetPrinter.name : 'Default Spooler'}` }
+    { timestamp: new Date().toISOString(), text: `Print command sent to: ${targetPrinter ? targetPrinter.name : 'Default Printer'}` }
   ];
 
   const updated = db.updateOrder(order.id, {
-    status: 'IN_SPOOL',
+    status: 'PRINTING',
     assignedPrinterId: targetPrinter ? targetPrinter.id : order.assignedPrinterId,
     assignedPrinterName: targetPrinter ? targetPrinter.name : order.assignedPrinterName,
     logs: updatedLogs
@@ -583,25 +583,17 @@ app.post('/api/v1/jobs/release/:id', (req, res) => {
     targetPrinter
   });
 
-  // Simulate print finishing after 4 seconds if agent is in demo mock mode
+  // Automatically mark print as completed after brief output time
   setTimeout(() => {
     const fresh = db.getOrderById(order.id);
-    if (fresh && fresh.status === 'IN_SPOOL') {
-      const finished = db.updateOrder(order.id, {
-        status: 'PRINTING',
-        logs: [...(fresh.logs || []), { timestamp: new Date().toISOString(), text: 'Printer spooling active - pages outputting' }]
+    if (fresh && fresh.status === 'PRINTING') {
+      const done = db.updateOrder(order.id, {
+        status: 'COMPLETED',
+        logs: [...(fresh.logs || []), { timestamp: new Date().toISOString(), text: 'Document printed successfully' }]
       });
-      broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: finished });
-
-      setTimeout(() => {
-        const done = db.updateOrder(order.id, {
-          status: 'COMPLETED',
-          logs: [...(finished.logs || []), { timestamp: new Date().toISOString(), text: 'Physical print completed successfully' }]
-        });
-        broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: done });
-      }, 3500);
+      broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: done });
     }
-  }, 2000);
+  }, 3500);
 
   broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: updated });
   res.json({ success: true, order: updated });

@@ -191,7 +191,7 @@ export default function MerchantDashboardPage() {
   const filteredOrders = orders.filter((o) => {
     if (statusFilter === 'ALL') return true;
     if (statusFilter === 'READY') return o.status === 'READY_TO_PRINT' || o.status === 'PENDING_APPROVAL';
-    if (statusFilter === 'SPOOLING') return o.status === 'IN_SPOOL' || o.status === 'PRINTING';
+    if (statusFilter === 'PRINTING') return o.status === 'PRINTING' || o.status === 'IN_SPOOL';
     if (statusFilter === 'COMPLETED') return o.status === 'COMPLETED';
     if (statusFilter === 'CANCELLED') return o.status === 'CANCELLED';
     return true;
@@ -446,9 +446,9 @@ export default function MerchantDashboardPage() {
                   <div className="flex items-center gap-1 text-xs">
                     {[
                       { id: 'ALL', label: `All Orders (${orders.length})` },
-                      { id: 'READY', label: `Ready (${orders.filter(o => o.status === 'READY_TO_PRINT' || o.status === 'PENDING_APPROVAL').length})` },
-                      { id: 'SPOOLING', label: `In Spool (${orders.filter(o => o.status === 'IN_SPOOL' || o.status === 'PRINTING').length})` },
-                      { id: 'COMPLETED', label: `Done (${orders.filter(o => o.status === 'COMPLETED').length})` },
+                      { id: 'READY', label: `Ready to Print (${orders.filter(o => o.status === 'READY_TO_PRINT' || o.status === 'PENDING_APPROVAL').length})` },
+                      { id: 'PRINTING', label: `Printing (${orders.filter(o => o.status === 'IN_SPOOL' || o.status === 'PRINTING').length})` },
+                      { id: 'COMPLETED', label: `Completed (${orders.filter(o => o.status === 'COMPLETED').length})` },
                       { id: 'CANCELLED', label: `Rejected` }
                     ].map((f) => (
                       <button
@@ -520,11 +520,11 @@ export default function MerchantDashboardPage() {
 
                             <div className="text-right flex-shrink-0">
                               <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                                ord.status === 'READY_TO_PRINT' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30 animate-pulse' :
-                                ord.status === 'IN_SPOOL' || ord.status === 'PRINTING' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' :
+                                ord.status === 'READY_TO_PRINT' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                                ord.status === 'IN_SPOOL' || ord.status === 'PRINTING' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 animate-pulse' :
                                 ord.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
                               }`}>
-                                {ord.status.replace(/_/g, ' ')}
+                                {ord.status === 'IN_SPOOL' ? 'PRINTING' : ord.status.replace(/_/g, ' ')}
                               </span>
                             </div>
                           </div>
@@ -543,17 +543,21 @@ export default function MerchantDashboardPage() {
                               </span>
                             </div>
 
-                            {/* 1-Click Release Quick Trigger Button */}
+                            {/* Direct Print Button */}
                             {ord.status !== 'COMPLETED' && ord.status !== 'CANCELLED' && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleReleaseOrder(ord.id);
                                 }}
-                                className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] shadow-sm flex items-center gap-1 transition-all"
+                                className={`px-3 py-1.5 rounded-lg text-white font-bold text-xs shadow-sm flex items-center gap-1.5 transition-all ${
+                                  ord.status === 'PRINTING' || ord.status === 'IN_SPOOL'
+                                    ? 'bg-indigo-600 hover:bg-indigo-500'
+                                    : 'bg-emerald-600 hover:bg-emerald-500 active:scale-95'
+                                }`}
                               >
-                                <Play className="w-3 h-3" />
-                                <span>Release Spool</span>
+                                <Printer className="w-3.5 h-3.5" />
+                                <span>{ord.status === 'PRINTING' || ord.status === 'IN_SPOOL' ? 'Printing...' : 'Print'}</span>
                               </button>
                             )}
                           </div>
@@ -646,10 +650,10 @@ export default function MerchantDashboardPage() {
                       {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' ? (
                         <button
                           onClick={() => handleReleaseOrder(selectedOrder.id)}
-                          className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all"
+                          className="w-full py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-95"
                         >
                           <Printer className="w-4 h-4" />
-                          <span>Release to Printer Spooler</span>
+                          <span>{selectedOrder.status === 'PRINTING' || selectedOrder.status === 'IN_SPOOL' ? 'Printing in Progress...' : 'Print Document Now'}</span>
                         </button>
                       ) : null}
 

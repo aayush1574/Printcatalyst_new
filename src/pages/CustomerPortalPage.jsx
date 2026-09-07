@@ -2,10 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Printer, Upload, FileText, CheckCircle2, QrCode,
-  ShieldCheck, Check, Copy, ArrowRight, RefreshCw, Sparkles, FileUp, Zap
+  ShieldCheck, Check, Copy, ArrowRight, RefreshCw, Sparkles, FileUp, Zap, LayoutGrid
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { API_BASE } from '../config';
+import MultiPhotoComposerModal from '../components/MultiPhotoComposerModal';
 
 export default function CustomerPortalPage() {
   const { shopId = 'printsupport-hub' } = useParams();
@@ -19,6 +20,7 @@ export default function CustomerPortalPage() {
   const [placedOrder, setPlacedOrder] = useState(null);
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
+  const [isMultiPhotoOpen, setIsMultiPhotoOpen] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -129,6 +131,11 @@ export default function CustomerPortalPage() {
 
   const removeItem = (id) => {
     setFiles((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  // Handler for composed multi-photo items from the composer modal
+  const handleAddComposedItem = (composedItem) => {
+    setFiles((prev) => [...prev, composedItem]);
   };
 
   const totalPages = files.reduce((acc, item) => acc + ((item.pageCount || 1) * (item.copies || 1)), 0);
@@ -314,15 +321,15 @@ export default function CustomerPortalPage() {
           </div>
         ) : (
           <>
-            {/* Upload Documents Card */}
+            {/* ═══ Card 1: Upload Single Document ═══ */}
             <div className="glass-card rounded-3xl p-6 sm:p-8 space-y-5 border-white/10 shadow-2xl">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center">
                     <Upload className="w-4 h-4" />
                   </div>
                   <h2 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider">
-                    Upload Documents to Print
+                    Upload Single Document
                   </h2>
                 </div>
                 <span className="text-[11px] font-semibold text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-white/5">
@@ -498,6 +505,46 @@ export default function CustomerPortalPage() {
               )}
             </div>
 
+            {/* ═══ Card 2: Multiple Photos on One Page ═══ */}
+            <div className="glass-card rounded-3xl p-6 sm:p-8 space-y-5 border-white/10 shadow-2xl">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 text-violet-400 flex items-center justify-center border border-violet-500/20">
+                    <LayoutGrid className="w-4 h-4" />
+                  </div>
+                  <h2 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider">
+                    Multiple Photos on One Page
+                  </h2>
+                </div>
+                <span className="text-[11px] font-semibold text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-white/5">
+                  PNG, JPG, WebP (2–6 photos)
+                </span>
+              </div>
+
+              {/* Multi-Photo Launch Zone */}
+              <div
+                onClick={() => setIsMultiPhotoOpen(true)}
+                className="border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 relative overflow-hidden group border-slate-700 hover:border-violet-500 bg-slate-950/50 hover:bg-slate-950/80"
+              >
+                <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-violet-400 to-transparent absolute top-0 left-0 opacity-0 group-hover:opacity-100 group-hover:animate-laser-scan pointer-events-none"></div>
+
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600/30 to-fuchsia-500/30 text-violet-400 flex items-center justify-center mx-auto mb-3.5 group-hover:scale-110 group-hover:text-white transition-all shadow-lg shadow-violet-600/20">
+                  <LayoutGrid className="w-7 h-7" />
+                </div>
+                <p className="text-base font-bold text-white">Arrange multiple photos on a single page</p>
+                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                  Select 2–6 photos and choose a layout (side-by-side, stacked, adaptive grid, hero, 2-col, or 3-col). Auto-fitted to paper with live preview.
+                </p>
+                <button
+                  type="button"
+                  className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-xs font-bold shadow-lg shadow-violet-600/30 transition-all hover:scale-[1.03] active:scale-95"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  <span>Open Photo Composer</span>
+                </button>
+              </div>
+            </div>
+
             {/* Submit Print Order Button */}
             {files.length > 0 && (
               <div className="pt-2">
@@ -513,6 +560,13 @@ export default function CustomerPortalPage() {
                 </button>
               </div>
             )}
+
+            {/* Multi-Photo Composer Modal */}
+            <MultiPhotoComposerModal
+              isOpen={isMultiPhotoOpen}
+              onClose={() => setIsMultiPhotoOpen(false)}
+              onAddComposedItem={handleAddComposedItem}
+            />
           </>
         )}
 

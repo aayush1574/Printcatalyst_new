@@ -134,16 +134,23 @@ export default function CustomerPortalPage() {
   };
 
   // Handler for composed multi-photo items from the composer modal
-  const handleAddComposedItem = (composedItem) => {
-    setFiles((prev) => [...prev, composedItem]);
+  const handleAddComposedItem = (composedItem, autoSubmit = false) => {
+    setFiles((prev) => {
+      const updated = [...prev, composedItem];
+      if (autoSubmit) {
+        setTimeout(() => handlePlaceOrder(updated), 50);
+      }
+      return updated;
+    });
   };
 
   const totalPages = files.reduce((acc, item) => acc + ((item.pageCount || 1) * (item.copies || 1)), 0);
 
   // Submit Order
-  const handlePlaceOrder = async () => {
-    if (files.length === 0) {
-      alert('Please upload at least one document to print.');
+  const handlePlaceOrder = async (customFiles = null) => {
+    const orderItems = customFiles || files;
+    if (orderItems.length === 0) {
+      alert('Please upload at least one document or photo to print.');
       return;
     }
 
@@ -159,7 +166,7 @@ export default function CustomerPortalPage() {
           source: 'QR_PORTAL',
           paymentMethod: 'UPI',
           isUrgent,
-          items: files
+          items: orderItems
         })
       });
 
@@ -178,7 +185,7 @@ export default function CustomerPortalPage() {
 
     // Seamless fallback to ensure customer order is NEVER blocked on mobile
     const orderNum = (Math.floor(Date.now() / 1000) % 50) + 1;
-    const calculatedAmount = Math.max(10, files.reduce((acc, i) => {
+    const calculatedAmount = Math.max(10, orderItems.reduce((acc, i) => {
       const rate = i.colorMode === 'COLOR' ? (i.duplex === 'DOUBLE_SIDED' ? 7 : 8) : (i.duplex === 'DOUBLE_SIDED' ? 1.5 : 2);
       return acc + ((i.pageCount || 1) * (i.copies || 1) * rate);
     }, 0) + (isUrgent ? 15 : 0));
@@ -192,7 +199,7 @@ export default function CustomerPortalPage() {
       totalAmount: Math.round(calculatedAmount),
       paymentStatus: 'PAID',
       status: 'READY_TO_PRINT',
-      items: files.map((f, idx) => ({
+      items: orderItems.map((f, idx) => ({
         ...f,
         computedPages: (f.pageCount || 1) * (f.copies || 1),
         subtotal: Math.round(((f.pageCount || 1) * (f.copies || 1)) * (f.colorMode === 'COLOR' ? 8 : 2))
@@ -533,24 +540,39 @@ export default function CustomerPortalPage() {
                 </div>
                 <p className="text-sm sm:text-base font-bold text-white">Arrange multiple photos on a single page</p>
                 <p className="text-[11px] sm:text-xs text-slate-400 mt-1 max-w-sm mx-auto">
-                  Select 2–6 photos and choose a layout (side-by-side, stacked, adaptive grid, hero, 2-col, or 3-col). Auto-fitted to paper with live preview.
+                  Select 1–6 photos and choose a layout (side-by-side, stacked, adaptive grid, hero, 2-col, or 3-col). Auto-fitted to paper with live preview.
                 </p>
-                <button
-                  type="button"
-                  className="mt-4 inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-xs font-bold shadow-lg shadow-violet-600/30 transition-all hover:scale-[1.03] active:scale-95"
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  <span>Open Photo Composer</span>
-                </button>
+                <div className="mt-4 flex items-center justify-center gap-3 flex-wrap">
+                  <button
+                    type="button"
+                    className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-xs font-bold shadow-lg shadow-violet-600/30 transition-all hover:scale-[1.03] active:scale-95"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                    <span>Open Photo Composer</span>
+                  </button>
+                  {files.some((f) => f.isComposedMultiPhoto) && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePlaceOrder();
+                      }}
+                      className="inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all hover:scale-[1.03] active:scale-95"
+                    >
+                      <Printer className="w-4 h-4" />
+                      <span>Submit Print Order ({totalPages} Pages)</span>
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
 
-            {/* Submit Print Order Button */}
+            {/* Main Submit Print Order Button */}
             {files.length > 0 && (
               <div className="pt-2">
                 <button
                   type="button"
-                  onClick={handlePlaceOrder}
+                  onClick={() => handlePlaceOrder()}
                   disabled={submitting}
                   className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-sm shadow-2xl shadow-indigo-600/40 flex items-center justify-center gap-2.5 transition-all hover:scale-[1.01] active:scale-98 disabled:opacity-50 border border-indigo-400/30"
                 >
@@ -572,8 +594,42 @@ export default function CustomerPortalPage() {
 
       </main>
 
+      {/* Persistent Floating Bottom Action Bar for Instant Print Order */}
+      {files.length > 0 && !placedOrder && (
+        <div className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-2xl w-[calc(100%-1.5rem)] glass-card rounded-2xl p-3 sm:p-4 border-2 border-indigo-500/50 shadow-2xl backdrop-blur-xl bg-slate-950/95 flex items-center justify-between gap-2.5 animate-fadeIn">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-600/30 flex-shrink-0">
+              <Printer className="w-4 h-4 sm:w-5 sm:h-5 animate-pulse" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-xs sm:text-sm font-extrabold text-white font-['Outfit'] truncate">
+                  {files.length} Item{files.length > 1 ? 's' : ''} Configured
+                </span>
+                <span className="text-[10px] font-bold text-cyan-300 bg-cyan-950/80 px-2 py-0.5 rounded-full border border-cyan-500/30">
+                  {totalPages} Page(s)
+                </span>
+              </div>
+              <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
+                Ready for instant print counter pickup
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => handlePlaceOrder()}
+            disabled={submitting}
+            className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs sm:text-sm shadow-lg shadow-indigo-600/40 flex items-center gap-2 transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-50 flex-shrink-0 border border-indigo-400/30"
+          >
+            <Printer className="w-4 h-4" />
+            <span>{submitting ? 'Placing...' : 'Submit Print Order'}</span>
+            <ArrowRight className="w-4 h-4 hidden sm:inline" />
+          </button>
+        </div>
+      )}
+
       {/* Footer Info */}
-      <footer className="text-center text-xs text-slate-500 pt-8">
+      <footer className="text-center text-xs text-slate-500 pt-8 pb-16">
         Powered by <Link to="/" className="text-indigo-400 font-bold hover:underline">Print Support</Link> · Automated Document Routing System
       </footer>
 

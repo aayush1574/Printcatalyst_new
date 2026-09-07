@@ -347,9 +347,9 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
   };
 
   // Compose and submit
-  const handleCompose = async () => {
-    if (photos.length < 2) {
-      alert('Please add at least 2 photos.');
+  const handleCompose = async (autoSubmit = false) => {
+    if (photos.length < 1) {
+      alert('Please add at least 1 photo.');
       return;
     }
     setComposing(true);
@@ -414,7 +414,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
         orientation: 'PORTRAIT',
         finishing,
         isComposedMultiPhoto: true,
-      });
+      }, autoSubmit);
 
       // Cleanup
       photos.forEach((p) => {
@@ -674,26 +674,50 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
 
             {/* ── Action Buttons ── */}
             <div className="mt-auto border-t border-slate-800/60 p-3.5 sm:p-4 space-y-2 bg-slate-950/70 flex-shrink-0">
-              <button
-                onClick={handleCompose}
-                disabled={photos.length < 2 || composing}
-                className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 text-white font-bold text-xs shadow-lg shadow-violet-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-              >
-                {composing ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    <span>Composing...</span>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Add to Print Order</span>
-                  </>
-                )}
-              </button>
-              {photos.length < 2 && photos.length > 0 && (
+              {photos.length > 0 && (
+                <div className="flex items-center justify-between text-[11px] text-slate-300 font-medium px-1 pb-1">
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    <span>{photos.length} Photo{photos.length > 1 ? 's' : ''} Ready ({paperSize})</span>
+                  </span>
+                  <span className="text-slate-400 font-mono text-[10px]">{copies} Copy({copies > 1 ? 'ies' : ''})</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleCompose(true)}
+                  disabled={photos.length < 1 || composing}
+                  className="w-full py-2.5 sm:py-3 px-3 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 border border-indigo-400/30"
+                >
+                  {composing ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>Composing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Printer className="w-4 h-4 text-cyan-300" />
+                      <span>Print Order Now</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleCompose(false)}
+                  disabled={photos.length < 1 || composing}
+                  className="w-full py-2.5 sm:py-3 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs border border-slate-600 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                >
+                  <CheckCircle className="w-4 h-4 text-violet-400" />
+                  <span>Add to Order</span>
+                </button>
+              </div>
+
+              {photos.length === 0 && (
                 <p className="text-[10px] text-amber-400/80 text-center font-medium">
-                  Add at least 1 more photo to compose
+                  Select 1–6 photos above to enable print order options
                 </p>
               )}
             </div>

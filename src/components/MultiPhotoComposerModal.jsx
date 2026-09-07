@@ -472,255 +472,204 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-0 overflow-y-auto lg:overflow-hidden min-h-0">
 
           {/* Left Controls Panel (2/5) */}
-          <div className="lg:col-span-2 flex flex-col lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-slate-800/60 bg-slate-950/50">
-            <div className="p-3.5 sm:p-4 space-y-3.5 sm:space-y-4">
+          <div className="lg:col-span-2 flex flex-col lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-slate-800/60 bg-slate-950/50 p-3.5 sm:p-4 space-y-3.5 sm:space-y-4">
 
-              {/* ── Photo Upload Zone ── */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <ImagePlus className="w-3.5 h-3.5 text-violet-400" />
-                  Photos ({photos.length}/6)
-                </h4>
+            {/* ── Photo Upload Zone ── */}
+            <div className="space-y-2">
+              <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <ImagePlus className="w-3.5 h-3.5 text-violet-400" />
+                Photos ({photos.length}/6)
+              </h4>
 
-                {/* Thumbnails */}
-                {photos.length > 0 && (
-                  <div className="flex gap-2 flex-wrap">
-                    {photos.map((p) => (
-                      <div
-                        key={p.id}
-                        className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-slate-700 group shadow-md"
-                      >
-                        <img
-                          src={p.objectUrl}
-                          alt={p.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <button
-                          onClick={() => handleRemovePhoto(p.id)}
-                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shadow-lg"
-                          title="Remove"
-                        >
-                          <X className="w-3 h-3" />
-                        </button>
-                        <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5 truncate px-1">
-                          {p.name}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Drop zone (show only if < 6 photos) */}
-                {photos.length < 6 && (
-                  <div
-                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
-                    onDragLeave={() => setIsDragging(false)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      setIsDragging(false);
-                      handleAddPhotos(e.dataTransfer.files);
-                    }}
-                    onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-3.5 sm:p-5 text-center cursor-pointer transition-all ${
-                      isDragging
-                        ? 'border-violet-400 bg-violet-950/30 scale-[1.01]'
-                        : 'border-slate-700 hover:border-violet-500/60 bg-slate-900/40'
-                    }`}
-                  >
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      multiple
-                      accept="image/png,image/jpeg,image/jpg,image/webp"
-                      onChange={(e) => {
-                        handleAddPhotos(e.target.files);
-                        e.target.value = '';
-                      }}
-                      className="hidden"
-                    />
-                    <ImagePlus className="w-6 h-6 sm:w-7 sm:h-7 mx-auto mb-1.5 text-violet-400/70" />
-                    <p className="text-xs font-semibold text-slate-300">
-                      {photos.length === 0 ? 'Add photos (2–6)' : `Add ${6 - photos.length} more`}
-                    </p>
-                    <p className="text-[10px] text-slate-500 mt-0.5">PNG, JPG, WebP</p>
-                  </div>
-                )}
-
-                {photos.length > 0 && (
-                  <button
-                    onClick={handleReset}
-                    className="text-[10px] text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 transition-colors"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                    Clear All
-                  </button>
-                )}
-              </div>
-
-              {/* ── Layout Selector ── */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <LayoutGrid className="w-3.5 h-3.5 text-violet-400" />
-                  Page Layout
-                </h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
-                  {LAYOUTS.map((l) => (
-                    <button
-                      key={l.id}
-                      onClick={() => setLayout(l.id)}
-                      className={`flex flex-col items-center gap-1 p-2 sm:p-2.5 rounded-xl border text-[10px] font-semibold transition-all ${
-                        layout === l.id
-                          ? 'bg-violet-600/20 border-violet-500/50 text-violet-300 shadow-md shadow-violet-600/10'
-                          : 'bg-slate-900/60 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:border-slate-600'
-                      }`}
+              {/* Thumbnails */}
+              {photos.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {photos.map((p) => (
+                    <div
+                      key={p.id}
+                      className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-slate-700 group shadow-md"
                     >
-                      <l.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                      <span className="truncate w-full text-center">{l.label}</span>
-                    </button>
+                      <img
+                        src={p.objectUrl}
+                        alt={p.name}
+                        className="w-full h-full object-cover"
+                      />
+                      <button
+                        onClick={() => handleRemovePhoto(p.id)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shadow-lg"
+                        title="Remove"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <div className="absolute bottom-0 inset-x-0 bg-black/60 text-[8px] text-white text-center py-0.5 truncate px-1">
+                        {p.name}
+                      </div>
+                    </div>
                   ))}
                 </div>
-              </div>
+              )}
 
-              {/* ── Paper & Margins ── */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Settings2 className="w-3.5 h-3.5 text-violet-400" />
-                  Paper & Margins
-                </h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1 font-medium">Paper Size</label>
-                    <select
-                      value={paperSize}
-                      onChange={(e) => setPaperSize(e.target.value)}
-                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
-                    >
-                      {Object.entries(PAPER_SIZES).map(([key, val]) => (
-                        <option key={key} value={key}>{val.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1 font-medium">Margins</label>
-                    <select
-                      value={margin}
-                      onChange={(e) => setMargin(Number(e.target.value))}
-                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
-                    >
-                      {MARGIN_OPTIONS.map((m) => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                      ))}
-                    </select>
-                  </div>
+              {/* Drop zone (show only if < 6 photos) */}
+              {photos.length < 6 && (
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                  onDragLeave={() => setIsDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsDragging(false);
+                    handleAddPhotos(e.dataTransfer.files);
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-xl p-3.5 sm:p-5 text-center cursor-pointer transition-all ${
+                    isDragging
+                      ? 'border-violet-400 bg-violet-950/30 scale-[1.01]'
+                      : 'border-slate-700 hover:border-violet-500/60 bg-slate-900/40'
+                  }`}
+                >
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    multiple
+                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    onChange={(e) => {
+                      handleAddPhotos(e.target.files);
+                      e.target.value = '';
+                    }}
+                    className="hidden"
+                  />
+                  <ImagePlus className="w-6 h-6 sm:w-7 sm:h-7 mx-auto mb-1.5 text-violet-400/70" />
+                  <p className="text-xs font-semibold text-slate-300">
+                    {photos.length === 0 ? 'Select 1–6 photos' : `Add ${6 - photos.length} more`}
+                  </p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">PNG, JPG, WebP</p>
                 </div>
-              </div>
+              )}
 
-              {/* ── Print Options ── */}
-              <div className="space-y-2">
-                <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Printer className="w-3.5 h-3.5 text-violet-400" />
-                  Print Options
-                </h4>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1 font-medium">Color Mode</label>
-                    <select
-                      value={colorMode}
-                      onChange={(e) => setColorMode(e.target.value)}
-                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
-                    >
-                      <option value="COLOR">Full Color</option>
-                      <option value="BLACK_AND_WHITE">Black & White</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1 font-medium">Copies</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="100"
-                      value={copies}
-                      onChange={(e) => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1 font-medium">Paper Quality</label>
-                    <select
-                      value={paperType}
-                      onChange={(e) => setPaperType(e.target.value)}
-                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
-                    >
-                      <option value="standard_75gsm">Standard 75 GSM</option>
-                      <option value="bond_85gsm">Executive Bond 85 GSM</option>
-                      <option value="glossy_180gsm">Glossy Photo 180 GSM</option>
-                      <option value="cardstock_250gsm">Heavy Cardstock 250 GSM</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-[10px] text-slate-400 block mb-1 font-medium">Finishing</label>
-                    <select
-                      value={finishing}
-                      onChange={(e) => setFinishing(e.target.value)}
-                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
-                    >
-                      <option value="none">No Finishing</option>
-                      <option value="lamination_a4">Lamination</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Action Buttons ── */}
-            <div className="mt-auto border-t border-slate-800/60 p-3.5 sm:p-4 space-y-2 bg-slate-950/70 flex-shrink-0">
               {photos.length > 0 && (
-                <div className="flex items-center justify-between text-[11px] text-slate-300 font-medium px-1 pb-1">
-                  <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
-                    <CheckCircle className="w-3.5 h-3.5" />
-                    <span>{photos.length} Photo{photos.length > 1 ? 's' : ''} Ready ({paperSize})</span>
-                  </span>
-                  <span className="text-slate-400 font-mono text-[10px]">{copies} Copy({copies > 1 ? 'ies' : ''})</span>
-                </div>
-              )}
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <button
-                  type="button"
-                  onClick={() => handleCompose(true)}
-                  disabled={photos.length < 1 || composing}
-                  className="w-full py-2.5 sm:py-3 px-3 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 border border-indigo-400/30"
+                  onClick={handleReset}
+                  className="text-[10px] text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 transition-colors"
                 >
-                  {composing ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      <span>Composing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Printer className="w-4 h-4 text-cyan-300" />
-                      <span>Print Order Now</span>
-                    </>
-                  )}
+                  <Trash2 className="w-3 h-3" />
+                  Clear All
                 </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleCompose(false)}
-                  disabled={photos.length < 1 || composing}
-                  className="w-full py-2.5 sm:py-3 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs border border-slate-600 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                >
-                  <CheckCircle className="w-4 h-4 text-violet-400" />
-                  <span>Add to Order</span>
-                </button>
-              </div>
-
-              {photos.length === 0 && (
-                <p className="text-[10px] text-amber-400/80 text-center font-medium">
-                  Select 1–6 photos above to enable print order options
-                </p>
               )}
             </div>
+
+            {/* ── Layout Selector ── */}
+            <div className="space-y-2">
+              <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <LayoutGrid className="w-3.5 h-3.5 text-violet-400" />
+                Page Layout
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
+                {LAYOUTS.map((l) => (
+                  <button
+                    key={l.id}
+                    onClick={() => setLayout(l.id)}
+                    className={`flex flex-col items-center gap-1 p-2 sm:p-2.5 rounded-xl border text-[10px] font-semibold transition-all ${
+                      layout === l.id
+                        ? 'bg-violet-600/20 border-violet-500/50 text-violet-300 shadow-md shadow-violet-600/10'
+                        : 'bg-slate-900/60 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                    }`}
+                  >
+                    <l.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="truncate w-full text-center">{l.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* ── Paper & Margins ── */}
+            <div className="space-y-2">
+              <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Settings2 className="w-3.5 h-3.5 text-violet-400" />
+                Paper & Margins
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1 font-medium">Paper Size</label>
+                  <select
+                    value={paperSize}
+                    onChange={(e) => setPaperSize(e.target.value)}
+                    className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                  >
+                    {Object.entries(PAPER_SIZES).map(([key, val]) => (
+                      <option key={key} value={key}>{val.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1 font-medium">Margins</label>
+                  <select
+                    value={margin}
+                    onChange={(e) => setMargin(Number(e.target.value))}
+                    className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                  >
+                    {MARGIN_OPTIONS.map((m) => (
+                      <option key={m.value} value={m.value}>{m.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* ── Print Options ── */}
+            <div className="space-y-2">
+              <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Printer className="w-3.5 h-3.5 text-violet-400" />
+                Print Options
+              </h4>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1 font-medium">Color Mode</label>
+                  <select
+                    value={colorMode}
+                    onChange={(e) => setColorMode(e.target.value)}
+                    className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                  >
+                    <option value="COLOR">Full Color</option>
+                    <option value="BLACK_AND_WHITE">Black & White</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1 font-medium">Copies</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={copies}
+                    onChange={(e) => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
+                    className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1 font-medium">Paper Quality</label>
+                  <select
+                    value={paperType}
+                    onChange={(e) => setPaperType(e.target.value)}
+                    className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                  >
+                    <option value="standard_75gsm">Standard 75 GSM</option>
+                    <option value="bond_85gsm">Executive Bond 85 GSM</option>
+                    <option value="glossy_180gsm">Glossy Photo 180 GSM</option>
+                    <option value="cardstock_250gsm">Heavy Cardstock 250 GSM</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] text-slate-400 block mb-1 font-medium">Finishing</label>
+                  <select
+                    value={finishing}
+                    onChange={(e) => setFinishing(e.target.value)}
+                    className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                  >
+                    <option value="none">No Finishing</option>
+                    <option value="lamination_a4">Lamination</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
           </div>
 
           {/* ── Right: Live Canvas Preview (3/5) ── */}
@@ -773,6 +722,56 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
               </p>
             </div>
           </div>
+        </div>
+
+        {/* ── Sticky Modal Action Footer (Always docked at bottom of modal on Mobile & Laptop) ── */}
+        <div className="border-t border-slate-800 bg-slate-950/95 p-3 sm:p-4 space-y-2 flex-shrink-0 z-30 shadow-2xl backdrop-blur-md">
+          {photos.length > 0 && (
+            <div className="flex items-center justify-between text-[11px] text-slate-300 font-medium px-1 pb-1">
+              <span className="flex items-center gap-1.5 text-emerald-400 font-bold">
+                <CheckCircle className="w-3.5 h-3.5" />
+                <span>{photos.length} Photo{photos.length > 1 ? 's' : ''} Selected ({paperSize})</span>
+              </span>
+              <span className="text-slate-400 font-mono text-[10px]">{copies} Copy({copies > 1 ? 'ies' : ''})</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+            <button
+              type="button"
+              onClick={() => handleCompose(true)}
+              disabled={photos.length < 1 || composing}
+              className="w-full py-3 sm:py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-indigo-600/40 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed border border-indigo-400/40"
+            >
+              {composing ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                  <span>Composing & Placing Order...</span>
+                </>
+              ) : (
+                <>
+                  <Printer className="w-4.5 h-4.5 text-cyan-300 animate-pulse" />
+                  <span>Submit Print Order Now</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleCompose(false)}
+              disabled={photos.length < 1 || composing}
+              className="w-full py-3 sm:py-3.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-bold text-xs sm:text-sm border border-slate-600 flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <CheckCircle className="w-4 h-4 text-violet-400" />
+              <span>Add to Order & Continue</span>
+            </button>
+          </div>
+
+          {photos.length === 0 && (
+            <p className="text-[10px] sm:text-xs text-amber-400/90 text-center font-semibold">
+              Select 1–6 photos above to unlock instant Print Order
+            </p>
+          )}
         </div>
       </div>
 

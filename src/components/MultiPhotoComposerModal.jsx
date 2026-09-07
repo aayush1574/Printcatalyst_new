@@ -439,45 +439,45 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-sm" style={{ animation: 'fadeIn 0.25s ease-out' }}>
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/80 backdrop-blur-sm" style={{ animation: 'fadeIn 0.25s ease-out' }}>
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-5xl max-h-[96vh] sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
 
         {/* ── Header ── */}
-        <div className="px-5 py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 border border-violet-500/30 flex items-center justify-center text-violet-400">
-              <LayoutGrid className="w-4.5 h-4.5" />
+        <div className="px-4 sm:px-5 py-3 sm:py-3.5 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 flex-shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 border border-violet-500/30 flex items-center justify-center text-violet-400 flex-shrink-0">
+              <LayoutGrid className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5 sm:gap-2">
                 Multiple Photos on One Page
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 font-semibold border border-violet-500/20">
+                <span className="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full bg-violet-500/15 text-violet-300 font-semibold border border-violet-500/20">
                   COMPOSER
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[10px] sm:text-[11px] text-slate-400">
                 Select 2–6 photos · Choose a layout · Auto-fitted to paper
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="p-1.5 sm:p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* ── Body ── */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-0 overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-5 gap-0 overflow-y-auto lg:overflow-hidden min-h-0">
 
           {/* Left Controls Panel (2/5) */}
-          <div className="lg:col-span-2 flex flex-col overflow-y-auto border-r border-slate-800/60 bg-slate-950/50">
-            <div className="p-4 space-y-4">
+          <div className="lg:col-span-2 flex flex-col lg:overflow-y-auto border-b lg:border-b-0 lg:border-r border-slate-800/60 bg-slate-950/50">
+            <div className="p-3.5 sm:p-4 space-y-3.5 sm:space-y-4">
 
               {/* ── Photo Upload Zone ── */}
-              <div className="space-y-2.5">
-                <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="space-y-2">
+                <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                   <ImagePlus className="w-3.5 h-3.5 text-violet-400" />
                   Photos ({photos.length}/6)
                 </h4>
@@ -488,7 +488,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
                     {photos.map((p) => (
                       <div
                         key={p.id}
-                        className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-700 group shadow-md"
+                        className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border border-slate-700 group shadow-md"
                       >
                         <img
                           src={p.objectUrl}
@@ -497,7 +497,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
                         />
                         <button
                           onClick={() => handleRemovePhoto(p.id)}
-                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center opacity-90 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shadow-lg"
                           title="Remove"
                         >
                           <X className="w-3 h-3" />
@@ -521,7 +521,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
                       handleAddPhotos(e.dataTransfer.files);
                     }}
                     onClick={() => fileInputRef.current?.click()}
-                    className={`border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all ${
+                    className={`border-2 border-dashed rounded-xl p-3.5 sm:p-5 text-center cursor-pointer transition-all ${
                       isDragging
                         ? 'border-violet-400 bg-violet-950/30 scale-[1.01]'
                         : 'border-slate-700 hover:border-violet-500/60 bg-slate-900/40'
@@ -538,7 +538,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
                       }}
                       className="hidden"
                     />
-                    <ImagePlus className="w-7 h-7 mx-auto mb-2 text-violet-400/70" />
+                    <ImagePlus className="w-6 h-6 sm:w-7 sm:h-7 mx-auto mb-1.5 text-violet-400/70" />
                     <p className="text-xs font-semibold text-slate-300">
                       {photos.length === 0 ? 'Add photos (2–6)' : `Add ${6 - photos.length} more`}
                     </p>
@@ -559,23 +559,23 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
 
               {/* ── Layout Selector ── */}
               <div className="space-y-2">
-                <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                   <LayoutGrid className="w-3.5 h-3.5 text-violet-400" />
                   Page Layout
                 </h4>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
                   {LAYOUTS.map((l) => (
                     <button
                       key={l.id}
                       onClick={() => setLayout(l.id)}
-                      className={`flex flex-col items-center gap-1.5 p-2.5 rounded-xl border text-[10px] font-semibold transition-all ${
+                      className={`flex flex-col items-center gap-1 p-2 sm:p-2.5 rounded-xl border text-[10px] font-semibold transition-all ${
                         layout === l.id
                           ? 'bg-violet-600/20 border-violet-500/50 text-violet-300 shadow-md shadow-violet-600/10'
                           : 'bg-slate-900/60 border-slate-700/60 text-slate-400 hover:text-slate-200 hover:border-slate-600'
                       }`}
                     >
-                      <l.icon className="w-5 h-5" />
-                      <span>{l.label}</span>
+                      <l.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <span className="truncate w-full text-center">{l.label}</span>
                     </button>
                   ))}
                 </div>
@@ -583,17 +583,17 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
 
               {/* ── Paper & Margins ── */}
               <div className="space-y-2">
-                <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                   <Settings2 className="w-3.5 h-3.5 text-violet-400" />
                   Paper & Margins
                 </h4>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[10px] text-slate-400 block mb-1 font-medium">Paper Size</label>
                     <select
                       value={paperSize}
                       onChange={(e) => setPaperSize(e.target.value)}
-                      className="w-full px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
                     >
                       {Object.entries(PAPER_SIZES).map(([key, val]) => (
                         <option key={key} value={key}>{val.label}</option>
@@ -605,7 +605,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
                     <select
                       value={margin}
                       onChange={(e) => setMargin(Number(e.target.value))}
-                      className="w-full px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
                     >
                       {MARGIN_OPTIONS.map((m) => (
                         <option key={m.value} value={m.value}>{m.label}</option>
@@ -617,17 +617,17 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
 
               {/* ── Print Options ── */}
               <div className="space-y-2">
-                <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <h4 className="text-[10px] sm:text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
                   <Printer className="w-3.5 h-3.5 text-violet-400" />
                   Print Options
                 </h4>
-                <div className="grid grid-cols-2 gap-2.5">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
                     <label className="text-[10px] text-slate-400 block mb-1 font-medium">Color Mode</label>
                     <select
                       value={colorMode}
                       onChange={(e) => setColorMode(e.target.value)}
-                      className="w-full px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
                     >
                       <option value="COLOR">Full Color</option>
                       <option value="BLACK_AND_WHITE">Black & White</option>
@@ -641,7 +641,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
                       max="100"
                       value={copies}
                       onChange={(e) => setCopies(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-full px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
                     />
                   </div>
                   <div>
@@ -649,7 +649,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
                     <select
                       value={paperType}
                       onChange={(e) => setPaperType(e.target.value)}
-                      className="w-full px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
                     >
                       <option value="standard_75gsm">Standard 75 GSM</option>
                       <option value="bond_85gsm">Executive Bond 85 GSM</option>
@@ -662,7 +662,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
                     <select
                       value={finishing}
                       onChange={(e) => setFinishing(e.target.value)}
-                      className="w-full px-2.5 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
+                      className="w-full px-2 py-1.5 sm:py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-[11px] focus:border-violet-500 focus:outline-none"
                     >
                       <option value="none">No Finishing</option>
                       <option value="lamination_a4">Lamination</option>
@@ -672,12 +672,12 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
               </div>
             </div>
 
-            {/* ── Action Buttons (pinned to bottom) ── */}
-            <div className="mt-auto border-t border-slate-800/60 p-4 space-y-2 bg-slate-950/70 flex-shrink-0">
+            {/* ── Action Buttons ── */}
+            <div className="mt-auto border-t border-slate-800/60 p-3.5 sm:p-4 space-y-2 bg-slate-950/70 flex-shrink-0">
               <button
                 onClick={handleCompose}
                 disabled={photos.length < 2 || composing}
-                className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 text-white font-bold text-xs shadow-lg shadow-violet-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                className="w-full py-2.5 sm:py-3 px-4 rounded-xl bg-gradient-to-r from-violet-600 via-fuchsia-600 to-violet-700 hover:from-violet-500 hover:to-violet-600 text-white font-bold text-xs shadow-lg shadow-violet-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
               >
                 {composing ? (
                   <>
@@ -700,11 +700,11 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
           </div>
 
           {/* ── Right: Live Canvas Preview (3/5) ── */}
-          <div className="lg:col-span-3 flex flex-col items-center justify-center bg-slate-950 p-4 sm:p-6 overflow-y-auto">
-            <div className="space-y-3 w-full flex flex-col items-center">
+          <div className="lg:col-span-3 flex flex-col items-center justify-center bg-slate-950 p-3.5 sm:p-6 lg:overflow-y-auto min-h-[260px] sm:min-h-[300px]">
+            <div className="space-y-2.5 sm:space-y-3 w-full flex flex-col items-center">
 
               {/* Preview header */}
-              <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-400">
+              <div className="flex items-center gap-2 text-[10px] sm:text-[11px] font-semibold text-slate-400">
                 <ZoomIn className="w-3.5 h-3.5 text-violet-400" />
                 <span>Live Page Preview</span>
                 <span className="text-slate-600">·</span>
@@ -712,10 +712,10 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
               </div>
 
               {/* Canvas */}
-              <div className="relative rounded-xl overflow-hidden shadow-2xl border border-slate-700/50" style={{ maxWidth: CANVAS_MAX_W }}>
+              <div className="relative rounded-xl overflow-hidden shadow-2xl border border-slate-700/50 w-full flex justify-center max-w-[340px] sm:max-w-[480px]">
                 <canvas
                   ref={canvasRef}
-                  className="w-full h-auto block"
+                  className="max-w-full h-auto block"
                   style={{ background: '#0f172a' }}
                 />
 
@@ -726,24 +726,24 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
               </div>
 
               {/* Info chips */}
-              <div className="flex flex-wrap items-center justify-center gap-2 text-[10px]">
-                <span className="px-2.5 py-1 rounded-full bg-slate-800/80 text-slate-300 border border-slate-700/60 font-medium">
+              <div className="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 text-[9px] sm:text-[10px]">
+                <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-slate-800/80 text-slate-300 border border-slate-700/60 font-medium">
                   {paperSize} · {margin}mm margins
                 </span>
-                <span className={`px-2.5 py-1 rounded-full font-medium border ${
+                <span className={`px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full font-medium border ${
                   colorMode === 'COLOR'
                     ? 'bg-amber-500/10 text-amber-300 border-amber-500/20'
                     : 'bg-slate-800/80 text-slate-300 border-slate-700/60'
                 }`}>
                   {colorMode === 'COLOR' ? 'Full Color' : 'B&W'}
                 </span>
-                <span className="px-2.5 py-1 rounded-full bg-slate-800/80 text-slate-300 border border-slate-700/60 font-medium">
+                <span className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-full bg-slate-800/80 text-slate-300 border border-slate-700/60 font-medium">
                   {copies} {copies === 1 ? 'Copy' : 'Copies'}
                 </span>
               </div>
 
               {/* Aspect ratio note */}
-              <p className="text-[10px] text-slate-500 text-center max-w-sm">
+              <p className="text-[9px] sm:text-[10px] text-slate-500 text-center max-w-sm px-2">
                 <Sparkles className="w-3 h-3 inline mr-1 text-violet-400/60" />
                 Photos are automatically fitted within cells while preserving original aspect ratios. No cropping or distortion.
               </p>

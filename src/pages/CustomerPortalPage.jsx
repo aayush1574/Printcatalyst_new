@@ -322,17 +322,17 @@ export default function CustomerPortalPage() {
         ) : (
           <>
             {/* ═══ Card 1: Upload Single Document ═══ */}
-            <div className="glass-card rounded-3xl p-6 sm:p-8 space-y-5 border-white/10 shadow-2xl">
+            <div className="glass-card rounded-3xl p-4 sm:p-8 space-y-4 sm:space-y-5 border-white/10 shadow-2xl">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-xl bg-indigo-600/30 text-indigo-400 flex items-center justify-center flex-shrink-0">
                     <Upload className="w-4 h-4" />
                   </div>
-                  <h2 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider">
+                  <h2 className="text-xs sm:text-base font-extrabold text-white uppercase tracking-wider">
                     Upload Single Document
                   </h2>
                 </div>
-                <span className="text-[11px] font-semibold text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-white/5">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-white/5">
                   PDF, Word, Images (up to 100MB)
                 </span>
               </div>
@@ -347,7 +347,7 @@ export default function CustomerPortalPage() {
                   if (e.dataTransfer.files) handleFileUpload(e.dataTransfer.files);
                 }}
                 onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 relative overflow-hidden group ${
+                className={`border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center cursor-pointer transition-all duration-300 relative overflow-hidden group ${
                   isDragging
                     ? 'border-indigo-400 bg-indigo-950/40 scale-[1.01]'
                     : 'border-slate-700 hover:border-indigo-500 bg-slate-950/50 hover:bg-slate-950/80'
@@ -363,11 +363,11 @@ export default function CustomerPortalPage() {
                   className="hidden"
                   accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
                 />
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600/30 to-cyan-500/30 text-indigo-400 flex items-center justify-center mx-auto mb-3.5 group-hover:scale-110 group-hover:text-white transition-all shadow-lg shadow-indigo-600/20">
-                  <FileUp className="w-7 h-7" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-indigo-600/30 to-cyan-500/30 text-indigo-400 flex items-center justify-center mx-auto mb-2.5 sm:mb-3.5 group-hover:scale-110 group-hover:text-white transition-all shadow-lg shadow-indigo-600/20">
+                  <FileUp className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
-                <p className="text-base font-bold text-white">Tap to browse files or drag & drop here</p>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                <p className="text-sm sm:text-base font-bold text-white">Tap to browse files or drag & drop here</p>
+                <p className="text-[11px] sm:text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                   Files are securely verified, scanned for orientation, and prepared for instant spooling.
                 </p>
               </div>
@@ -388,32 +388,32 @@ export default function CustomerPortalPage() {
                   {files.map((item) => (
                     <div
                       key={item.id}
-                      className="glass-card rounded-2xl p-5 space-y-4 transition-all hover:border-indigo-500/40 shadow-md"
+                      className="glass-card rounded-2xl p-4 sm:p-5 space-y-4 transition-all hover:border-indigo-500/40 shadow-md"
                     >
                       <div className="flex items-start justify-between gap-3 border-b border-white/5 pb-3">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-indigo-900/40 text-indigo-400 flex items-center justify-center border border-indigo-500/20">
-                            <FileText className="w-5 h-5" />
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-900/40 text-indigo-400 flex items-center justify-center border border-indigo-500/20 flex-shrink-0">
+                            <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                           </div>
-                          <div>
-                            <h4 className="text-sm font-bold text-white truncate max-w-xs">{item.fileName}</h4>
-                            <p className="text-[11px] text-slate-400">{item.fileSize} · {item.pageCount} page(s)</p>
+                          <div className="min-w-0">
+                            <h4 className="text-xs sm:text-sm font-bold text-white truncate">{item.fileName}</h4>
+                            <p className="text-[10px] sm:text-[11px] text-slate-400">{item.fileSize} · {item.pageCount} page(s)</p>
                           </div>
                         </div>
                         <button
                           onClick={() => removeItem(item.id)}
-                          className="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-colors"
+                          className="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-colors flex-shrink-0"
                         >
                           Remove
                         </button>
                       </div>
 
                       {/* Print Options Controls Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 text-xs">
                         
                         {/* Color Mode */}
                         <div>
-                          <label className="text-slate-400 block mb-1 font-medium">Color Mode</label>
+                          <label className="text-slate-400 block mb-1 font-medium text-[11px]">Color Mode</label>
                           <select
                             value={item.colorMode}
                             onChange={(e) => updateItem(item.id, { colorMode: e.target.value })}
@@ -426,7 +426,7 @@ export default function CustomerPortalPage() {
 
                         {/* Duplex */}
                         <div>
-                          <label className="text-slate-400 block mb-1 font-medium">Sides (Duplex)</label>
+                          <label className="text-slate-400 block mb-1 font-medium text-[11px]">Sides (Duplex)</label>
                           <select
                             value={item.duplex}
                             onChange={(e) => updateItem(item.id, { duplex: e.target.value })}
@@ -439,7 +439,7 @@ export default function CustomerPortalPage() {
 
                         {/* Paper Size */}
                         <div>
-                          <label className="text-slate-400 block mb-1 font-medium">Paper Size</label>
+                          <label className="text-slate-400 block mb-1 font-medium text-[11px]">Paper Size</label>
                           <select
                             value={item.paperSize}
                             onChange={(e) => updateItem(item.id, { paperSize: e.target.value })}
@@ -454,7 +454,7 @@ export default function CustomerPortalPage() {
 
                         {/* Copies */}
                         <div>
-                          <label className="text-slate-400 block mb-1 font-medium">Copies</label>
+                          <label className="text-slate-400 block mb-1 font-medium text-[11px]">Copies</label>
                           <input
                             type="number"
                             min="1"
@@ -468,9 +468,9 @@ export default function CustomerPortalPage() {
                       </div>
 
                       {/* Finishing & Paper GSM */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs pt-2 border-t border-white/5">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 text-xs pt-2 border-t border-white/5">
                         <div>
-                          <label className="text-slate-400 block mb-1 font-medium">Paper Quality</label>
+                          <label className="text-slate-400 block mb-1 font-medium text-[11px]">Paper Quality</label>
                           <select
                             value={item.paperType}
                             onChange={(e) => updateItem(item.id, { paperType: e.target.value })}
@@ -484,7 +484,7 @@ export default function CustomerPortalPage() {
                         </div>
 
                         <div>
-                          <label className="text-slate-400 block mb-1 font-medium">Finishing & Binding</label>
+                          <label className="text-slate-400 block mb-1 font-medium text-[11px]">Finishing & Binding</label>
                           <select
                             value={item.finishing}
                             onChange={(e) => updateItem(item.id, { finishing: e.target.value })}
@@ -506,17 +506,17 @@ export default function CustomerPortalPage() {
             </div>
 
             {/* ═══ Card 2: Multiple Photos on One Page ═══ */}
-            <div className="glass-card rounded-3xl p-6 sm:p-8 space-y-5 border-white/10 shadow-2xl">
+            <div className="glass-card rounded-3xl p-4 sm:p-8 space-y-4 sm:space-y-5 border-white/10 shadow-2xl">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 text-violet-400 flex items-center justify-center border border-violet-500/20">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-600/30 to-fuchsia-600/30 text-violet-400 flex items-center justify-center border border-violet-500/20 flex-shrink-0">
                     <LayoutGrid className="w-4 h-4" />
                   </div>
-                  <h2 className="text-sm sm:text-base font-extrabold text-white uppercase tracking-wider">
+                  <h2 className="text-xs sm:text-base font-extrabold text-white uppercase tracking-wider">
                     Multiple Photos on One Page
                   </h2>
                 </div>
-                <span className="text-[11px] font-semibold text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-white/5">
+                <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 bg-slate-900 px-2.5 py-1 rounded-full border border-white/5">
                   PNG, JPG, WebP (2–6 photos)
                 </span>
               </div>
@@ -524,20 +524,20 @@ export default function CustomerPortalPage() {
               {/* Multi-Photo Launch Zone */}
               <div
                 onClick={() => setIsMultiPhotoOpen(true)}
-                className="border-2 border-dashed rounded-2xl p-10 text-center cursor-pointer transition-all duration-300 relative overflow-hidden group border-slate-700 hover:border-violet-500 bg-slate-950/50 hover:bg-slate-950/80"
+                className="border-2 border-dashed rounded-2xl p-6 sm:p-10 text-center cursor-pointer transition-all duration-300 relative overflow-hidden group border-slate-700 hover:border-violet-500 bg-slate-950/50 hover:bg-slate-950/80"
               >
                 <div className="w-full h-0.5 bg-gradient-to-r from-transparent via-violet-400 to-transparent absolute top-0 left-0 opacity-0 group-hover:opacity-100 group-hover:animate-laser-scan pointer-events-none"></div>
 
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-violet-600/30 to-fuchsia-500/30 text-violet-400 flex items-center justify-center mx-auto mb-3.5 group-hover:scale-110 group-hover:text-white transition-all shadow-lg shadow-violet-600/20">
-                  <LayoutGrid className="w-7 h-7" />
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-violet-600/30 to-fuchsia-500/30 text-violet-400 flex items-center justify-center mx-auto mb-2.5 sm:mb-3.5 group-hover:scale-110 group-hover:text-white transition-all shadow-lg shadow-violet-600/20">
+                  <LayoutGrid className="w-6 h-6 sm:w-7 sm:h-7" />
                 </div>
-                <p className="text-base font-bold text-white">Arrange multiple photos on a single page</p>
-                <p className="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                <p className="text-sm sm:text-base font-bold text-white">Arrange multiple photos on a single page</p>
+                <p className="text-[11px] sm:text-xs text-slate-400 mt-1 max-w-sm mx-auto">
                   Select 2–6 photos and choose a layout (side-by-side, stacked, adaptive grid, hero, 2-col, or 3-col). Auto-fitted to paper with live preview.
                 </p>
                 <button
                   type="button"
-                  className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-xs font-bold shadow-lg shadow-violet-600/30 transition-all hover:scale-[1.03] active:scale-95"
+                  className="mt-4 inline-flex items-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-500 hover:to-fuchsia-500 text-white text-xs font-bold shadow-lg shadow-violet-600/30 transition-all hover:scale-[1.03] active:scale-95"
                 >
                   <LayoutGrid className="w-4 h-4" />
                   <span>Open Photo Composer</span>

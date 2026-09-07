@@ -1009,7 +1009,23 @@ if (fs.existsSync(DIST_DIR)) {
 }
 
 const HOST = '0.0.0.0';
-server.listen(PORT, HOST, () => {
-  console.log(`Print Support Backend Server running on http://${HOST}:${PORT}`);
+
+// Wait for database to finish loading from cloud before starting server
+db.ready().then(() => {
+  server.listen(PORT, HOST, () => {
+    console.log(`Print Support Backend Server running on http://${HOST}:${PORT}`);
+    if (process.env.JSONBIN_API_KEY && process.env.JSONBIN_BIN_ID) {
+      console.log('☁️  Cloud persistence enabled (JSONBin.io)');
+    } else {
+      console.log('⚠️  No cloud persistence configured. Data will be lost on redeploy.');
+      console.log('   Set JSONBIN_API_KEY and JSONBIN_BIN_ID env vars for permanent storage.');
+    }
+  });
+}).catch((err) => {
+  console.error('Failed to initialize database:', err);
+  // Start server anyway with local fallback
+  server.listen(PORT, HOST, () => {
+    console.log(`Print Support Backend Server running on http://${HOST}:${PORT} (local fallback)`);
+  });
 });
 

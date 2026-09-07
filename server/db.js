@@ -1,11 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
+// ─── Cloud Persistence via JSONBin.io ───
+// Set these environment variables on your hosting platform (Render/Railway/etc):
+//   JSONBIN_API_KEY  - Your JSONBin.io Master Key (get free at https://jsonbin.io)
+//   JSONBIN_BIN_ID   - The Bin ID (created automatically on first run if empty)
+const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY || '';
+const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID || '';
+const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
+
+// ─── Local file fallback for development ───
 const DATA_DIR = path.join(__dirname, 'data');
 if (!fs.existsSync(DATA_DIR)) {
   fs.mkdirSync(DATA_DIR, { recursive: true });
 }
-
 const DB_FILE = path.join(DATA_DIR, 'database.json');
 const BACKUP_FILE = path.join(DATA_DIR, 'database.backup.json');
 
@@ -187,12 +195,99 @@ const defaultData = {
   supportEnquiries: []
 };
 
+// ─── Cloud Sync Helper (JSONBin.io) ───
+// Reads and writes data to JSONBin.io for persistence across deploys.
+// Falls back gracefully to local file if JSONBin is not configured.
+
+async function cloudRead() {
+  if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return null;
+  try {
+    const res = await fetch(`${JSONBIN_BASE}/${JSONBIN_BIN_ID}/latest`, {
+      headers: { 'X-Master-Key': JSONBIN_API_KEY }
+    });
+    if (!res.ok) {
+      console.warn('⚠️ [DB] Cloud read failed:', res.status, res.statusText);
+      return null;
+    }
+    const json = await res.json();
+    // JSONBin wraps data in { record: {...} }
+    return json.record || json;
+  } catch (e) {
+    console.warn('⚠️ [DB] Cloud read error:', e.message);
+    return null;
+  }
+}
+
+// Debounced cloud write - batches rapid saves into one request
+let _cloudWriteTimer = null;
+let _pendingCloudData = null;
+
+function cloudWriteDebounced(data) {
+  if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return;
+  _pendingCloudData = data;
+  if (_cloudWriteTimer) clearTimeout(_cloudWriteTimer);
+  _cloudWriteTimer = setTimeout(async () => {
+    const toWrite = _pendingCloudData;
+    _pendingCloudData = null;
+    try {
+      const res = await fetch(`${JSONBIN_BASE}/${JSONBIN_BIN_ID}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Master-Key': JSONBIN_API_KEY,
+          'X-Bin-Versioning': 'false'
+        },
+        body: JSON.stringify(toWrite)
+      });
+      if (!res.ok) {
+        console.warn('⚠️ [DB] Cloud write failed:', res.status);
+      } else {
+        console.log('☁️  [DB] Cloud sync OK');
+      }
+    } catch (e) {
+      console.warn('⚠️ [DB] Cloud write error:', e.message);
+    }
+  }, 2000); // 2s debounce to batch rapid saves
+}
+
 class Database {
   constructor() {
-    this.data = this.load();
+    this.data = null;
+    this._ready = this._init();
   }
 
-  load() {
+  async _init() {
+    // 1. Try loading from cloud first (survives redeploys)
+    const cloudData = await cloudRead();
+    if (cloudData && typeof cloudData === 'object' && Array.isArray(cloudData.shops) && cloudData.shops.length > 0) {
+      console.log('☁️  [DB] Loaded data from cloud storage (' + cloudData.shops.length + ' shops, ' + (cloudData.orders || []).length + ' orders)');
+      this.data = {
+        ...defaultData,
+        ...cloudData,
+        counters: cloudData.counters || { global: 0 }
+      };
+      // Mirror to local file for fast subsequent reads
+      this._saveLocal(this.data);
+      return;
+    }
+
+    // 2. Fall back to local file
+    this.data = this._loadLocal();
+
+    // 3. If we have cloud configured but no data there yet, seed it
+    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
+      console.log('☁️  [DB] Seeding cloud with local data...');
+      cloudWriteDebounced(this.data);
+    }
+  }
+
+  // Wait for async initialization to complete
+  async ready() {
+    await this._ready;
+    return this;
+  }
+
+  _loadLocal() {
     try {
       if (fs.existsSync(DB_FILE)) {
         const raw = fs.readFileSync(DB_FILE, 'utf8');
@@ -233,11 +328,11 @@ class Database {
         console.error('⚠️ [DB] Backup restore error:', backupErr.message);
       }
     }
-    this.save(defaultData);
-    return defaultData;
+    this._saveLocal(defaultData);
+    return { ...defaultData };
   }
 
-  save(data = this.data) {
+  _saveLocal(data = this.data) {
     try {
       const serialized = JSON.stringify(data, null, 2);
       fs.writeFileSync(DB_FILE, serialized, 'utf8');
@@ -245,6 +340,13 @@ class Database {
     } catch (e) {
       console.error('⚠️ [DB] Error persisting database to disk:', e.message);
     }
+  }
+
+  save(data = this.data) {
+    // Save locally (fast)
+    this._saveLocal(data);
+    // Save to cloud (debounced, async)
+    cloudWriteDebounced(data);
   }
 
   getShops() { return this.data.shops || []; }
@@ -422,4 +524,6 @@ class Database {
   }
 }
 
-module.exports = new Database();
+// Create singleton and export
+const db = new Database();
+module.exports = db;

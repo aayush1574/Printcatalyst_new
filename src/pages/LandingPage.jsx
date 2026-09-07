@@ -9,7 +9,7 @@ import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import AntigravityCanvas from '../components/AntigravityCanvas';
 import HolographicSpooler3D from '../components/HolographicSpooler3D';
-import Interactive3DCalculator from '../components/Interactive3DCalculator';
+
 
 export default function LandingPage() {
   const [activeSimulationStep, setActiveSimulationStep] = useState(0);
@@ -242,8 +242,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Interactive 3D ROI & Savings Simulator */}
-      <Interactive3DCalculator />
+
 
       <Footer />
     </div>

@@ -10,6 +10,7 @@ import FAQPage from './pages/FAQPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { OrderManagementPage, PrinterRoutingPage } from './pages/FeaturePages';
 import { GuidePage, LegalPage, ContactPage } from './pages/GuidesAndLegalPages';
+import { useAuth } from './context/AuthContext';
 
 // Code-split heavy interactive dashboards
 const MerchantDashboardPage = lazy(() => import('./pages/MerchantDashboardPage'));
@@ -28,6 +29,14 @@ function PageLoader() {
 }
 
 export default function App() {
+  const { loading } = useAuth();
+
+  // Wait for auth session check to finish before rendering routes
+  // This prevents blank pages from lazy-loaded pages reading stale auth state
+  if (loading) {
+    return <PageLoader />;
+  }
+
   return (
     <Suspense fallback={<PageLoader />}>
       <Routes>

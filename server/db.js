@@ -5,8 +5,8 @@ const path = require('path');
 // Set these environment variables on your hosting platform (Render/Railway/etc):
 //   JSONBIN_API_KEY  - Your JSONBin.io Master Key (get free at https://jsonbin.io)
 //   JSONBIN_BIN_ID   - The Bin ID (created automatically on first run if empty)
-const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY || '';
-const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID || '';
+const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY || '$2a$10$r2qT4CiAEBpCBqZH84GFAObeeMPKCNdp3PqEa.FDaV98rwSKjvYMe';
+const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID || '6a9e4032ffd5d16053e7b0dd';
 const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
 
 // ─── Local file fallback for development ───

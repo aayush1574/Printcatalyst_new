@@ -165,6 +165,8 @@ app.get('/api/v1/health', (req, res) => {
     status: 'online',
     version: '1.0.0',
     uptimeSeconds: Math.floor(process.uptime()),
+    cloudEnabled: db.isCloudEnabled(),
+    storage: db.isCloudEnabled() ? 'mongodb_atlas' : 'local_json',
     activeShops: db.getShops().length,
     activeWsClients: clients.size,
     timestamp: new Date().toISOString()

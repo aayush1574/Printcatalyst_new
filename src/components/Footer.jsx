@@ -19,18 +19,22 @@ export default function Footer() {
             <p className="text-slate-400 text-sm leading-relaxed max-w-sm">
               The premier print shop automation software designed specifically for Indian Xerox centers, stationery stores, photocopy hubs, and high-volume document counters.
             </p>
-            <div className="pt-2 flex flex-col gap-2 text-xs text-slate-400">
+            <div className="pt-2 flex flex-col gap-2.5 text-xs text-slate-400">
               <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-indigo-400" />
-                <span>support@printsupport.in</span>
+                <span className="text-slate-300 font-medium">Founder / Contact:</span>
+                <span className="text-white font-semibold">Aayush Purohit</span>
               </div>
               <div className="flex items-center gap-2">
                 <Phone className="w-4 h-4 text-emerald-400" />
-                <span>+91 98765 43210 (WhatsApp Support)</span>
+                <a href="tel:+917225083904" className="hover:text-emerald-300 transition-colors">+91 72250 83904 (Call / WhatsApp)</a>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-amber-400" />
-                <span>New Delhi · Bangalore · Mumbai · Hyderabad</span>
+                <span>Vidisha, Madhya Pradesh (MP), India</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-indigo-400" />
+                <span>support@printsupport.in</span>
               </div>
             </div>
           </div>

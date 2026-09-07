@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Send, CheckCircle2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle2, User } from 'lucide-react';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 
@@ -68,16 +68,40 @@ export function ContactPage() {
             <h2 className="font-bold text-white text-base">Direct Channels</h2>
             <div className="space-y-4 text-slate-300">
               <div className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-indigo-400" />
-                <span>support@printsupport.in</span>
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <User className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Founder & Lead Contact</p>
+                  <p className="text-sm font-bold text-white">Aayush Purohit</p>
+                </div>
               </div>
               <div className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-emerald-400" />
-                <span>+91 98765 43210 (WhatsApp Support)</span>
+                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                  <Phone className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Phone & WhatsApp</p>
+                  <a href="tel:+917225083904" className="text-sm font-bold text-emerald-400 hover:underline">+91 72250 83904</a>
+                </div>
               </div>
               <div className="flex items-center gap-3">
-                <MapPin className="w-5 h-5 text-amber-400" />
-                <span>Delhi NCR · Bangalore · Mumbai</span>
+                <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                  <MapPin className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Location</p>
+                  <p className="text-sm font-bold text-white">Vidisha, Madhya Pradesh (MP), India</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
+                  <Mail className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Email</p>
+                  <a href="mailto:support@printsupport.in" className="text-sm font-bold text-white hover:underline">support@printsupport.in</a>
+                </div>
               </div>
             </div>
           </div>

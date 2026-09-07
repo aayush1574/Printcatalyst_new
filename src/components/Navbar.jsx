@@ -92,6 +92,17 @@ export default function Navbar() {
             </Link>
 
             <Link
+              to="/contact"
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                isCurrent('/contact')
+                  ? 'text-white bg-indigo-600/30 border border-indigo-500/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+              }`}
+            >
+              Contact
+            </Link>
+
+            <Link
               to="/admin"
               className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1 ${
                 isCurrent('/admin')
@@ -183,6 +194,13 @@ export default function Navbar() {
               className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors"
             >
               FAQ
+            </Link>
+            <Link
+              to="/contact"
+              onClick={() => setMobileMenuOpen(false)}
+              className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800/60 transition-colors"
+            >
+              Contact
             </Link>
 
             <div className="my-2 border-t border-slate-800"></div>

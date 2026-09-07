@@ -43,9 +43,9 @@ export default function CustomerPortalPage() {
           id: 'shop_demo',
           name: 'Print Support',
           slug: shopId || 'printsupport-hub',
-          address: 'Shop No. 1, Main Market',
+          address: 'Vidisha, Madhya Pradesh (MP)',
           upiId: 'printsupport@okaxis',
-          phone: '+91 98765 43210'
+          phone: '+91 72250 83904'
         });
         setLoading(false);
       }

@@ -176,10 +176,10 @@ export default function Interactive3DCalculator() {
                 ₹{(wasteSavedPerMonth * 12 + monthlyHoursSaved * 12 * 200).toLocaleString('en-IN')}
               </div>
               <Link
-                to="/pricing"
+                to="/contact"
                 className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/20 transition-all hover:scale-102"
               >
-                <span>Choose Your Plan (Starts ₹999/mo)</span>
+                <span>Get Started Today</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>

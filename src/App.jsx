@@ -5,7 +5,6 @@ import ProductTourPage from './pages/ProductTourPage';
 import WhatsAppTourPage from './pages/WhatsAppTourPage';
 import QROrdersTourPage from './pages/QROrdersTourPage';
 import HowItWorksPage from './pages/HowItWorksPage';
-import PricingPage from './pages/PricingPage';
 import FAQPage from './pages/FAQPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { OrderManagementPage, PrinterRoutingPage } from './pages/FeaturePages';
@@ -45,7 +44,6 @@ export default function App() {
         <Route path="/whatsapp-printing-software" element={<WhatsAppTourPage />} />
         <Route path="/qr-code-printing-system" element={<QROrdersTourPage />} />
         <Route path="/how-it-works" element={<HowItWorksPage />} />
-        <Route path="/pricing" element={<PricingPage />} />
         <Route path="/faq" element={<FAQPage />} />
         <Route path="/print-order-management-software" element={<OrderManagementPage />} />
         <Route path="/automatic-printer-routing" element={<PrinterRoutingPage />} />

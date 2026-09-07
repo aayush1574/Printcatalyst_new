@@ -313,7 +313,11 @@ app.get('/api/v1/merchants/profile', (req, res) => {
 app.put('/api/v1/merchants/profile', (req, res) => {
   const shop = getRequestShop(req);
   if (!shop) return res.status(404).json({ success: false, message: 'Shop not found' });
-  const updated = db.updateShop(shop.id, req.body);
+  // PROTECT: Never allow slug or id to be changed (QR permanence)
+  const updates = { ...req.body };
+  delete updates.slug;
+  delete updates.id;
+  const updated = db.updateShop(shop.id, updates);
   res.json({ success: true, shop: updated });
 });
 
@@ -321,8 +325,29 @@ app.put('/api/v1/merchants/profile', (req, res) => {
 app.get('/api/v1/portal/shop/:slugOrId', async (req, res) => {
   const { slugOrId } = req.params;
   let shop = db.getShopBySlug(slugOrId) || db.getShopById(slugOrId);
+
+  // If shop not found, try fallback to first shop or return a useful default
   if (!shop) {
-    shop = db.getShopById('shop_demo');
+    const allShops = db.getShops();
+    shop = allShops[0] || null;
+  }
+  if (!shop) {
+    // Return a safe default so the portal page doesn't crash
+    return res.json({
+      shop: {
+        id: 'shop_default',
+        slug: slugOrId,
+        name: 'Print Support',
+        ownerName: 'Manager',
+        address: 'Contact shop for address',
+        phone: '',
+        upiId: '',
+        autoPrintEnabled: true
+      },
+      pricing: {},
+      portalUrl: `${req.protocol}://${req.get('host')}/portal/${slugOrId}`,
+      qrCodeDataUrl: ''
+    });
   }
 
   const pricing = db.getPricing(shop.id);
@@ -940,7 +965,13 @@ app.put('/api/v1/admin/shops/:id', (req, res) => {
     return res.status(404).json({ success: false, message: 'Shop not found' });
   }
 
-  const updated = db.updateShop(id, req.body);
+  // PROTECT: Never allow slug or id to be changed once created
+  // This ensures QR codes remain permanent and working forever
+  const updates = { ...req.body };
+  delete updates.slug;
+  delete updates.id;
+
+  const updated = db.updateShop(id, updates);
   res.json({ success: true, shop: updated });
 });
 

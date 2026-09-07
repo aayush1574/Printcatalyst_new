@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: printcatalyst-backend
+    runtime: node
+    plan: free
+    region: singapore
+    buildCommand: npm install
+    startCommand: node server/server.js
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: MONGODB_DB_NAME
+        value: printcatalyst
+      - key: MONGODB_URI
+        value: mongodb+srv://purohitaayush23:aayush2004@cluster0.rgfr9wi.mongodb.net/printcatalyst?retryWrites=true&w=majority&appName=Cluster0

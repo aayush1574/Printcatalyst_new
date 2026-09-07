@@ -1045,11 +1045,11 @@ const HOST = '0.0.0.0';
 db.ready().then(() => {
   server.listen(PORT, HOST, () => {
     console.log(`Print Support Backend Server running on http://${HOST}:${PORT}`);
-    if (process.env.JSONBIN_API_KEY && process.env.JSONBIN_BIN_ID) {
-      console.log('☁️  Cloud persistence enabled (JSONBin.io)');
+    if (db.isCloudEnabled()) {
+      console.log('🍃 MongoDB Atlas cloud persistence active');
     } else {
-      console.log('⚠️  No cloud persistence configured. Data will be lost on redeploy.');
-      console.log('   Set JSONBIN_API_KEY and JSONBIN_BIN_ID env vars for permanent storage.');
+      console.log('📁 Local file persistence active (server/data/database.json)');
+      console.log('   Set MONGODB_URI env var to enable permanent MongoDB Atlas cloud storage.');
     }
   });
 }).catch((err) => {

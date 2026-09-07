@@ -1,13 +1,15 @@
 const fs = require('fs');
 const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 
-// ─── Cloud Persistence via JSONBin.io ───
-// Set these environment variables on your hosting platform (Render/Railway/etc):
-//   JSONBIN_API_KEY  - Your JSONBin.io Master Key (get free at https://jsonbin.io)
-//   JSONBIN_BIN_ID   - The Bin ID (created automatically on first run if empty)
-const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY || '$2a$10$r2qT4CiAEBpCBqZH84GFAObeeMPKCNdp3PqEa.FDaV98rwSKjvYMe';
-const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID || '6a9e4032ffd5d16053e7b0dd';
-const JSONBIN_BASE = 'https://api.jsonbin.io/v3/b';
+const { MongoClient } = require('mongodb');
+
+// ─── Cloud Persistence via MongoDB Atlas ───
+// Set MONGODB_URI in your environment / Render / Railway / .env:
+// Example: mongodb+srv://<username>:<password>@cluster0.mongodb.net/printcatalyst?retryWrites=true&w=majority
+const MONGODB_URI = process.env.MONGODB_URI || '';
+const MONGODB_DB_NAME = process.env.MONGODB_DB_NAME || 'printcatalyst';
 
 // ─── Local file fallback for development ───
 const DATA_DIR = path.join(__dirname, 'data');
@@ -195,59 +197,62 @@ const defaultData = {
   supportEnquiries: []
 };
 
-// ─── Cloud Sync Helper (JSONBin.io) ───
-// Reads and writes data to JSONBin.io for persistence across deploys.
-// Falls back gracefully to local file if JSONBin is not configured.
+// ─── Cloud Sync Helper (MongoDB Atlas) ───
+let _mongoClient = null;
+let _mongoDb = null;
+let _mongoSyncTimer = null;
+let _pendingMongoData = null;
 
-async function cloudRead() {
-  if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return null;
+async function connectMongoDB() {
+  if (!MONGODB_URI) return null;
   try {
-    const res = await fetch(`${JSONBIN_BASE}/${JSONBIN_BIN_ID}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_API_KEY }
+    _mongoClient = new MongoClient(MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000,
+      connectTimeoutMS: 10000,
     });
-    if (!res.ok) {
-      console.warn('⚠️ [DB] Cloud read failed:', res.status, res.statusText);
-      return null;
-    }
-    const json = await res.json();
-    // JSONBin wraps data in { record: {...} }
-    return json.record || json;
-  } catch (e) {
-    console.warn('⚠️ [DB] Cloud read error:', e.message);
+    await _mongoClient.connect();
+    _mongoDb = _mongoClient.db(MONGODB_DB_NAME);
+    console.log(`🍃 [DB] Connected to MongoDB Atlas successfully (Database: ${MONGODB_DB_NAME})`);
+    return _mongoDb;
+  } catch (err) {
+    console.warn('⚠️ [DB] MongoDB Atlas connection error:', err.message);
+    _mongoClient = null;
+    _mongoDb = null;
     return null;
   }
 }
 
-// Debounced cloud write - batches rapid saves into one request
-let _cloudWriteTimer = null;
-let _pendingCloudData = null;
-
-function cloudWriteDebounced(data) {
-  if (!JSONBIN_API_KEY || !JSONBIN_BIN_ID) return;
-  _pendingCloudData = data;
-  if (_cloudWriteTimer) clearTimeout(_cloudWriteTimer);
-  _cloudWriteTimer = setTimeout(async () => {
-    const toWrite = _pendingCloudData;
-    _pendingCloudData = null;
+function mongoSyncDebounced(data) {
+  if (!_mongoDb) return;
+  _pendingMongoData = data;
+  if (_mongoSyncTimer) clearTimeout(_mongoSyncTimer);
+  _mongoSyncTimer = setTimeout(async () => {
+    const toSave = _pendingMongoData;
+    _pendingMongoData = null;
+    if (!_mongoDb || !toSave) return;
     try {
-      const res = await fetch(`${JSONBIN_BASE}/${JSONBIN_BIN_ID}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Master-Key': JSONBIN_API_KEY,
-          'X-Bin-Versioning': 'false'
+      const colState = _mongoDb.collection('app_state');
+      await colState.updateOne(
+        { _id: 'main_state' },
+        {
+          $set: {
+            shops: toSave.shops || [],
+            orders: toSave.orders || [],
+            pricing: toSave.pricing || {},
+            printers: toSave.printers || [],
+            counters: toSave.counters || {},
+            plans: toSave.plans || [],
+            supportEnquiries: toSave.supportEnquiries || [],
+            updatedAt: new Date()
+          }
         },
-        body: JSON.stringify(toWrite)
-      });
-      if (!res.ok) {
-        console.warn('⚠️ [DB] Cloud write failed:', res.status);
-      } else {
-        console.log('☁️  [DB] Cloud sync OK');
-      }
+        { upsert: true }
+      );
+      console.log('🍃 [DB] MongoDB Atlas sync OK');
     } catch (e) {
-      console.warn('⚠️ [DB] Cloud write error:', e.message);
+      console.warn('⚠️ [DB] MongoDB Atlas sync error:', e.message);
     }
-  }, 2000); // 2s debounce to batch rapid saves
+  }, 1000);
 }
 
 class Database {
@@ -257,28 +262,36 @@ class Database {
   }
 
   async _init() {
-    // 1. Try loading from cloud first (survives redeploys)
-    const cloudData = await cloudRead();
-    if (cloudData && typeof cloudData === 'object' && Array.isArray(cloudData.shops) && cloudData.shops.length > 0) {
-      console.log('☁️  [DB] Loaded data from cloud storage (' + cloudData.shops.length + ' shops, ' + (cloudData.orders || []).length + ' orders)');
-      this.data = {
-        ...defaultData,
-        ...cloudData,
-        counters: cloudData.counters || { global: 0 }
-      };
-      // Mirror to local file for fast subsequent reads
-      this._saveLocal(this.data);
-      return;
+    // 1. Try loading from MongoDB Atlas first (if configured)
+    if (MONGODB_URI) {
+      const dbInstance = await connectMongoDB();
+      if (dbInstance) {
+        try {
+          const colState = dbInstance.collection('app_state');
+          const doc = await colState.findOne({ _id: 'main_state' });
+          if (doc && Array.isArray(doc.shops) && doc.shops.length > 0) {
+            console.log(`🍃 [DB] Loaded data from MongoDB Atlas (${doc.shops.length} shops, ${(doc.orders || []).length} orders)`);
+            this.data = {
+              ...defaultData,
+              ...doc,
+              counters: doc.counters || { global: 0 }
+            };
+            this._saveLocal(this.data);
+            return;
+          } else {
+            console.log('🍃 [DB] MongoDB Atlas connected. Seeding initial data from local store...');
+            this.data = this._loadLocal();
+            mongoSyncDebounced(this.data);
+            return;
+          }
+        } catch (readErr) {
+          console.warn('⚠️ [DB] Error reading from MongoDB Atlas:', readErr.message);
+        }
+      }
     }
 
     // 2. Fall back to local file
     this.data = this._loadLocal();
-
-    // 3. If we have cloud configured but no data there yet, seed it
-    if (JSONBIN_API_KEY && JSONBIN_BIN_ID) {
-      console.log('☁️  [DB] Seeding cloud with local data...');
-      cloudWriteDebounced(this.data);
-    }
   }
 
   // Wait for async initialization to complete
@@ -345,8 +358,14 @@ class Database {
   save(data = this.data) {
     // Save locally (fast)
     this._saveLocal(data);
-    // Save to cloud (debounced, async)
-    cloudWriteDebounced(data);
+    // Save to MongoDB Atlas if connected
+    if (_mongoDb) {
+      mongoSyncDebounced(data);
+    }
+  }
+
+  isCloudEnabled() {
+    return Boolean(_mongoDb);
   }
 
   getShops() { return this.data.shops || []; }

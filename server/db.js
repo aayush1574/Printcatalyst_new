@@ -207,8 +207,9 @@ async function connectMongoDB() {
   if (!MONGODB_URI) return null;
   try {
     _mongoClient = new MongoClient(MONGODB_URI, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 12000,
+      family: 4,
     });
     await _mongoClient.connect();
     _mongoDb = _mongoClient.db(MONGODB_DB_NAME);
@@ -216,6 +217,9 @@ async function connectMongoDB() {
     return _mongoDb;
   } catch (err) {
     console.warn('⚠️ [DB] MongoDB Atlas connection error:', err.message);
+    if (err.message && (err.message.includes('alert') || err.message.includes('SSL') || err.message.includes('timed out'))) {
+      console.warn('💡 [DB Hint] Ensure MongoDB Atlas -> Network Access allows 0.0.0.0/0 (Access from Anywhere) for cloud hosts like Render.');
+    }
     _mongoClient = null;
     _mongoDb = null;
     return null;

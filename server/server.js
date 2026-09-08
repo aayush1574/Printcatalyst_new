@@ -816,55 +816,85 @@ app.post('/api/v1/printers/auto-detect', (req, res) => {
 app.get('/api/v1/agent/download-connector', (req, res) => {
   const shopId = req.query.shopId || 'shop_demo';
   const shop = db.getShopById(shopId);
-  const shopName = shop ? shop.name : 'Print Catalyst Shop';
+  const shopName = (shop ? shop.name : 'Print Catalyst Shop').replace(/"/g, '');
   const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
   const host = req.get('host') || 'localhost:5000';
   const serverUrl = `${protocol}://${host}`;
 
+  const psScript = `
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+Write-Host ""
+Write-Host "======================================================================" -ForegroundColor Cyan
+Write-Host "          PRINT CATALYST - 1-CLICK INSTANT PRINTER BRIDGE" -ForegroundColor Cyan
+Write-Host "======================================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  Shop Name  : ${shopName}" -ForegroundColor White
+Write-Host "  Shop ID    : ${shopId}" -ForegroundColor White
+Write-Host "  Server URL : ${serverUrl}" -ForegroundColor White
+Write-Host ""
+Write-Host "  Scanning Windows for installed USB, Wi-Fi and Network Printers..." -ForegroundColor Gray
+Write-Host "----------------------------------------------------------------------" -ForegroundColor DarkGray
+Write-Host ""
+
+$installed = Get-Printer | Select-Object Name, DriverName, Default
+if (-not $installed) {
+  Write-Host " [!] No printers found. Please ensure your printer is turned on and connected." -ForegroundColor Yellow
+} else {
+  $list = @()
+  foreach ($p in $installed) {
+    $isColor = ($p.Name -match '(?i)color|tank|photo|c3530|l8050|deskjet|inkjet' -or ($p.DriverName -and $p.DriverName -match '(?i)color'))
+    $type = if ($isColor) { 'COLOR_INKJET_PHOTO' } else { 'MONO_LASER' }
+    $list += @{
+      name = $p.Name
+      driver = $p.DriverName
+      isDefault = [bool]$p.Default
+      supportsColor = [bool]$isColor
+      type = $type
+    }
+    Write-Host ("   [+] Detected: " + $p.Name + " (" + $(if ($isColor) {'Color'} else {'Monochrome'}) + ")") -ForegroundColor Green
+  }
+
+  $payload = @{
+    shopId = '${shopId}'
+    hostname = $env:COMPUTERNAME
+    printers = $list
+  } | ConvertTo-Json -Depth 4
+
+  Write-Host ""
+  Write-Host "[*] Linking detected printers with your online Dashboard..." -ForegroundColor Yellow
+
+  try {
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls11 -bor [System.Net.SecurityProtocolType]::Tls
+    
+    $res = Invoke-RestMethod -Uri "${serverUrl}/api/v1/printers/auto-detect" -Method Post -Body $payload -ContentType "application/json"
+    
+    Write-Host ""
+    Write-Host "======================================================================" -ForegroundColor Green
+    Write-Host ("  [SUCCESS] All " + $installed.Count + " printer(s) are now LIVE in your Dashboard!") -ForegroundColor Green
+    Write-Host "  Go to your browser tab - your printers are ready for instant printing." -ForegroundColor Green
+    Write-Host "======================================================================" -ForegroundColor Green
+  } catch {
+    Write-Host ""
+    Write-Host (" [!] Connection error: " + $_.Exception.Message) -ForegroundColor Red
+  }
+}
+
+Write-Host ""
+Write-Host "Press any key to close this setup window..." -ForegroundColor Gray
+$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+`;
+
+  const encodedPs = Buffer.from(psScript, 'utf16le').toString('base64');
+
   const batScript = `@echo off\r
+setlocal\r
 chcp 65001 >nul\r
 title Print Catalyst - 1-Click Printer Bridge\r
 color 0B\r
 cls\r
-echo ======================================================================\r
-echo           PRINT CATALYST - 1-CLICK INSTANT PRINTER BRIDGE\r
-echo ======================================================================\r
-echo.\r
-echo   Shop Name  : ${shopName}\r
-echo   Shop ID    : ${shopId}\r
-echo   Server URL : ${serverUrl}\r
-echo.\r
-echo   Connecting your local printer to the Print Catalyst Dashboard...\r
-echo ----------------------------------------------------------------------\r
-echo.\r
-echo [*] Scanning Windows for installed USB, Wi-Fi and Network Printers...\r
-\r
-powershell -NoProfile -ExecutionPolicy Bypass -Command ^\r
-  "$ErrorActionPreference = 'SilentlyContinue'; ^\r
-  $installed = Get-Printer | Select-Object Name, DriverName, Default; ^\r
-  if (-not $installed) { Write-Host ' [!] No printers found. Please ensure your printer is turned on and connected.' -ForegroundColor Yellow; exit } ^\r
-  $list = @(); ^\r
-  foreach ($p in $installed) { ^\r
-    $isColor = ($p.Name -match '(?i)color|tank|photo|c3530|l8050|deskjet|inkjet' -or $p.DriverName -match '(?i)color'); ^\r
-    $type = if ($isColor) { 'COLOR_INKJET_PHOTO' } else { 'MONO_LASER' }; ^\r
-    $list += @{ name = $p.Name; driver = $p.DriverName; isDefault = [bool]$p.Default; supportsColor = [bool]$isColor; type = $type }; ^\r
-    Write-Host ('   [+] Detected: ' + $p.Name + ' (' + $(if ($isColor) {'Color'} else {'Monochrome'}) + ')') -ForegroundColor Cyan; ^\r
-  } ^\r
-  $payload = @{ shopId = '${shopId}'; hostname = $env:COMPUTERNAME; printers = $list } | ConvertTo-Json -Depth 4; ^\r
-  try { ^\r
-    $res = Invoke-RestMethod -Uri '${serverUrl}/api/v1/printers/auto-detect' -Method Post -Body $payload -ContentType 'application/json'; ^\r
-    Write-Host ''; ^\r
-    Write-Host ' ======================================================================' -ForegroundColor Green; ^\r
-    Write-Host '  [SUCCESS] All ' $installed.Count ' printers connected to your Dashboard!' -ForegroundColor Green; ^\r
-    Write-Host '  You can now return to your browser. You are ready to print!' -ForegroundColor Green; ^\r
-    Write-Host ' ======================================================================' -ForegroundColor Green; ^\r
-  } catch { ^
-    Write-Host ' [!] Could not reach server: ' $_.Exception.Message -ForegroundColor Red; ^
-  }"\r
-\r
-echo.\r
-echo Press any key to close this setup window...\r
-pause >nul\r
+powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPs}\r
 `;
 
   res.setHeader('Content-Disposition', `attachment; filename="PrintCatalyst-AutoConnect-${shopId}.bat"`);

@@ -116,6 +116,7 @@ wss.on('connection', (ws, req) => {
               logs: updatedLogs
             });
             broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: updated });
+          }
         }
       } else if (data.type === 'AUTO_DISCOVERED_PRINTERS') {
         const shopId = data.shopId || 'shop_demo';

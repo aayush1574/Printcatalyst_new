@@ -156,6 +156,24 @@ export default function MerchantDashboardPage() {
     });
   };
 
+  // Direct Browser Print (Zero setup / no install required)
+  const handleBrowserPrint = (order) => {
+    if (!order) return;
+    const fileUrl = order.items?.[0]?.fileUrl;
+    if (fileUrl) {
+      const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${API_BASE}${fileUrl}`;
+      const printWindow = window.open(fullUrl, '_blank');
+      if (printWindow) {
+        printWindow.focus();
+        setTimeout(() => {
+          try { printWindow.print(); } catch (e) {}
+        }, 1200);
+      }
+    } else {
+      window.print();
+    }
+  };
+
   // Save Printer
   const handleSavePrinter = async (printerData) => {
     if (printers.some((p) => p.id === printerData.id)) {
@@ -510,6 +528,7 @@ export default function MerchantDashboardPage() {
                   onOpenStudio={() => setIsStudioOpen(true)}
                   onRelease={handleReleaseOrder}
                   onReject={handleRejectOrder}
+                  onBrowserPrint={handleBrowserPrint}
                 />
               </div>
             </div>
@@ -518,38 +537,106 @@ export default function MerchantDashboardPage() {
           {/* ═══ TAB: PRINTERS ═══ */}
           {activeTab === 'PRINTERS' && (
             <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-6 max-w-5xl mx-auto text-xs">
+              {/* Header & Quick Actions */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                     <Printer className="w-5 h-5 text-indigo-400" />
-                    Connected Printers
+                    Connected Printers & Auto-Routing
                   </h2>
-                  <p className="text-slate-400 text-xs">Manage local queues and routing</p>
+                  <p className="text-slate-400 text-xs">Manage local USB / Wi-Fi printers, queues, and 1-click silent spooling</p>
                 </div>
 
-                <button
-                  onClick={() => setIsPrinterSettingsOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 self-start"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Printer</span>
-                </button>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <a
+                    href={`${API_BASE}/api/v1/agent/download-connector?shopId=${merchant?.id || 'shop_demo'}`}
+                    download
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold flex items-center gap-2 shadow-lg shadow-emerald-600/30 text-xs transition-all active:scale-95"
+                    title="Download 1-click installer that auto-detects all your printers on Windows without typing any commands"
+                  >
+                    <Download className="w-4 h-4" />
+                    <span>Download 1-Click Connector (.bat)</span>
+                  </a>
+
+                  <button
+                    onClick={() => setIsPrinterSettingsOpen(true)}
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold flex items-center gap-2 border border-slate-700 text-xs transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Custom Queue</span>
+                  </button>
+                </div>
               </div>
 
+              {/* Zero-Command Setup Guide Banner */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Method 1: Direct Browser Print */}
+                <div className="bg-gradient-to-br from-indigo-950/40 via-slate-950 to-slate-900/60 p-4 sm:p-5 rounded-2xl border border-indigo-500/20 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      Method 1: Zero Setup (Instant)
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">
+                      Always Ready
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-white">Browser Direct Print</h3>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    No software download required. Any printer already connected to this PC works automatically when you click <strong className="text-white">"Print in Browser"</strong> on incoming orders.
+                  </p>
+                  <div className="text-[11px] text-indigo-300/80 font-medium">
+                    ✓ Zero installation · Works on Chrome, Edge, Mac & Windows
+                  </div>
+                </div>
+
+                {/* Method 2: 1-Click Auto-Detect Silent Spooler */}
+                <div className="bg-gradient-to-br from-emerald-950/30 via-slate-950 to-slate-900/60 p-4 sm:p-5 rounded-2xl border border-emerald-500/20 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+                      Method 2: 1-Click Silent Auto-Print
+                    </span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                      merchant?.agentStatus === 'ONLINE'
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
+                    }`}>
+                      {merchant?.agentStatus === 'ONLINE' ? '🟢 Connector Active' : '⚪ Connector Standby'}
+                    </span>
+                  </div>
+                  <h3 className="text-sm font-bold text-white">Auto-Detect Windows Spooler</h3>
+                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                    Download the 1-Click Connector file and double-click it. It automatically reads all Canon, HP, Epson, Brother printers on your PC and enables instant hands-free printing.
+                  </p>
+                  <div className="text-[11px] text-emerald-300/80 font-medium">
+                    ✓ No command line · Auto-detects in 2 seconds
+                  </div>
+                </div>
+              </div>
+
+              {/* Printer Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 {printers.map((p) => (
-                  <div key={p.id} className="bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3 shadow-md">
+                  <div key={p.id} className="bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3 shadow-md hover:border-slate-700 transition-all">
                     <div className="flex items-start justify-between">
                       <div className="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
                         <Printer className="w-5 h-5" />
                       </div>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
-                        {p.status}
-                      </span>
+                      <div className="flex items-center gap-1.5">
+                        {p.autoDetected && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold" title="Auto-discovered from Windows spooler">
+                            Auto-Detected
+                          </span>
+                        )}
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
+                          {p.status || 'READY'}
+                        </span>
+                      </div>
                     </div>
 
                     <div>
-                      <h3 className="text-sm font-bold text-white">{p.name}</h3>
+                      <h3 className="text-sm font-bold text-white leading-snug truncate" title={p.name}>{p.name}</h3>
                       <p className="text-[11px] text-slate-400 mt-0.5">{p.connection} · {p.type?.replace('_', ' ')}</p>
                     </div>
 
@@ -557,16 +644,18 @@ export default function MerchantDashboardPage() {
                       <div className="flex justify-between text-slate-400">
                         <span>Color:</span>
                         <span className={p.supportsColor ? 'text-amber-400 font-bold' : 'text-slate-300'}>
-                          {p.supportsColor ? 'Yes' : 'Mono'}
+                          {p.supportsColor ? 'Color + B&W' : 'Mono Only'}
                         </span>
                       </div>
                       <div className="flex justify-between text-slate-400">
                         <span>Duplex:</span>
-                        <span className="text-white font-medium">{p.supportsDuplex ? 'Yes' : 'No'}</span>
+                        <span className="text-white font-medium">{p.supportsDuplex ? 'Auto Duplex' : 'Single'}</span>
                       </div>
                       <div className="flex justify-between text-slate-400">
-                        <span>Toner:</span>
-                        <span className="text-emerald-400 font-bold font-mono">{p.tonerBlack}</span>
+                        <span>Default Role:</span>
+                        <span className="text-indigo-300 font-medium">
+                          {p.isDefaultMono ? 'Default B&W' : (p.isDefaultColor ? 'Default Color' : 'Secondary')}
+                        </span>
                       </div>
                     </div>
 
@@ -844,6 +933,7 @@ export default function MerchantDashboardPage() {
                 onOpenStudio={() => { setMobileDetailOpen(false); setIsStudioOpen(true); }}
                 onRelease={handleReleaseOrder}
                 onReject={handleRejectOrder}
+                onBrowserPrint={handleBrowserPrint}
               />
             </div>
           </div>
@@ -909,7 +999,7 @@ export default function MerchantDashboardPage() {
 
 
 /* ─── Order Detail Panel (reusable between desktop sidebar and mobile slide-over) ─── */
-function OrderDetailPanel({ selectedOrder, onOpenStudio, onRelease, onReject }) {
+function OrderDetailPanel({ selectedOrder, onOpenStudio, onRelease, onReject, onBrowserPrint }) {
   if (!selectedOrder) {
     return (
       <div className="text-center py-16 text-slate-500 text-xs">
@@ -981,13 +1071,24 @@ function OrderDetailPanel({ selectedOrder, onOpenStudio, onRelease, onReject }) 
       {/* Action Buttons */}
       <div className="space-y-2 pt-2">
         {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && (
-          <button
-            onClick={() => onRelease(selectedOrder.id)}
-            className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-95"
-          >
-            <Printer className="w-4 h-4" />
-            <span>{selectedOrder.status === 'PRINTING' || selectedOrder.status === 'IN_SPOOL' ? 'Printing...' : 'Print Now'}</span>
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={() => onRelease(selectedOrder.id)}
+              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <Printer className="w-4 h-4" />
+              <span>{selectedOrder.status === 'PRINTING' || selectedOrder.status === 'IN_SPOOL' ? 'Printing...' : 'Print Now (Silent Spool)'}</span>
+            </button>
+
+            <button
+              onClick={() => onBrowserPrint && onBrowserPrint(selectedOrder)}
+              className="w-full py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-semibold flex items-center justify-center gap-2 transition-all"
+              title="Opens document in browser print dialog - zero software required"
+            >
+              <Eye className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Print in Browser (Zero Setup)</span>
+            </button>
+          </div>
         )}
 
         {selectedOrder.status !== 'CANCELLED' && (

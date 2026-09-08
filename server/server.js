@@ -116,8 +116,43 @@ wss.on('connection', (ws, req) => {
               logs: updatedLogs
             });
             broadcastToShop(order.shopId, { type: 'ORDER_UPDATED', order: updated });
-          }
         }
+      } else if (data.type === 'AUTO_DISCOVERED_PRINTERS') {
+        const shopId = data.shopId || 'shop_demo';
+        const discovered = Array.isArray(data.printers) ? data.printers : [];
+        const currentPrinters = db.getPrinters(shopId);
+
+        discovered.forEach((disc) => {
+          const existing = currentPrinters.find((p) => p.name === disc.name || p.id === disc.id);
+          if (!existing) {
+            db.addPrinter({
+              id: disc.id || 'prn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+              shopId,
+              name: disc.name,
+              type: disc.type || 'MONO_LASER',
+              connection: disc.connection || 'LOCAL_USB',
+              status: 'READY',
+              isDefaultMono: disc.isDefaultMono ?? true,
+              isDefaultColor: disc.isDefaultColor ?? false,
+              supportsColor: disc.supportsColor ?? false,
+              supportsDuplex: disc.supportsDuplex ?? true,
+              autoDetected: true,
+              lastSeen: new Date().toISOString()
+            });
+          } else {
+            db.updatePrinter(existing.id, {
+              status: 'READY',
+              autoDetected: true,
+              lastSeen: new Date().toISOString()
+            });
+          }
+        });
+
+        broadcastToShop(shopId, {
+          type: 'PRINTERS_UPDATED',
+          printers: db.getPrinters(shopId),
+          autoDetectedCount: discovered.length
+        });
       }
     } catch (e) {
       console.error('WS Error parsing message:', e);
@@ -714,6 +749,126 @@ app.post('/api/v1/test-print', (req, res) => {
     success: true,
     message: `Test print sent to ${printer ? printer.name : 'selected printer'}`
   });
+});
+
+// Auto-detect endpoint called by 1-click Windows connector or desktop agent
+app.post('/api/v1/printers/auto-detect', (req, res) => {
+  const { shopId = 'shop_demo', hostname, printers = [] } = req.body;
+  const currentPrinters = db.getPrinters(shopId);
+
+  let addedCount = 0;
+  printers.forEach((disc) => {
+    if (!disc.name) return;
+    const existing = currentPrinters.find((p) => p.name.toLowerCase() === disc.name.toLowerCase());
+    if (!existing) {
+      db.addPrinter({
+        id: 'prn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        shopId,
+        name: disc.name,
+        type: disc.type || (disc.name.match(/color|photo|tank/i) ? 'COLOR_INKJET_PHOTO' : 'MONO_LASER'),
+        connection: 'LOCAL_USB',
+        status: 'READY',
+        isDefaultMono: disc.isDefault ?? true,
+        isDefaultColor: disc.supportsColor ?? false,
+        supportsColor: disc.supportsColor ?? (disc.name.match(/color|photo|tank/i) !== null),
+        supportsDuplex: disc.supportsDuplex ?? true,
+        autoDetected: true,
+        lastSeen: new Date().toISOString()
+      });
+      addedCount++;
+    } else {
+      db.updatePrinter(existing.id, {
+        status: 'READY',
+        autoDetected: true,
+        lastSeen: new Date().toISOString()
+      });
+    }
+  });
+
+  // Mark shop agent as online
+  db.updateShop(shopId, {
+    agentStatus: 'ONLINE',
+    agentLastHeartbeat: new Date().toISOString()
+  });
+
+  broadcastToShop(shopId, {
+    type: 'AGENT_STATUS_CHANGE',
+    status: 'ONLINE'
+  });
+
+  const allPrinters = db.getPrinters(shopId);
+  broadcastToShop(shopId, {
+    type: 'PRINTERS_UPDATED',
+    printers: allPrinters,
+    autoDetectedCount: printers.length
+  });
+
+  res.json({
+    success: true,
+    message: `Discovered ${printers.length} printer(s)`,
+    addedCount,
+    totalPrinters: allPrinters.length
+  });
+});
+
+// Downloadable 1-Click Windows Connector script
+app.get('/api/v1/agent/download-connector', (req, res) => {
+  const shopId = req.query.shopId || 'shop_demo';
+  const shop = db.getShopById(shopId);
+  const shopName = shop ? shop.name : 'Print Catalyst Shop';
+  const protocol = req.protocol === 'https' || req.headers['x-forwarded-proto'] === 'https' ? 'https' : 'http';
+  const host = req.get('host') || 'localhost:5000';
+  const serverUrl = `${protocol}://${host}`;
+
+  const batScript = `@echo off\r
+chcp 65001 >nul\r
+title Print Catalyst - 1-Click Printer Bridge\r
+color 0B\r
+cls\r
+echo ======================================================================\r
+echo           PRINT CATALYST - 1-CLICK INSTANT PRINTER BRIDGE\r
+echo ======================================================================\r
+echo.\r
+echo   Shop Name  : ${shopName}\r
+echo   Shop ID    : ${shopId}\r
+echo   Server URL : ${serverUrl}\r
+echo.\r
+echo   Connecting your local printer to the Print Catalyst Dashboard...\r
+echo ----------------------------------------------------------------------\r
+echo.\r
+echo [*] Scanning Windows for installed USB, Wi-Fi and Network Printers...\r
+\r
+powershell -NoProfile -ExecutionPolicy Bypass -Command ^\r
+  "$ErrorActionPreference = 'SilentlyContinue'; ^\r
+  $installed = Get-Printer | Select-Object Name, DriverName, Default; ^\r
+  if (-not $installed) { Write-Host ' [!] No printers found. Please ensure your printer is turned on and connected.' -ForegroundColor Yellow; exit } ^\r
+  $list = @(); ^\r
+  foreach ($p in $installed) { ^\r
+    $isColor = ($p.Name -match '(?i)color|tank|photo|c3530|l8050|deskjet|inkjet' -or $p.DriverName -match '(?i)color'); ^\r
+    $type = if ($isColor) { 'COLOR_INKJET_PHOTO' } else { 'MONO_LASER' }; ^\r
+    $list += @{ name = $p.Name; driver = $p.DriverName; isDefault = [bool]$p.Default; supportsColor = [bool]$isColor; type = $type }; ^\r
+    Write-Host ('   [+] Detected: ' + $p.Name + ' (' + $(if ($isColor) {'Color'} else {'Monochrome'}) + ')') -ForegroundColor Cyan; ^\r
+  } ^\r
+  $payload = @{ shopId = '${shopId}'; hostname = $env:COMPUTERNAME; printers = $list } | ConvertTo-Json -Depth 4; ^\r
+  try { ^\r
+    $res = Invoke-RestMethod -Uri '${serverUrl}/api/v1/printers/auto-detect' -Method Post -Body $payload -ContentType 'application/json'; ^\r
+    Write-Host ''; ^\r
+    Write-Host ' ======================================================================' -ForegroundColor Green; ^\r
+    Write-Host '  [SUCCESS] All ' $installed.Count ' printers connected to your Dashboard!' -ForegroundColor Green; ^\r
+    Write-Host '  You can now return to your browser. You are ready to print!' -ForegroundColor Green; ^\r
+    Write-Host ' ======================================================================' -ForegroundColor Green; ^\r
+  } catch { ^
+    Write-Host ' [!] Could not reach server: ' $_.Exception.Message -ForegroundColor Red; ^
+  }"\r
+\r
+echo.\r
+echo Press any key to close this setup window...\r
+pause >nul\r
+`;
+
+  res.setHeader('Content-Disposition', `attachment; filename="PrintCatalyst-AutoConnect-${shopId}.bat"`);
+  res.setHeader('Content-Type', 'application/x-bat');
+  res.send(batScript);
 });
 
 // 7. WhatsApp Automation & Bot Simulator API

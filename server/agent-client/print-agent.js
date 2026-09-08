@@ -109,7 +109,30 @@ function connect() {
       hostname: os.hostname()
     }));
 
-    discoverLocalPrinters(() => {});
+    discoverLocalPrinters((err, list) => {
+      if (!err && Array.isArray(list)) {
+        console.log(`[AGENT] Syncing ${list.length} detected printer(s) with cloud dashboard...`);
+        ws.send(JSON.stringify({
+          type: 'AUTO_DISCOVERED_PRINTERS',
+          shopId: SHOP_ID,
+          printers: list.map(p => {
+            const name = p.Name || 'Standard Printer';
+            const isColor = name.match(/color|tank|photo|c3530|l8050|deskjet|inkjet/i) !== null || (p.DriverName && p.DriverName.match(/color/i) !== null);
+            return {
+              id: 'prn_' + name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
+              name,
+              type: isColor ? 'COLOR_INKJET_PHOTO' : 'MONO_LASER',
+              connection: 'LOCAL_USB',
+              supportsColor: isColor,
+              supportsDuplex: true,
+              isDefaultMono: p.Default || false,
+              isDefaultColor: isColor && (p.Default || false),
+              status: 'READY'
+            };
+          })
+        }));
+      }
+    });
   });
 
   ws.on('message', (msg) => {

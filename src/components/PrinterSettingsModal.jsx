@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Printer, Check, Plus, Trash2, Sliders, Cpu, Activity, Play, Download, Sparkles } from 'lucide-react';
 import { API_BASE } from '../config';
 
-export default function PrinterSettingsModal({ printers, onSavePrinter, onDeletePrinter, onTestPrint, isOpen, onClose }) {
+export default function PrinterSettingsModal({ printers = [], initialPrinter, onSavePrinter, onDeletePrinter, onTestPrint, isOpen, onClose }) {
   const [selectedPrinter, setSelectedPrinter] = useState(printers[0] || null);
   const [isCreating, setIsCreating] = useState(false);
   const [testPrinting, setTestPrinting] = useState(false);
@@ -16,22 +16,36 @@ export default function PrinterSettingsModal({ printers, onSavePrinter, onDelete
     supportsDuplex: true,
     isDefaultMono: false,
     isDefaultColor: false,
-    trayCount: 2
+    trayCount: 1
   });
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (initialPrinter === 'NEW') {
+      handleStartCreate();
+    } else if (initialPrinter && typeof initialPrinter === 'object') {
+      handleSelect(initialPrinter);
+    } else if (printers.length > 0 && !selectedPrinter) {
+      handleSelect(printers[0]);
+    } else if (printers.length === 0) {
+      handleStartCreate();
+    }
+  }, [isOpen, initialPrinter]);
 
   if (!isOpen) return null;
 
   const handleSelect = (p) => {
+    if (!p) return;
     setSelectedPrinter(p);
     setIsCreating(false);
     setForm({
-      name: p.name,
-      type: p.type,
-      connection: p.connection,
-      supportsColor: p.supportsColor,
-      supportsDuplex: p.supportsDuplex,
-      isDefaultMono: p.isDefaultMono,
-      isDefaultColor: p.isDefaultColor,
+      name: p.name || '',
+      type: p.type || 'MONO_LASER',
+      connection: p.connection || 'LOCAL_USB',
+      supportsColor: p.supportsColor || false,
+      supportsDuplex: p.supportsDuplex !== undefined ? p.supportsDuplex : true,
+      isDefaultMono: p.isDefaultMono || false,
+      isDefaultColor: p.isDefaultColor || false,
       trayCount: p.trayCount || 1
     });
   };
@@ -40,24 +54,47 @@ export default function PrinterSettingsModal({ printers, onSavePrinter, onDelete
     setIsCreating(true);
     setSelectedPrinter(null);
     setForm({
-      name: 'New Canon/HP Spooler',
+      name: '',
       type: 'MONO_LASER',
       connection: 'LOCAL_USB',
       supportsColor: false,
       supportsDuplex: true,
-      isDefaultMono: false,
+      isDefaultMono: printers.length === 0,
       isDefaultColor: false,
       trayCount: 1
     });
   };
 
   const handleSave = async () => {
+    if (!form.name.trim()) {
+      alert('Please enter a printer display name.');
+      return;
+    }
     if (isCreating) {
-      await onSavePrinter({ ...form, id: 'prn_' + Date.now() });
+      await onSavePrinter({ ...form, id: 'prn_' + Date.now(), status: 'READY' });
     } else if (selectedPrinter) {
       await onSavePrinter({ ...selectedPrinter, ...form });
     }
     onClose();
+  };
+
+  const handleDelete = () => {
+    if (!selectedPrinter) return;
+    if (window.confirm(`Are you sure you want to delete "${selectedPrinter.name}"?`)) {
+      onDeletePrinter(selectedPrinter.id, selectedPrinter.name);
+      setSelectedPrinter(null);
+      setIsCreating(true);
+      setForm({
+        name: '',
+        type: 'MONO_LASER',
+        connection: 'LOCAL_USB',
+        supportsColor: false,
+        supportsDuplex: true,
+        isDefaultMono: false,
+        isDefaultColor: false,
+        trayCount: 1
+      });
+    }
   };
 
   const triggerTestPrint = async (printerId) => {
@@ -178,7 +215,8 @@ export default function PrinterSettingsModal({ printers, onSavePrinter, onDelete
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
-                className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500"
+                placeholder="e.g. Hewlett-Packard HP LaserJet M1005 or Canon IR3530"
+                className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs focus:outline-none focus:border-indigo-500 placeholder-slate-500"
               />
             </div>
 
@@ -262,7 +300,7 @@ export default function PrinterSettingsModal({ printers, onSavePrinter, onDelete
 
                 <button
                   type="button"
-                  onClick={() => onDeletePrinter(selectedPrinter.id)}
+                  onClick={handleDelete}
                   className="text-xs text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1"
                 >
                   <Trash2 className="w-3.5 h-3.5" />

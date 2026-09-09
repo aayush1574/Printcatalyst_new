@@ -4,7 +4,7 @@ import {
   Printer, LayoutDashboard, QrCode, Settings, Sliders,
   TrendingUp, Download, Plus, CheckCircle, Clock, AlertTriangle,
   Play, RefreshCw, Smartphone, Layers, Eye, FileText, Check, ShieldCheck, ChevronRight,
-  Wifi, WifiOff, Sparkles, User, HelpCircle, Volume2, LogOut, Lock, X, Menu, ChevronDown
+  Wifi, WifiOff, Sparkles, User, HelpCircle, Volume2, LogOut, Lock, X, Menu, ChevronDown, Trash2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -32,7 +32,12 @@ export default function MerchantDashboardPage() {
   const [isStudioOpen, setIsStudioOpen] = useState(false);
   const [isStandeeOpen, setIsStandeeOpen] = useState(false);
   const [isPrinterSettingsOpen, setIsPrinterSettingsOpen] = useState(false);
+  const [selectedEditPrinter, setSelectedEditPrinter] = useState(null);
   const [isManualOrderOpen, setIsManualOrderOpen] = useState(false);
+
+  // Printer Management State
+  const [refreshingPrinters, setRefreshingPrinters] = useState(false);
+  const [refreshNotice, setRefreshNotice] = useState('');
 
   // Load initial shop data
   const loadDashboardData = async () => {
@@ -176,26 +181,63 @@ export default function MerchantDashboardPage() {
 
   // Save Printer
   const handleSavePrinter = async (printerData) => {
+    const payload = { ...printerData, shopId: merchant?.id || 'shop_demo' };
     if (printers.some((p) => p.id === printerData.id)) {
       await fetch(`${API_BASE}/api/v1/printers/${printerData.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(printerData)
+        body: JSON.stringify(payload)
       });
     } else {
       await fetch(`${API_BASE}/api/v1/printers/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(printerData)
+        body: JSON.stringify(payload)
       });
     }
-    loadDashboardData();
+    setRefreshNotice(`Saved printer "${printerData.name || 'Printer'}"`);
+    setTimeout(() => setRefreshNotice(''), 3500);
+    await loadDashboardData();
   };
 
   // Delete Printer
-  const handleDeletePrinter = async (printerId) => {
-    await fetch(`${API_BASE}/api/v1/printers/${printerId}`, { method: 'DELETE' });
-    loadDashboardData();
+  const handleDeletePrinter = async (printerId, printerName) => {
+    const name = printerName || printers.find((p) => p.id === printerId)?.name || 'this printer';
+    if (!window.confirm(`Are you sure you want to delete "${name}"?`)) return;
+    try {
+      await fetch(`${API_BASE}/api/v1/printers/${printerId}`, { method: 'DELETE' });
+      setPrinters((prev) => prev.filter((p) => p.id !== printerId));
+      setRefreshNotice(`Removed "${name}"`);
+      setTimeout(() => setRefreshNotice(''), 3500);
+    } catch (e) {
+      console.error('Delete printer error:', e);
+    }
+  };
+
+  // Refresh Printer Status
+  const handleRefreshStatus = async () => {
+    setRefreshingPrinters(true);
+    setRefreshNotice('');
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/printers/refresh?shopId=${merchant?.id || 'shop_demo'}`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      if (data && Array.isArray(data.printers)) {
+        setPrinters(data.printers);
+        setRefreshNotice(`Status updated! ${data.printers.length} printer(s) active.`);
+      } else {
+        await loadDashboardData();
+        setRefreshNotice('Refreshed printer list');
+      }
+      setTimeout(() => setRefreshNotice(''), 3500);
+    } catch (e) {
+      await loadDashboardData();
+      setRefreshNotice('Refreshed printer list');
+      setTimeout(() => setRefreshNotice(''), 3500);
+    } finally {
+      setRefreshingPrinters(false);
+    }
   };
 
   // Test Print
@@ -544,10 +586,32 @@ export default function MerchantDashboardPage() {
                     <Printer className="w-5 h-5 text-indigo-400" />
                     Connected Printers & Auto-Routing
                   </h2>
-                  <p className="text-slate-400 text-xs">Manage local USB / Wi-Fi printers, queues, and 1-click silent spooling</p>
+                  <p className="text-slate-400 text-xs">Manage local USB / Wi-Fi printers, queues, status checks and 1-click silent spooling</p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    onClick={handleRefreshStatus}
+                    disabled={refreshingPrinters}
+                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold flex items-center gap-2 border border-slate-700 text-xs transition-colors shadow-sm disabled:opacity-60"
+                    title="Check live status of connected printers"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 ${refreshingPrinters ? 'animate-spin text-indigo-400' : 'text-slate-400'}`} />
+                    <span>{refreshingPrinters ? 'Checking...' : 'Refresh Status'}</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setSelectedEditPrinter('NEW');
+                      setIsPrinterSettingsOpen(true);
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold flex items-center gap-2 shadow-lg shadow-indigo-600/30 text-xs transition-all active:scale-95"
+                    title="Add a new printer queue"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Add Printer</span>
+                  </button>
+
                   <a
                     href={`${API_BASE}/api/v1/agent/download-connector?shopId=${merchant?.id || 'shop_demo'}`}
                     download
@@ -557,16 +621,16 @@ export default function MerchantDashboardPage() {
                     <Download className="w-4 h-4" />
                     <span>Download 1-Click Connector (.bat)</span>
                   </a>
-
-                  <button
-                    onClick={() => setIsPrinterSettingsOpen(true)}
-                    className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold flex items-center gap-2 border border-slate-700 text-xs transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Add Custom Queue</span>
-                  </button>
                 </div>
               </div>
+
+              {/* Status Update Banner */}
+              {refreshNotice && (
+                <div className="px-4 py-2.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2 animate-fadeIn shadow-md">
+                  <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  <span className="font-semibold">{refreshNotice}</span>
+                </div>
+              )}
 
               {/* Zero-Command Setup Guide Banner */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -615,57 +679,115 @@ export default function MerchantDashboardPage() {
                 </div>
               </div>
 
+              {/* Empty State */}
+              {printers.length === 0 && (
+                <div className="p-8 sm:p-12 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-3 max-w-lg mx-auto shadow-xl">
+                  <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/30">
+                    <Printer className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-base font-bold text-white">No Printers Added Yet</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
+                    Add your printer manually or download the 1-click Windows connector to auto-detect your connected HP, Canon, Epson or Brother printers.
+                  </p>
+                  <div className="flex items-center justify-center gap-3 pt-3 flex-wrap">
+                    <button
+                      onClick={() => {
+                        setSelectedEditPrinter('NEW');
+                        setIsPrinterSettingsOpen(true);
+                      }}
+                      className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-indigo-600/30 transition-all"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Add Printer</span>
+                    </button>
+                    <a
+                      href={`${API_BASE}/api/v1/agent/download-connector?shopId=${merchant?.id || 'shop_demo'}`}
+                      download
+                      className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-600/30 transition-all"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>Download Auto-Detect (.bat)</span>
+                    </a>
+                  </div>
+                </div>
+              )}
+
               {/* Printer Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 {printers.map((p) => (
-                  <div key={p.id} className="bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3 shadow-md hover:border-slate-700 transition-all">
-                    <div className="flex items-start justify-between">
-                      <div className="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
-                        <Printer className="w-5 h-5" />
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {p.autoDetected && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold" title="Auto-discovered from Windows spooler">
-                            Auto-Detected
+                  <div key={p.id} className="bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3 shadow-md hover:border-slate-700 transition-all flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center">
+                          <Printer className="w-5 h-5" />
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {p.autoDetected && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 font-semibold" title="Auto-discovered from Windows spooler">
+                              Auto-Detected
+                            </span>
+                          )}
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
+                            {p.status || 'READY'}
                           </span>
-                        )}
-                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
-                          {p.status || 'READY'}
-                        </span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-sm font-bold text-white leading-snug truncate" title={p.name}>{p.name}</h3>
+                        <p className="text-[11px] text-slate-400 mt-0.5">{p.connection} · {p.type?.replace('_', ' ')}</p>
+                      </div>
+
+                      <div className="space-y-1.5 pt-2 border-t border-slate-800 text-[11px]">
+                        <div className="flex justify-between text-slate-400">
+                          <span>Color:</span>
+                          <span className={p.supportsColor ? 'text-amber-400 font-bold' : 'text-slate-300'}>
+                            {p.supportsColor ? 'Color + B&W' : 'Mono Only'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Duplex:</span>
+                          <span className="text-white font-medium">{p.supportsDuplex ? 'Auto Duplex' : 'Single'}</span>
+                        </div>
+                        <div className="flex justify-between text-slate-400">
+                          <span>Default Role:</span>
+                          <span className="text-indigo-300 font-medium">
+                            {p.isDefaultMono ? 'Default B&W' : (p.isDefaultColor ? 'Default Color' : 'Secondary')}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <h3 className="text-sm font-bold text-white leading-snug truncate" title={p.name}>{p.name}</h3>
-                      <p className="text-[11px] text-slate-400 mt-0.5">{p.connection} · {p.type?.replace('_', ' ')}</p>
-                    </div>
+                    {/* Actions: Test, Configure, Delete */}
+                    <div className="pt-3 border-t border-slate-800/80 flex items-center gap-2">
+                      <button
+                        onClick={() => handleTestPrint(p.id)}
+                        className="flex-1 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-slate-700 hover:border-slate-600"
+                        title="Send diagnostic test print"
+                      >
+                        <Play className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Test</span>
+                      </button>
 
-                    <div className="space-y-1.5 pt-2 border-t border-slate-800 text-[11px]">
-                      <div className="flex justify-between text-slate-400">
-                        <span>Color:</span>
-                        <span className={p.supportsColor ? 'text-amber-400 font-bold' : 'text-slate-300'}>
-                          {p.supportsColor ? 'Color + B&W' : 'Mono Only'}
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Duplex:</span>
-                        <span className="text-white font-medium">{p.supportsDuplex ? 'Auto Duplex' : 'Single'}</span>
-                      </div>
-                      <div className="flex justify-between text-slate-400">
-                        <span>Default Role:</span>
-                        <span className="text-indigo-300 font-medium">
-                          {p.isDefaultMono ? 'Default B&W' : (p.isDefaultColor ? 'Default Color' : 'Secondary')}
-                        </span>
-                      </div>
-                    </div>
+                      <button
+                        onClick={() => {
+                          setSelectedEditPrinter(p);
+                          setIsPrinterSettingsOpen(true);
+                        }}
+                        className="p-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 hover:border-indigo-500/50 transition-colors"
+                        title="Configure settings"
+                      >
+                        <Settings className="w-3.5 h-3.5 text-slate-400" />
+                      </button>
 
-                    <button
-                      onClick={() => handleTestPrint(p.id)}
-                      className="w-full mt-2 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-slate-700"
-                    >
-                      <Play className="w-3.5 h-3.5 text-cyan-400" />
-                      <span>Test Print</span>
-                    </button>
+                      <button
+                        onClick={() => handleDeletePrinter(p.id, p.name)}
+                        className="p-2 rounded-lg bg-slate-900 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 border border-slate-700 hover:border-rose-800/60 transition-colors"
+                        title="Delete printer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -957,8 +1079,12 @@ export default function MerchantDashboardPage() {
 
       <PrinterSettingsModal
         printers={printers}
+        initialPrinter={selectedEditPrinter}
         isOpen={isPrinterSettingsOpen}
-        onClose={() => setIsPrinterSettingsOpen(false)}
+        onClose={() => {
+          setIsPrinterSettingsOpen(false);
+          setSelectedEditPrinter(null);
+        }}
         onSavePrinter={handleSavePrinter}
         onDeletePrinter={handleDeletePrinter}
         onTestPrint={handleTestPrint}

@@ -690,14 +690,14 @@ app.get('/api/v1/printers/list', (req, res) => {
 });
 
 app.post('/api/v1/printers/add', (req, res) => {
-  const shopId = req.body.shopId || 'shop_demo';
+  const shopId = req.body.shopId || req.query.shopId || 'shop_demo';
   const newPrinter = {
-    id: 'prn_' + Date.now(),
+    id: req.body.id || ('prn_' + Date.now()),
     shopId,
     name: req.body.name || 'New Printer',
     type: req.body.type || 'MONO_LASER',
     connection: req.body.connection || 'LOCAL_USB',
-    status: 'IDLE',
+    status: 'READY',
     isDefaultMono: req.body.isDefaultMono || false,
     isDefaultColor: req.body.isDefaultColor || false,
     supportsColor: req.body.supportsColor || false,
@@ -707,7 +707,8 @@ app.post('/api/v1/printers/add', (req, res) => {
     trayCount: req.body.trayCount || 1,
     paperLevel: '100%',
     tonerBlack: '100%',
-    totalJobsPrinted: 0
+    totalJobsPrinted: 0,
+    lastSeen: new Date().toISOString()
   };
 
   const added = db.addPrinter(newPrinter);
@@ -732,6 +733,36 @@ app.delete('/api/v1/printers/:id', (req, res) => {
     return res.json({ success: true });
   }
   res.status(404).json({ success: false, message: 'Printer not found' });
+});
+
+// Refresh printer status endpoint
+app.post('/api/v1/printers/refresh', (req, res) => {
+  const shopId = req.query.shopId || req.body.shopId || 'shop_demo';
+  const printers = db.getPrinters(shopId);
+  const shop = db.getShopById(shopId);
+
+  // Check agent heartbeat age
+  let agentStatus = shop ? (shop.agentStatus || 'OFFLINE') : 'OFFLINE';
+  if (shop && shop.agentLastHeartbeat) {
+    const ageSeconds = (Date.now() - new Date(shop.agentLastHeartbeat).getTime()) / 1000;
+    if (ageSeconds > 120) {
+      agentStatus = 'OFFLINE';
+      db.updateShop(shopId, { agentStatus: 'OFFLINE' });
+    }
+  }
+
+  broadcastToShop(shopId, {
+    type: 'PRINTERS_UPDATED',
+    printers,
+    agentStatus
+  });
+
+  res.json({
+    success: true,
+    printers,
+    agentStatus,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Test print endpoint

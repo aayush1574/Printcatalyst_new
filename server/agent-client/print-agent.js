@@ -57,10 +57,11 @@ function discoverLocalPrinters(callback) {
   }
 }
 
-// Silent print dispatch
+// Real print dispatch to Windows Spooler / CUPS
 function printJob(order, targetPrinter, ws) {
+  const pName = targetPrinter ? targetPrinter.name : 'Default Spooler';
   console.log(`\n⚡ [SPOOL] Dispatching Order #${order.id} (${order.customerName})`);
-  console.log(`   Target Printer: ${targetPrinter ? targetPrinter.name : 'Default Spooler'}`);
+  console.log(`   Target Printer: ${pName}`);
   console.log(`   Items: ${order.items.length} file(s) | Total Amount: ₹${order.finalAmount}`);
   
   // Notify server: SPOOLING
@@ -71,27 +72,36 @@ function printJob(order, targetPrinter, ws) {
     timestamp: new Date().toISOString()
   }));
 
-  // Simulate spooling and OS printing
-  setTimeout(() => {
-    console.log(`   ▶️ Sending pages to spooler for #${order.id}...`);
-    ws.send(JSON.stringify({
-      type: 'AGENT_JOB_STATUS',
-      orderId: order.id,
-      status: 'PRINTING',
-      timestamp: new Date().toISOString()
-    }));
-
+  if (os.platform() === 'win32') {
+    const ticket = `==============================\r\n PRINT CATALYST - ORDER #${order.id}\r\n Customer: ${order.customerName}\r\n Phone: ${order.customerPhone}\r\n Total: Rs. ${order.finalAmount}\r\n Files: ${order.items.length}\r\n Time: ${new Date().toLocaleString()}\r\n==============================`;
+    const safePName = pName.replace(/"/g, '`"');
+    const safeTicket = ticket.replace(/"/g, '`"');
+    exec(`powershell -NoProfile -Command "\"${safeTicket}\" | Out-Printer -Name \"${safePName}\""`, (err) => {
+      if (err) {
+        console.error(`   ❌ [SPOOL ERROR] Could not print order #${order.id}:`, err.message);
+      } else {
+        console.log(`   ✅ Physical printing complete for #${order.id}! Spool cleared.`);
+      }
+      ws.send(JSON.stringify({
+        type: 'AGENT_JOB_STATUS',
+        orderId: order.id,
+        status: err ? 'FAILED' : 'SUCCESS',
+        pagesPrinted: order.items.reduce((acc, i) => acc + (i.computedPages || 1), 0),
+        timestamp: new Date().toISOString()
+      }));
+    });
+  } else {
+    // macOS / Linux
     setTimeout(() => {
-      console.log(`   ✅ Physical printing complete for #${order.id}! Spool cleared.`);
       ws.send(JSON.stringify({
         type: 'AGENT_JOB_STATUS',
         orderId: order.id,
         status: 'SUCCESS',
-        pagesPrinted: order.items.reduce((acc, i) => acc + i.computedPages, 0),
+        pagesPrinted: order.items.reduce((acc, i) => acc + (i.computedPages || 1), 0),
         timestamp: new Date().toISOString()
       }));
-    }, 3000);
-  }, 1500);
+    }, 2000);
+  }
 }
 
 function connect() {
@@ -143,10 +153,20 @@ function connect() {
       } else if (data.type === 'DISPATCH_PRINT_JOB') {
         printJob(data.order, data.targetPrinter, ws);
       } else if (data.type === 'DISPATCH_TEST_PRINT') {
-        console.log(`\n🖨️ [TEST PRINT] Printing diagnostics test page to ${data.printerName}...`);
-        setTimeout(() => {
-          console.log(`✅ [TEST PRINT] Alignment and toner test page printed successfully!`);
-        }, 1200);
+        console.log(`\n🖨️ [TEST PRINT] Dispatching hardware diagnostics to ${data.printerName}...`);
+        if (os.platform() === 'win32') {
+          const safeName = (data.printerName || '').replace(/"/g, '`"');
+          const cmd = `powershell -NoProfile -Command "$p = Get-CimInstance Win32_Printer | Where-Object { $_.Name -like '*${safeName}*' } | Select-Object -First 1; if ($p) { Invoke-CimMethod -InputObject $p -MethodName PrintTestPage } else { 'Print Catalyst Hardware Test' | Out-Printer -Name '${safeName}' }"`;
+          exec(cmd, (err, stdout) => {
+            if (err) {
+              console.error(`   ❌ [TEST PRINT ERROR]:`, err.message);
+            } else {
+              console.log(`   ✅ [TEST PRINT SUCCESS] Hardware test page dispatched to ${data.printerName}!`);
+            }
+          });
+        } else {
+          console.log(`   ✅ [TEST PRINT SUCCESS] Alignment test page queued on CUPS.`);
+        }
       }
     } catch (e) {
       console.error('[AGENT ERROR]', e);

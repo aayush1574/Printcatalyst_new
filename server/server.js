@@ -49,6 +49,26 @@ process.on('unhandledRejection', (reason, promise) => {
 // Track connected WebSocket clients
 const clients = new Map(); // ws -> { type: 'MERCHANT' | 'AGENT' | 'CUSTOMER', shopId, orderId }
 
+// Pending print action queue for shops (polled by 1-click connector or desktop agent)
+const pendingPrintQueue = new Map(); // shopId -> Array of action objects
+
+function enqueuePrintAction(shopId, action) {
+  if (!shopId) return;
+  if (!pendingPrintQueue.has(shopId)) {
+    pendingPrintQueue.set(shopId, []);
+  }
+  const queue = pendingPrintQueue.get(shopId);
+  queue.push({
+    id: 'act_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+    createdAt: new Date().toISOString(),
+    ...action
+  });
+  // Keep queue capped at 50 to avoid memory growth
+  if (queue.length > 50) {
+    queue.shift();
+  }
+}
+
 function broadcastToShop(shopId, payload) {
   try {
     const msg = JSON.stringify(payload);
@@ -590,6 +610,11 @@ app.post('/api/v1/jobs', async (req, res) => {
 
     // Auto print if shop has auto print enabled
     if (shop && shop.autoPrintEnabled && newOrder.paymentStatus === 'PAID') {
+      enqueuePrintAction(targetShopId, {
+        type: 'PRINT_JOB',
+        order: newOrder,
+        targetPrinter: assignedPrinter
+      });
       broadcastToAgent(targetShopId, {
         type: 'DISPATCH_PRINT_JOB',
         order: newOrder,
@@ -639,7 +664,12 @@ app.post('/api/v1/jobs/release/:id', (req, res) => {
     logs: updatedLogs
   });
 
-  // Broadcast to Desktop Agent
+  // Queue for 1-click bridge & broadcast to Desktop Agent
+  enqueuePrintAction(order.shopId, {
+    type: 'PRINT_JOB',
+    order: updated,
+    targetPrinter
+  });
   broadcastToAgent(order.shopId, {
     type: 'DISPATCH_PRINT_JOB',
     order: updated,
@@ -769,17 +799,47 @@ app.post('/api/v1/printers/refresh', (req, res) => {
 app.post('/api/v1/test-print', (req, res) => {
   const { printerId, shopId = 'shop_demo' } = req.body;
   const printer = db.getPrinterById(printerId);
-  
+  const printerName = printer ? printer.name : 'Test Printer';
+
+  // Enqueue for 1-click Windows connector loop
+  enqueuePrintAction(shopId, {
+    type: 'TEST_PRINT',
+    printerId,
+    printerName
+  });
+
+  // Broadcast to active WebSocket agent
   broadcastToAgent(shopId, {
     type: 'DISPATCH_TEST_PRINT',
     printerId,
-    printerName: printer ? printer.name : 'Test Printer',
+    printerName,
     timestamp: new Date().toISOString()
   });
 
   res.json({
     success: true,
-    message: `Test print sent to ${printer ? printer.name : 'selected printer'}`
+    message: `Test print queued for ${printerName}`
+  });
+});
+
+// Polling endpoint for 1-click Windows connector & background print bridge
+app.get('/api/v1/agent/pending', (req, res) => {
+  const shopId = req.query.shopId || 'shop_demo';
+
+  // Mark shop agent status as ONLINE and update heartbeat timestamp
+  db.updateShop(shopId, {
+    agentStatus: 'ONLINE',
+    agentLastHeartbeat: new Date().toISOString()
+  });
+
+  const actions = pendingPrintQueue.get(shopId) || [];
+  pendingPrintQueue.set(shopId, []); // drain queue
+
+  res.json({
+    success: true,
+    shopId,
+    actions,
+    timestamp: new Date().toISOString()
   });
 });
 
@@ -904,7 +964,6 @@ if (-not $installed) {
     Write-Host ""
     Write-Host "======================================================================" -ForegroundColor Green
     Write-Host ("  [SUCCESS] All " + $installed.Count + " printer(s) are now LIVE in your Dashboard!") -ForegroundColor Green
-    Write-Host "  Go to your browser tab - your printers are ready for instant printing." -ForegroundColor Green
     Write-Host "======================================================================" -ForegroundColor Green
   } catch {
     Write-Host ""
@@ -913,8 +972,52 @@ if (-not $installed) {
 }
 
 Write-Host ""
-Write-Host "Press any key to close this setup window..." -ForegroundColor Gray
-$null = $Host.UI.RawUI.ReadKey("NoEcho,IncludeKeyDown")
+Write-Host "======================================================================" -ForegroundColor Cyan
+Write-Host "   >>> PRINT CATALYST BRIDGE IS ACTIVE & LISTENING <<<" -ForegroundColor Green
+Write-Host "   Keep this window open or minimized in the background." -ForegroundColor White
+Write-Host "   Any Test Prints or Print Orders from Dashboard print automatically!" -ForegroundColor Yellow
+Write-Host "   (Press Ctrl+C anytime to close the bridge)" -ForegroundColor DarkGray
+Write-Host "======================================================================" -ForegroundColor Cyan
+Write-Host ""
+
+$pollUrl = "${serverUrl}/api/v1/agent/pending?shopId=${shopId}"
+
+while ($true) {
+  try {
+    $resp = Invoke-RestMethod -Uri $pollUrl -Method Get -TimeoutSec 10
+    if ($resp -and $resp.actions -and $resp.actions.Count -gt 0) {
+      foreach ($act in $resp.actions) {
+        if ($act.type -eq 'TEST_PRINT') {
+          Write-Host ("`n[" + (Get-Date -Format 'HH:mm:ss') + "] [TEST PRINT] Received diagnostic test for: " + $act.printerName) -ForegroundColor Cyan
+          $targetName = $act.printerName
+          $prn = Get-CimInstance Win32_Printer | Where-Object { $_.Name -eq $targetName -or $_.Name -like "*$targetName*" -or $targetName -like "*$($_.Name)*" } | Select-Object -First 1
+          if ($prn) {
+            $resCode = Invoke-CimMethod -InputObject $prn -MethodName PrintTestPage
+            Write-Host ("   [+] Native Windows Test Page dispatched to " + $prn.Name + "! (Status: " + $resCode.ReturnValue + ")") -ForegroundColor Green
+          } else {
+            $testText = "========================================`r`n PRINT CATALYST - TEST PRINT`r`n Printer: " + $act.printerName + "`r`n Shop: ${shopName}`r`n Time: " + (Get-Date) + "`r`n Status: HARDWARE CONNECTION VERIFIED`r`n========================================"
+            $testText | Out-Printer -Name "$targetName"
+            Write-Host ("   [+] Diagnostic print ticket dispatched via Out-Printer!") -ForegroundColor Green
+          }
+        } elseif ($act.type -eq 'PRINT_JOB') {
+          $ord = $act.order
+          $pName = if ($act.targetPrinter -and $act.targetPrinter.name) { $act.targetPrinter.name } else { $ord.assignedPrinterName }
+          Write-Host ("`n[" + (Get-Date -Format 'HH:mm:ss') + "] [PRINT ORDER] #" + $ord.id + " (" + $ord.customerName + ") -> " + $pName) -ForegroundColor Cyan
+          $ticket = "========================================`r`n PRINT CATALYST - ORDER TICKET`r`n========================================`r`n Order ID: #" + $ord.id + "`r`n Customer: " + $ord.customerName + "`r`n Phone   : " + $ord.customerPhone + "`r`n Amount  : Rs. " + $ord.finalAmount + "`r`n Time    : " + (Get-Date) + "`r`n Documents: " + $ord.items.Count + "`r`n========================================"
+          try {
+            $ticket | Out-Printer -Name "$pName"
+            Write-Host ("   [+] Order slip sent to printer: " + $pName) -ForegroundColor Green
+          } catch {
+            Write-Host ("   [!] Spool warning: " + $_.Exception.Message) -ForegroundColor Red
+          }
+        }
+      }
+    }
+  } catch {
+    # Network blip - quietly retry next cycle
+  }
+  Start-Sleep -Seconds 2
+}
 `;
 
   const encodedPs = Buffer.from(psScript, 'utf16le').toString('base64');

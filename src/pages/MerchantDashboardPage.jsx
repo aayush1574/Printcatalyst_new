@@ -38,6 +38,7 @@ export default function MerchantDashboardPage() {
   // Printer Management State
   const [refreshingPrinters, setRefreshingPrinters] = useState(false);
   const [refreshNotice, setRefreshNotice] = useState('');
+  const [testPrintStates, setTestPrintStates] = useState({}); // printerId -> 'SENDING' | 'SENT' | 'ERROR'
 
   // Load initial shop data
   const loadDashboardData = async () => {
@@ -240,13 +241,101 @@ export default function MerchantDashboardPage() {
     }
   };
 
-  // Test Print
-  const handleTestPrint = async (printerId) => {
-    await fetch(`${API_BASE}/api/v1/test-print`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ printerId, shopId: merchant?.id })
-    });
+  // Test Print via Cloud Queue (executed by 1-Click Bridge / Desktop Agent)
+  const handleTestPrint = async (printerId, printerName = 'Printer') => {
+    try {
+      setTestPrintStates(prev => ({ ...prev, [printerId]: 'SENDING' }));
+      const res = await fetch(`${API_BASE}/api/v1/test-print`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ printerId, shopId: merchant?.id })
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.success) {
+        setTestPrintStates(prev => ({ ...prev, [printerId]: 'SENT' }));
+        setRefreshNotice(`Test page queued for ${printerName}! (Ensure 1-Click Connector is running on PC)`);
+      } else {
+        setTestPrintStates(prev => ({ ...prev, [printerId]: 'ERROR' }));
+        setRefreshNotice(`Failed to send test print`);
+      }
+    } catch (err) {
+      setTestPrintStates(prev => ({ ...prev, [printerId]: 'ERROR' }));
+    } finally {
+      setTimeout(() => {
+        setTestPrintStates(prev => ({ ...prev, [printerId]: null }));
+      }, 4000);
+      setTimeout(() => setRefreshNotice(''), 7000);
+    }
+  };
+
+  // Direct Browser Print Test (Instant verification without background connector)
+  const handleBrowserTestPrint = (printerName) => {
+    const printWindow = window.open('', '_blank', 'width=600,height=750');
+    if (!printWindow) {
+      alert('Please allow pop-ups for this site to use Direct Browser Print.');
+      return;
+    }
+    printWindow.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <title>Print Catalyst - Diagnostic Test Page</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 40px; color: #111; line-height: 1.5; }
+    .header { border-bottom: 3px solid #111; padding-bottom: 12px; margin-bottom: 24px; }
+    .title { font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    .sub { color: #555; font-size: 13px; margin-top: 4px; }
+    .grid { display: grid; grid-template-columns: 140px 1fr; row-gap: 8px; font-size: 13px; margin-bottom: 24px; }
+    .label { font-weight: 700; color: #444; }
+    .box { border: 1px solid #999; padding: 16px; border-radius: 6px; margin: 20px 0; background: #fafafa; }
+    .align-grid { display: grid; grid-template-columns: repeat(10, 1fr); height: 35px; border: 1px dashed #666; margin-top: 10px; }
+    .align-cell { border-right: 1px dashed #ccc; }
+    .footer { font-size: 11px; color: #777; margin-top: 40px; border-top: 1px solid #ccc; padding-top: 12px; }
+    @media print { body { padding: 15mm; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="title">Print Catalyst Diagnostic Test</div>
+    <div class="sub">Hardware Spooler & Alignment Verification Page</div>
+  </div>
+  <div class="grid">
+    <div class="label">Target Device:</div>
+    <div><strong>${printerName || 'Connected Printer'}</strong></div>
+    <div class="label">Shop Name:</div>
+    <div>${merchant?.name || 'Print Catalyst Shop'}</div>
+    <div class="label">Shop ID:</div>
+    <div style="font-family: monospace;">${merchant?.id || 'shop_demo'}</div>
+    <div class="label">Printed At:</div>
+    <div>${new Date().toLocaleString()}</div>
+    <div class="label">Connection:</div>
+    <div style="color: green; font-weight: 700;">HARDWARE READY</div>
+  </div>
+  <div class="box">
+    <div style="font-weight: 700; margin-bottom: 6px;">Alignment & Quality Test Bar</div>
+    <div style="font-size: 11px; color: #555;">Check grid margins and edge contrast:</div>
+    <div class="align-grid">
+      <div class="align-cell" style="background:#000;"></div>
+      <div class="align-cell" style="background:#333;"></div>
+      <div class="align-cell" style="background:#666;"></div>
+      <div class="align-cell" style="background:#999;"></div>
+      <div class="align-cell" style="background:#bbb;"></div>
+      <div class="align-cell" style="background:#ddd;"></div>
+      <div class="align-cell" style="background:#eee;"></div>
+      <div class="align-cell"></div>
+      <div class="align-cell"></div>
+      <div class="align-cell"></div>
+    </div>
+  </div>
+  <p style="font-size: 12px;">If you see this page cleanly printed, your printer hardware, paper feed, and toner cartridges are functioning properly.</p>
+  <div class="footer">Print Catalyst Smart Cloud Spooler &bull; https://printcatalyst-new.onrender.com</div>
+  <script>
+    window.onload = function() {
+      window.print();
+    };
+  </script>
+</body>
+</html>`);
+    printWindow.document.close();
   };
 
   // Filter orders
@@ -758,15 +847,33 @@ export default function MerchantDashboardPage() {
                       </div>
                     </div>
 
-                    {/* Actions: Test, Configure, Delete */}
-                    <div className="pt-3 border-t border-slate-800/80 flex items-center gap-2">
+                    {/* Actions: Auto Test, Browser Test, Configure, Delete */}
+                    <div className="pt-3 border-t border-slate-800/80 flex items-center gap-1.5 flex-wrap">
                       <button
-                        onClick={() => handleTestPrint(p.id)}
-                        className="flex-1 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors border border-slate-700 hover:border-slate-600"
-                        title="Send diagnostic test print"
+                        onClick={() => handleTestPrint(p.id, p.name)}
+                        disabled={testPrintStates[p.id] === 'SENDING'}
+                        className={`flex-1 min-w-[85px] py-2 px-2.5 rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 transition-all border ${
+                          testPrintStates[p.id] === 'SENT'
+                            ? 'bg-emerald-950/80 text-emerald-300 border-emerald-600/50'
+                            : testPrintStates[p.id] === 'SENDING'
+                            ? 'bg-cyan-950/80 text-cyan-300 border-cyan-600/50 animate-pulse'
+                            : 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-slate-700 hover:border-slate-600'
+                        }`}
+                        title="Dispatch test print via background 1-Click Connector or Desktop Agent"
                       >
-                        <Play className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>Test</span>
+                        <Play className={`w-3.5 h-3.5 ${testPrintStates[p.id] === 'SENT' ? 'text-emerald-400' : 'text-cyan-400'}`} />
+                        <span>
+                          {testPrintStates[p.id] === 'SENDING' ? 'Sending...' : testPrintStates[p.id] === 'SENT' ? 'Sent!' : 'Test'}
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => handleBrowserTestPrint(p.name)}
+                        className="py-2 px-2.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-indigo-300 border border-slate-700 hover:border-indigo-500/50 text-xs font-semibold flex items-center gap-1 transition-colors"
+                        title="Direct Browser Print (zero setup, prints test sheet instantly)"
+                      >
+                        <Printer className="w-3.5 h-3.5 text-indigo-400" />
+                        <span className="text-[11px]">Browser</span>
                       </button>
 
                       <button

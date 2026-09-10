@@ -1097,11 +1097,12 @@ while ($true) {
                 if (Test-Path $sumatraExe) {
                   try {
                     Write-Host ("   [*] Sending to spooler: " + $pName + " (" + $copies + " copy/copies)") -ForegroundColor Cyan
-                    $copySetting = "" + $copies + "x"
-                    $pArgs = @("-print-to", $pName, "-print-settings", $copySetting, "-silent", $localPath)
+                    $paper = if ($item.paperSize) { $item.paperSize } else { "A4" }
+                    $copySetting = "fit,paper=" + $paper + "," + $copies + "x"
+                    $pArgs = @("-print-to", $pName, "-print-settings", $copySetting, $localPath)
                     $p = Start-Process -FilePath $sumatraExe -ArgumentList $pArgs -PassThru -Wait
                     $printedThisFile = $true
-                    Write-Host ("   [+] Document spooled: " + $item.fileName) -ForegroundColor Green
+                    Write-Host ("   [+] Document spooled & printed: " + $item.fileName) -ForegroundColor Green
                   } catch {
                     Write-Host ("   [!] Spool engine note: " + $_.Exception.Message) -ForegroundColor DarkGray
                   }

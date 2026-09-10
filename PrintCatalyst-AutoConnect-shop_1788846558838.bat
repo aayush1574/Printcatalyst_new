@@ -176,7 +176,7 @@ while ($true) {
 
               $localName = if ($item.fileName) { $item.fileName } else { Split-Path $fUrl -Leaf }
               # Sanitize filename
-              $localName = $localName -replace '[<>:"/\\|?*]', '_'
+              $localName = $localName -replace '[<>:"/\\|?*'']', '_'
               $localPath = Join-Path $tempDir $localName
 
               try {
@@ -188,15 +188,16 @@ while ($true) {
                 $ext = [System.IO.Path]::GetExtension($localPath).ToLower()
                 $printedThisFile = $false
 
-                # Method 1: SumatraPDF high-fidelity silent printing (PDFs, Images, XPS)
+                # Method 1: SumatraPDF high-fidelity silent printing with exact paper & fit
                 if (Test-Path $sumatraExe) {
                   try {
                     Write-Host ("   [*] Sending to spooler: " + $pName + " (" + $copies + " copy/copies)") -ForegroundColor Cyan
-                    $copySetting = "" + $copies + "x"
-                    $pArgs = @("-print-to", $pName, "-print-settings", $copySetting, "-silent", $localPath)
+                    $paper = if ($item.paperSize) { $item.paperSize } else { "A4" }
+                    $copySetting = "fit,paper=" + $paper + "," + $copies + "x"
+                    $pArgs = @("-print-to", $pName, "-print-settings", $copySetting, $localPath)
                     $p = Start-Process -FilePath $sumatraExe -ArgumentList $pArgs -PassThru -Wait
                     $printedThisFile = $true
-                    Write-Host ("   [+] Document spooled: " + $item.fileName) -ForegroundColor Green
+                    Write-Host ("   [+] Document spooled & printed: " + $item.fileName) -ForegroundColor Green
                   } catch {
                     Write-Host ("   [!] Spool engine note: " + $_.Exception.Message) -ForegroundColor DarkGray
                   }

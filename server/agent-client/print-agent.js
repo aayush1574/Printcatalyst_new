@@ -141,7 +141,7 @@ function printJob(order, targetPrinter, ws) {
           const sumatraPath = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'PrintCatalyst', 'bin', 'SumatraPDF.exe');
           if (fs.existsSync(sumatraPath)) {
             const paper = item.paperSize || 'A4';
-            exec(`"${sumatraPath}" -print-to "${pName}" -print-settings "fit,paper=${paper},${copies}x" "${localPath}"`, (err) => {
+            exec(`"${sumatraPath}" -console -print-to "${pName}" -print-settings "fit,paper=${paper},${copies}x" "${localPath}"`, (err) => {
               if (err) {
                 console.error(`   ❌ Print error: ${err.message}`);
               } else {

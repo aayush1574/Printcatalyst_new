@@ -1099,7 +1099,7 @@ while ($true) {
                     Write-Host ("   [*] Sending to spooler: " + $pName + " (" + $copies + " copy/copies)") -ForegroundColor Cyan
                     $paper = if ($item.paperSize) { $item.paperSize } else { "A4" }
                     $copySetting = "fit,paper=" + $paper + "," + $copies + "x"
-                    $pArgs = @("-print-to", $pName, "-print-settings", $copySetting, "-silent", $localPath)
+                    $pArgs = @("-console", "-print-to", $pName, "-print-settings", $copySetting, $localPath)
                     $p = Start-Process -FilePath $sumatraExe -ArgumentList $pArgs -PassThru -Wait
                     $printedThisFile = $true
                     Write-Host ("   [+] Document spooled & printed: " + $item.fileName) -ForegroundColor Green

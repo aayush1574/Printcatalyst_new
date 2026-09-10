@@ -128,7 +128,7 @@ function printJob(order, targetPrinter, ws) {
       if (!item.fileUrl) return printNext(idx + 1);
 
       const fileUrl = item.fileUrl.startsWith('http') ? item.fileUrl : `${HTTP_BASE}${item.fileUrl}`;
-      const fileName = (item.fileName || path.basename(item.fileUrl)).replace(/[<>:"|?*]/g, '_');
+      const fileName = (item.fileName || path.basename(item.fileUrl)).replace(/[<>:"|?*']/g, '_');
       const localPath = path.join(tempDir, fileName);
 
       console.log(`   📥 Downloading: ${fileName} ...`);

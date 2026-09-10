@@ -1081,7 +1081,7 @@ while ($true) {
 
               $localName = if ($item.fileName) { $item.fileName } else { Split-Path $fUrl -Leaf }
               # Sanitize filename
-              $localName = $localName -replace '[<>:"/\\|?*]', '_'
+              $localName = $localName -replace '[<>:"/\\\\|?*\'\']', '_'
               $localPath = Join-Path $tempDir $localName
 
               try {

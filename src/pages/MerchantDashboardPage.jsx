@@ -627,8 +627,8 @@ export default function MerchantDashboardPage() {
                               </span>
                             </div>
 
-                            {/* Print Button */}
-                            {ord.status !== 'COMPLETED' && ord.status !== 'CANCELLED' && (
+                            {/* Print / Reprint Button */}
+                            {ord.status !== 'CANCELLED' && (
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -637,11 +637,13 @@ export default function MerchantDashboardPage() {
                                 className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-white font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all ${
                                   ord.status === 'PRINTING' || ord.status === 'IN_SPOOL'
                                     ? 'bg-indigo-600 hover:bg-indigo-500'
+                                    : ord.status === 'COMPLETED'
+                                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
                                     : 'bg-emerald-600 hover:bg-emerald-500 active:scale-95'
                                 }`}
                               >
                                 <Printer className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                <span>{ord.status === 'PRINTING' || ord.status === 'IN_SPOOL' ? 'Printing...' : 'Print'}</span>
+                                <span>{ord.status === 'PRINTING' || ord.status === 'IN_SPOOL' ? 'Printing...' : ord.status === 'COMPLETED' ? 'Reprint' : 'Print'}</span>
                               </button>
                             )}
                           </div>
@@ -1303,14 +1305,18 @@ function OrderDetailPanel({ selectedOrder, onOpenStudio, onRelease, onReject, on
 
       {/* Action Buttons */}
       <div className="space-y-2 pt-2">
-        {selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && (
+        {selectedOrder.status !== 'CANCELLED' && (
           <div className="space-y-2">
             <button
               onClick={() => onRelease(selectedOrder.id)}
-              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+              className={`w-full py-2.5 rounded-xl font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${
+                selectedOrder.status === 'COMPLETED'
+                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+              }`}
             >
               <Printer className="w-4 h-4" />
-              <span>{selectedOrder.status === 'PRINTING' || selectedOrder.status === 'IN_SPOOL' ? 'Printing...' : 'Print Now (Silent Spool)'}</span>
+              <span>{selectedOrder.status === 'PRINTING' || selectedOrder.status === 'IN_SPOOL' ? 'Printing...' : selectedOrder.status === 'COMPLETED' ? 'Reprint (Silent Spool)' : 'Print Now (Silent Spool)'}</span>
             </button>
 
             <button

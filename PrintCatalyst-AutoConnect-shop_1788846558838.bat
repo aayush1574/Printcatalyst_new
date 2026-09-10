@@ -1,7 +1,270 @@
+<# :
 @echo off
 setlocal
 chcp 65001 >nul
 title Print Catalyst - 1-Click Printer Bridge
 color 0B
 cls
-powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand CgBbAEMAbwBuAHMAbwBsAGUAXQA6ADoATwB1AHQAcAB1AHQARQBuAGMAbwBkAGkAbgBnACAAPQAgAFsAUwB5AHMAdABlAG0ALgBUAGUAeAB0AC4ARQBuAGMAbwBkAGkAbgBnAF0AOgA6AFUAVABGADgACgAKAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAiACIACgBXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9ACIAIAAtAEYAbwByAGUAZwByAG8AdQBuAGQAQwBvAGwAbwByACAAQwB5AGEAbgAKAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAiACAAIAAgACAAIAAgACAAIAAgACAAUABSAEkATgBUACAAQwBBAFQAQQBMAFkAUwBUACAALQAgADEALQBDAEwASQBDAEsAIABJAE4AUwBUAEEATgBUACAAUABSAEkATgBUAEUAUgAgAEIAUgBJAEQARwBFACIAIAAtAEYAbwByAGUAZwByAG8AdQBuAGQAQwBvAGwAbwByACAAQwB5AGEAbgAKAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAiAD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0AIgAgAC0ARgBvAHIAZQBnAHIAbwB1AG4AZABDAG8AbABvAHIAIABDAHkAYQBuAAoAVwByAGkAdABlAC0ASABvAHMAdAAgACIAIgAKAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAiACAAIABTAGgAbwBwACAATgBhAG0AZQAgACAAOgAgAE0AYQBoAGEAawBhAGwAIABTAHQAYQB0AGkAbwBuAGEAcgB5ACIAIAAtAEYAbwByAGUAZwByAG8AdQBuAGQAQwBvAGwAbwByACAAVwBoAGkAdABlAAoAVwByAGkAdABlAC0ASABvAHMAdAAgACIAIAAgAFMAaABvAHAAIABJAEQAIAAgACAAIAA6ACAAcwBoAG8AcABfADEANwA4ADgAOAA0ADYANQA1ADgAOAAzADgAIgAgAC0ARgBvAHIAZQBnAHIAbwB1AG4AZABDAG8AbABvAHIAIABXAGgAaQB0AGUACgBXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgAgACAAUwBlAHIAdgBlAHIAIABVAFIATAAgADoAIABoAHQAdABwAHMAOgAvAC8AcAByAGkAbgB0AGMAYQB0AGEAbAB5AHMAdAAtAG4AZQB3AC4AbwBuAHIAZQBuAGQAZQByAC4AYwBvAG0AIgAgAC0ARgBvAHIAZQBnAHIAbwB1AG4AZABDAG8AbABvAHIAIABXAGgAaQB0AGUACgBXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgAiAAoAVwByAGkAdABlAC0ASABvAHMAdAAgACIAIAAgAFMAYwBhAG4AbgBpAG4AZwAgAFcAaQBuAGQAbwB3AHMAIABmAG8AcgAgAGkAbgBzAHQAYQBsAGwAZQBkACAAVQBTAEIALAAgAFcAaQAtAEYAaQAgAGEAbgBkACAATgBlAHQAdwBvAHIAawAgAFAAcgBpAG4AdABlAHIAcwAuAC4ALgAiACAALQBGAG8AcgBlAGcAcgBvAHUAbgBkAEMAbwBsAG8AcgAgAEcAcgBhAHkACgBXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtAC0ALQAtACIAIAAtAEYAbwByAGUAZwByAG8AdQBuAGQAQwBvAGwAbwByACAARABhAHIAawBHAHIAYQB5AAoAVwByAGkAdABlAC0ASABvAHMAdAAgACIAIgAKAAoAJABpAG4AcwB0AGEAbABsAGUAZAAgAD0AIABHAGUAdAAtAFAAcgBpAG4AdABlAHIAIAB8ACAAUwBlAGwAZQBjAHQALQBPAGIAagBlAGMAdAAgAE4AYQBtAGUALAAgAEQAcgBpAHYAZQByAE4AYQBtAGUALAAgAEQAZQBmAGEAdQBsAHQACgBpAGYAIAAoAC0AbgBvAHQAIAAkAGkAbgBzAHQAYQBsAGwAZQBkACkAIAB7AAoAIAAgAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAiACAAWwAhAF0AIABOAG8AIABwAHIAaQBuAHQAZQByAHMAIABmAG8AdQBuAGQALgAgAFAAbABlAGEAcwBlACAAZQBuAHMAdQByAGUAIAB5AG8AdQByACAAcAByAGkAbgB0AGUAcgAgAGkAcwAgAHQAdQByAG4AZQBkACAAbwBuACAAYQBuAGQAIABjAG8AbgBuAGUAYwB0AGUAZAAuACIAIAAtAEYAbwByAGUAZwByAG8AdQBuAGQAQwBvAGwAbwByACAAWQBlAGwAbABvAHcACgB9ACAAZQBsAHMAZQAgAHsACgAgACAAJABsAGkAcwB0ACAAPQAgAEAAKAApAAoAIAAgAGYAbwByAGUAYQBjAGgAIAAoACQAcAAgAGkAbgAgACQAaQBuAHMAdABhAGwAbABlAGQAKQAgAHsACgAgACAAIAAgACQAaQBzAEMAbwBsAG8AcgAgAD0AIAAoACQAcAAuAE4AYQBtAGUAIAAtAG0AYQB0AGMAaAAgACcAKAA/AGkAKQBjAG8AbABvAHIAfAB0AGEAbgBrAHwAcABoAG8AdABvAHwAYwAzADUAMwAwAHwAbAA4ADAANQAwAHwAZABlAHMAawBqAGUAdAB8AGkAbgBrAGoAZQB0ACcAIAAtAG8AcgAgACgAJABwAC4ARAByAGkAdgBlAHIATgBhAG0AZQAgAC0AYQBuAGQAIAAkAHAALgBEAHIAaQB2AGUAcgBOAGEAbQBlACAALQBtAGEAdABjAGgAIAAnACgAPwBpACkAYwBvAGwAbwByACcAKQApAAoAIAAgACAAIAAkAHQAeQBwAGUAIAA9ACAAaQBmACAAKAAkAGkAcwBDAG8AbABvAHIAKQAgAHsAIAAnAEMATwBMAE8AUgBfAEkATgBLAEoARQBUAF8AUABIAE8AVABPACcAIAB9ACAAZQBsAHMAZQAgAHsAIAAnAE0ATwBOAE8AXwBMAEEAUwBFAFIAJwAgAH0ACgAgACAAIAAgACQAbABpAHMAdAAgACsAPQAgAEAAewAKACAAIAAgACAAIAAgAG4AYQBtAGUAIAA9ACAAJABwAC4ATgBhAG0AZQAKACAAIAAgACAAIAAgAGQAcgBpAHYAZQByACAAPQAgACQAcAAuAEQAcgBpAHYAZQByAE4AYQBtAGUACgAgACAAIAAgACAAIABpAHMARABlAGYAYQB1AGwAdAAgAD0AIABbAGIAbwBvAGwAXQAkAHAALgBEAGUAZgBhAHUAbAB0AAoAIAAgACAAIAAgACAAcwB1AHAAcABvAHIAdABzAEMAbwBsAG8AcgAgAD0AIABbAGIAbwBvAGwAXQAkAGkAcwBDAG8AbABvAHIACgAgACAAIAAgACAAIAB0AHkAcABlACAAPQAgACQAdAB5AHAAZQAKACAAIAAgACAAfQAKACAAIAAgACAAVwByAGkAdABlAC0ASABvAHMAdAAgACgAIgAgACAAIABbACsAXQAgAEQAZQB0AGUAYwB0AGUAZAA6ACAAIgAgACsAIAAkAHAALgBOAGEAbQBlACAAKwAgACIAIAAoACIAIAArACAAJAAoAGkAZgAgACgAJABpAHMAQwBvAGwAbwByACkAIAB7ACcAQwBvAGwAbwByACcAfQAgAGUAbABzAGUAIAB7ACcATQBvAG4AbwBjAGgAcgBvAG0AZQAnAH0AKQAgACsAIAAiACkAIgApACAALQBGAG8AcgBlAGcAcgBvAHUAbgBkAEMAbwBsAG8AcgAgAEcAcgBlAGUAbgAKACAAIAB9AAoACgAgACAAJABwAGEAeQBsAG8AYQBkACAAPQAgAEAAewAKACAAIAAgACAAcwBoAG8AcABJAGQAIAA9ACAAJwBzAGgAbwBwAF8AMQA3ADgAOAA4ADQANgA1ADUAOAA4ADMAOAAnAAoAIAAgACAAIABoAG8AcwB0AG4AYQBtAGUAIAA9ACAAJABlAG4AdgA6AEMATwBNAFAAVQBUAEUAUgBOAEEATQBFAAoAIAAgACAAIABwAHIAaQBuAHQAZQByAHMAIAA9ACAAJABsAGkAcwB0AAoAIAAgAH0AIAB8ACAAQwBvAG4AdgBlAHIAdABUAG8ALQBKAHMAbwBuACAALQBEAGUAcAB0AGgAIAA0AAoACgAgACAAVwByAGkAdABlAC0ASABvAHMAdAAgACIAIgAKACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgBbACoAXQAgAEwAaQBuAGsAaQBuAGcAIABkAGUAdABlAGMAdABlAGQAIABwAHIAaQBuAHQAZQByAHMAIAB3AGkAdABoACAAeQBvAHUAcgAgAG8AbgBsAGkAbgBlACAARABhAHMAaABiAG8AYQByAGQALgAuAC4AIgAgAC0ARgBvAHIAZQBnAHIAbwB1AG4AZABDAG8AbABvAHIAIABZAGUAbABsAG8AdwAKAAoAIAAgAHQAcgB5ACAAewAKACAAIAAgACAAWwBTAHkAcwB0AGUAbQAuAE4AZQB0AC4AUwBlAHIAdgBpAGMAZQBQAG8AaQBuAHQATQBhAG4AYQBnAGUAcgBdADoAOgBTAGUAcgB2AGUAcgBDAGUAcgB0AGkAZgBpAGMAYQB0AGUAVgBhAGwAaQBkAGEAdABpAG8AbgBDAGEAbABsAGIAYQBjAGsAIAA9ACAAewAkAHQAcgB1AGUAfQAKACAAIAAgACAAWwBTAHkAcwB0AGUAbQAuAE4AZQB0AC4AUwBlAHIAdgBpAGMAZQBQAG8AaQBuAHQATQBhAG4AYQBnAGUAcgBdADoAOgBTAGUAYwB1AHIAaQB0AHkAUAByAG8AdABvAGMAbwBsACAAPQAgAFsAUwB5AHMAdABlAG0ALgBOAGUAdAAuAFMAZQBjAHUAcgBpAHQAeQBQAHIAbwB0AG8AYwBvAGwAVAB5AHAAZQBdADoAOgBUAGwAcwAxADIAIAAtAGIAbwByACAAWwBTAHkAcwB0AGUAbQAuAE4AZQB0AC4AUwBlAGMAdQByAGkAdAB5AFAAcgBvAHQAbwBjAG8AbABUAHkAcABlAF0AOgA6AFQAbABzADEAMQAgAC0AYgBvAHIAIABbAFMAeQBzAHQAZQBtAC4ATgBlAHQALgBTAGUAYwB1AHIAaQB0AHkAUAByAG8AdABvAGMAbwBsAFQAeQBwAGUAXQA6ADoAVABsAHMACgAgACAAIAAgAAoAIAAgACAAIAAkAHIAZQBzACAAPQAgAEkAbgB2AG8AawBlAC0AUgBlAHMAdABNAGUAdABoAG8AZAAgAC0AVQByAGkAIAAiAGgAdAB0AHAAcwA6AC8ALwBwAHIAaQBuAHQAYwBhAHQAYQBsAHkAcwB0AC0AbgBlAHcALgBvAG4AcgBlAG4AZABlAHIALgBjAG8AbQAvAGEAcABpAC8AdgAxAC8AcAByAGkAbgB0AGUAcgBzAC8AYQB1AHQAbwAtAGQAZQB0AGUAYwB0ACIAIAAtAE0AZQB0AGgAbwBkACAAUABvAHMAdAAgAC0AQgBvAGQAeQAgACQAcABhAHkAbABvAGEAZAAgAC0AQwBvAG4AdABlAG4AdABUAHkAcABlACAAIgBhAHAAcABsAGkAYwBhAHQAaQBvAG4ALwBqAHMAbwBuACIACgAgACAAIAAgAAoAIAAgACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgAiAAoAIAAgACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9ACIAIAAtAEYAbwByAGUAZwByAG8AdQBuAGQAQwBvAGwAbwByACAARwByAGUAZQBuAAoAIAAgACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAKAAiACAAIABbAFMAVQBDAEMARQBTAFMAXQAgAEEAbABsACAAIgAgACsAIAAkAGkAbgBzAHQAYQBsAGwAZQBkAC4AQwBvAHUAbgB0ACAAKwAgACIAIABwAHIAaQBuAHQAZQByACgAcwApACAAYQByAGUAIABuAG8AdwAgAEwASQBWAEUAIABpAG4AIAB5AG8AdQByACAARABhAHMAaABiAG8AYQByAGQAIQAiACkAIAAtAEYAbwByAGUAZwByAG8AdQBuAGQAQwBvAGwAbwByACAARwByAGUAZQBuAAoAIAAgACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9ACIAIAAtAEYAbwByAGUAZwByAG8AdQBuAGQAQwBvAGwAbwByACAARwByAGUAZQBuAAoAIAAgAH0AIABjAGEAdABjAGgAIAB7AAoAIAAgACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgAiAAoAIAAgACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAKAAiACAAWwAhAF0AIABDAG8AbgBuAGUAYwB0AGkAbwBuACAAZQByAHIAbwByADoAIAAiACAAKwAgACQAXwAuAEUAeABjAGUAcAB0AGkAbwBuAC4ATQBlAHMAcwBhAGcAZQApACAALQBGAG8AcgBlAGcAcgBvAHUAbgBkAEMAbwBsAG8AcgAgAFIAZQBkAAoAIAAgAH0ACgB9AAoACgBXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgAiAAoAVwByAGkAdABlAC0ASABvAHMAdAAgACIAPQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQAiACAALQBGAG8AcgBlAGcAcgBvAHUAbgBkAEMAbwBsAG8AcgAgAEMAeQBhAG4ACgBXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgAgACAAIAA+AD4APgAgAFAAUgBJAE4AVAAgAEMAQQBUAEEATABZAFMAVAAgAEIAUgBJAEQARwBFACAASQBTACAAQQBDAFQASQBWAEUAIAAmACAATABJAFMAVABFAE4ASQBOAEcAIAA8ADwAPAAiACAALQBGAG8AcgBlAGcAcgBvAHUAbgBkAEMAbwBsAG8AcgAgAEcAcgBlAGUAbgAKAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAiACAAIAAgAEsAZQBlAHAAIAB0AGgAaQBzACAAdwBpAG4AZABvAHcAIABvAHAAZQBuACAAbwByACAAbQBpAG4AaQBtAGkAegBlAGQAIABpAG4AIAB0AGgAZQAgAGIAYQBjAGsAZwByAG8AdQBuAGQALgAiACAALQBGAG8AcgBlAGcAcgBvAHUAbgBkAEMAbwBsAG8AcgAgAFcAaABpAHQAZQAKAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAiACAAIAAgAEEAbgB5ACAAVABlAHMAdAAgAFAAcgBpAG4AdABzACAAbwByACAAUAByAGkAbgB0ACAATwByAGQAZQByAHMAIABmAHIAbwBtACAARABhAHMAaABiAG8AYQByAGQAIABwAHIAaQBuAHQAIABhAHUAdABvAG0AYQB0AGkAYwBhAGwAbAB5ACEAIgAgAC0ARgBvAHIAZQBnAHIAbwB1AG4AZABDAG8AbABvAHIAIABZAGUAbABsAG8AdwAKAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAiACAAIAAgACgAUAByAGUAcwBzACAAQwB0AHIAbAArAEMAIABhAG4AeQB0AGkAbQBlACAAdABvACAAYwBsAG8AcwBlACAAdABoAGUAIABiAHIAaQBkAGcAZQApACIAIAAtAEYAbwByAGUAZwByAG8AdQBuAGQAQwBvAGwAbwByACAARABhAHIAawBHAHIAYQB5AAoAVwByAGkAdABlAC0ASABvAHMAdAAgACIAPQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQAiACAALQBGAG8AcgBlAGcAcgBvAHUAbgBkAEMAbwBsAG8AcgAgAEMAeQBhAG4ACgBXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgAiAAoACgAkAHAAbwBsAGwAVQByAGwAIAA9ACAAIgBoAHQAdABwAHMAOgAvAC8AcAByAGkAbgB0AGMAYQB0AGEAbAB5AHMAdAAtAG4AZQB3AC4AbwBuAHIAZQBuAGQAZQByAC4AYwBvAG0ALwBhAHAAaQAvAHYAMQAvAGEAZwBlAG4AdAAvAHAAZQBuAGQAaQBuAGcAPwBzAGgAbwBwAEkAZAA9AHMAaABvAHAAXwAxADcAOAA4ADgANAA2ADUANQA4ADgAMwA4ACIACgAKAHcAaABpAGwAZQAgACgAJAB0AHIAdQBlACkAIAB7AAoAIAAgAHQAcgB5ACAAewAKACAAIAAgACAAJAByAGUAcwBwACAAPQAgAEkAbgB2AG8AawBlAC0AUgBlAHMAdABNAGUAdABoAG8AZAAgAC0AVQByAGkAIAAkAHAAbwBsAGwAVQByAGwAIAAtAE0AZQB0AGgAbwBkACAARwBlAHQAIAAtAFQAaQBtAGUAbwB1AHQAUwBlAGMAIAAxADAACgAgACAAIAAgAGkAZgAgACgAJAByAGUAcwBwACAALQBhAG4AZAAgACQAcgBlAHMAcAAuAGEAYwB0AGkAbwBuAHMAIAAtAGEAbgBkACAAJAByAGUAcwBwAC4AYQBjAHQAaQBvAG4AcwAuAEMAbwB1AG4AdAAgAC0AZwB0ACAAMAApACAAewAKACAAIAAgACAAIAAgAGYAbwByAGUAYQBjAGgAIAAoACQAYQBjAHQAIABpAG4AIAAkAHIAZQBzAHAALgBhAGMAdABpAG8AbgBzACkAIAB7AAoAIAAgACAAIAAgACAAIAAgAGkAZgAgACgAJABhAGMAdAAuAHQAeQBwAGUAIAAtAGUAcQAgACcAVABFAFMAVABfAFAAUgBJAE4AVAAnACkAIAB7AAoAIAAgACAAIAAgACAAIAAgACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAIgAiAAoAIAAgACAAIAAgACAAIAAgACAAIABXAHIAaQB0AGUALQBIAG8AcwB0ACAAKAAiAFsAIgAgACsAIAAoAEcAZQB0AC0ARABhAHQAZQAgAC0ARgBvAHIAbQBhAHQAIAAnAEgASAA6AG0AbQA6AHMAcwAnACkAIAArACAAIgBdACAAWwBUAEUAUwBUACAAUABSAEkATgBUAF0AIABSAGUAYwBlAGkAdgBlAGQAIABkAGkAYQBnAG4AbwBzAHQAaQBjACAAdABlAHMAdAAgAGYAbwByADoAIAAiACAAKwAgACQAYQBjAHQALgBwAHIAaQBuAHQAZQByAE4AYQBtAGUAKQAgAC0ARgBvAHIAZQBnAHIAbwB1AG4AZABDAG8AbABvAHIAIABDAHkAYQBuAAoAIAAgACAAIAAgACAAIAAgACAAIAAkAHQAYQByAGcAZQB0AE4AYQBtAGUAIAA9ACAAJABhAGMAdAAuAHAAcgBpAG4AdABlAHIATgBhAG0AZQAKACAAIAAgACAAIAAgACAAIAAgACAAJABwAHIAbgAgAD0AIABHAGUAdAAtAEMAaQBtAEkAbgBzAHQAYQBuAGMAZQAgAFcAaQBuADMAMgBfAFAAcgBpAG4AdABlAHIAIAB8ACAAVwBoAGUAcgBlAC0ATwBiAGoAZQBjAHQAIAB7ACAAJABfAC4ATgBhAG0AZQAgAC0AZQBxACAAJAB0AGEAcgBnAGUAdABOAGEAbQBlACAALQBvAHIAIAAkAF8ALgBOAGEAbQBlACAALQBsAGkAawBlACAAIgAqACQAdABhAHIAZwBlAHQATgBhAG0AZQAqACIAIAAtAG8AcgAgACQAdABhAHIAZwBlAHQATgBhAG0AZQAgAC0AbABpAGsAZQAgACIAKgAkACgAJABfAC4ATgBhAG0AZQApACoAIgAgAH0AIAB8ACAAUwBlAGwAZQBjAHQALQBPAGIAagBlAGMAdAAgAC0ARgBpAHIAcwB0ACAAMQAKACAAIAAgACAAIAAgACAAIAAgACAAaQBmACAAKAAkAHAAcgBuACkAIAB7AAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAJAByAGUAcwBDAG8AZABlACAAPQAgAEkAbgB2AG8AawBlAC0AQwBpAG0ATQBlAHQAaABvAGQAIAAtAEkAbgBwAHUAdABPAGIAagBlAGMAdAAgACQAcAByAG4AIAAtAE0AZQB0AGgAbwBkAE4AYQBtAGUAIABQAHIAaQBuAHQAVABlAHMAdABQAGEAZwBlAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAVwByAGkAdABlAC0ASABvAHMAdAAgACgAIgAgACAAIABbACsAXQAgAE4AYQB0AGkAdgBlACAAVwBpAG4AZABvAHcAcwAgAFQAZQBzAHQAIABQAGEAZwBlACAAZABpAHMAcABhAHQAYwBoAGUAZAAgAHQAbwAgACIAIAArACAAJABwAHIAbgAuAE4AYQBtAGUAIAArACAAIgAhACAAKABTAHQAYQB0AHUAcwA6ACAAIgAgACsAIAAkAHIAZQBzAEMAbwBkAGUALgBSAGUAdAB1AHIAbgBWAGEAbAB1AGUAIAArACAAIgApACIAKQAgAC0ARgBvAHIAZQBnAHIAbwB1AG4AZABDAG8AbABvAHIAIABHAHIAZQBlAG4ACgAgACAAIAAgACAAIAAgACAAIAAgAH0AIABlAGwAcwBlACAAewAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACQAdABlAHMAdABMAGkAbgBlAHMAIAA9ACAAQAAoAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACIAPQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQAiACwACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIgAgAFAAUgBJAE4AVAAgAEMAQQBUAEEATABZAFMAVAAgAC0AIABUAEUAUwBUACAAUABSAEkATgBUACIALAAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAiACAAUAByAGkAbgB0AGUAcgA6ACAAIgAgACsAIAAkAGEAYwB0AC4AcAByAGkAbgB0AGUAcgBOAGEAbQBlACwACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIgAgAFMAaABvAHAAOgAgAE0AYQBoAGEAawBhAGwAIABTAHQAYQB0AGkAbwBuAGEAcgB5ACIALAAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAiACAAVABpAG0AZQA6ACAAIgAgACsAIAAoAEcAZQB0AC0ARABhAHQAZQApACwACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIgAgAFMAdABhAHQAdQBzADoAIABIAEEAUgBEAFcAQQBSAEUAIABDAE8ATgBOAEUAQwBUAEkATwBOACAAVgBFAFIASQBGAEkARQBEACIALAAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIAAiAD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0AIgAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACkACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAkAHQAZQBzAHQATABpAG4AZQBzACAALQBqAG8AaQBuACAAWwBFAG4AdgBpAHIAbwBuAG0AZQBuAHQAXQA6ADoATgBlAHcATABpAG4AZQAgAHwAIABPAHUAdAAtAFAAcgBpAG4AdABlAHIAIAAtAE4AYQBtAGUAIAAiACQAdABhAHIAZwBlAHQATgBhAG0AZQAiAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAVwByAGkAdABlAC0ASABvAHMAdAAgACIAIAAgACAAWwArAF0AIABEAGkAYQBnAG4AbwBzAHQAaQBjACAAcAByAGkAbgB0ACAAdABpAGMAawBlAHQAIABkAGkAcwBwAGEAdABjAGgAZQBkACAAdgBpAGEAIABPAHUAdAAtAFAAcgBpAG4AdABlAHIAIQAiACAALQBGAG8AcgBlAGcAcgBvAHUAbgBkAEMAbwBsAG8AcgAgAEcAcgBlAGUAbgAKACAAIAAgACAAIAAgACAAIAAgACAAfQAKACAAIAAgACAAIAAgACAAIAB9ACAAZQBsAHMAZQBpAGYAIAAoACQAYQBjAHQALgB0AHkAcABlACAALQBlAHEAIAAnAFAAUgBJAE4AVABfAEoATwBCACcAKQAgAHsACgAgACAAIAAgACAAIAAgACAAIAAgACQAbwByAGQAIAA9ACAAJABhAGMAdAAuAG8AcgBkAGUAcgAKACAAIAAgACAAIAAgACAAIAAgACAAJABwAE4AYQBtAGUAIAA9ACAAaQBmACAAKAAkAGEAYwB0AC4AdABhAHIAZwBlAHQAUAByAGkAbgB0AGUAcgAgAC0AYQBuAGQAIAAkAGEAYwB0AC4AdABhAHIAZwBlAHQAUAByAGkAbgB0AGUAcgAuAG4AYQBtAGUAKQAgAHsAIAAkAGEAYwB0AC4AdABhAHIAZwBlAHQAUAByAGkAbgB0AGUAcgAuAG4AYQBtAGUAIAB9ACAAZQBsAHMAZQAgAHsAIAAkAG8AcgBkAC4AYQBzAHMAaQBnAG4AZQBkAFAAcgBpAG4AdABlAHIATgBhAG0AZQAgAH0ACgAgACAAIAAgACAAIAAgACAAIAAgAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAiACIACgAgACAAIAAgACAAIAAgACAAIAAgAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAoACIAWwAiACAAKwAgACgARwBlAHQALQBEAGEAdABlACAALQBGAG8AcgBtAGEAdAAgACcASABIADoAbQBtADoAcwBzACcAKQAgACsAIAAiAF0AIABbAFAAUgBJAE4AVAAgAE8AUgBEAEUAUgBdACAAIwAiACAAKwAgACQAbwByAGQALgBpAGQAIAArACAAIgAgACgAIgAgACsAIAAkAG8AcgBkAC4AYwB1AHMAdABvAG0AZQByAE4AYQBtAGUAIAArACAAIgApACAALQA+ACAAIgAgACsAIAAkAHAATgBhAG0AZQApACAALQBGAG8AcgBlAGcAcgBvAHUAbgBkAEMAbwBsAG8AcgAgAEMAeQBhAG4ACgAgACAAIAAgACAAIAAgACAAIAAgACQAdABpAGMAawBlAHQATABpAG4AZQBzACAAPQAgAEAAKAAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACIAPQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQAiACwACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAiACAAUABSAEkATgBUACAAQwBBAFQAQQBMAFkAUwBUACAALQAgAE8AUgBEAEUAUgAgAFQASQBDAEsARQBUACIALAAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACIAPQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQAiACwACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAiACAATwByAGQAZQByACAASQBEADoAIAAjACIAIAArACAAJABvAHIAZAAuAGkAZAAsAAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAIgAgAEMAdQBzAHQAbwBtAGUAcgA6ACAAIgAgACsAIAAkAG8AcgBkAC4AYwB1AHMAdABvAG0AZQByAE4AYQBtAGUALAAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACIAIABQAGgAbwBuAGUAIAAgACAAOgAgACIAIAArACAAJABvAHIAZAAuAGMAdQBzAHQAbwBtAGUAcgBQAGgAbwBuAGUALAAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACIAIABBAG0AbwB1AG4AdAAgACAAOgAgAFIAcwAuACAAIgAgACsAIAAkAG8AcgBkAC4AZgBpAG4AYQBsAEEAbQBvAHUAbgB0ACwACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAiACAAVABpAG0AZQAgACAAIAAgADoAIAAiACAAKwAgACgARwBlAHQALQBEAGEAdABlACkALAAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgACIAIABEAG8AYwB1AG0AZQBuAHQAcwA6ACAAIgAgACsAIAAkAG8AcgBkAC4AaQB0AGUAbQBzAC4AQwBvAHUAbgB0ACwACgAgACAAIAAgACAAIAAgACAAIAAgACAAIAAiAD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0APQA9AD0AIgAKACAAIAAgACAAIAAgACAAIAAgACAAKQAKACAAIAAgACAAIAAgACAAIAAgACAAdAByAHkAIAB7AAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAJAB0AGkAYwBrAGUAdABMAGkAbgBlAHMAIAAtAGoAbwBpAG4AIABbAEUAbgB2AGkAcgBvAG4AbQBlAG4AdABdADoAOgBOAGUAdwBMAGkAbgBlACAAfAAgAE8AdQB0AC0AUAByAGkAbgB0AGUAcgAgAC0ATgBhAG0AZQAgACIAJABwAE4AYQBtAGUAIgAKACAAIAAgACAAIAAgACAAIAAgACAAIAAgAFcAcgBpAHQAZQAtAEgAbwBzAHQAIAAoACIAIAAgACAAWwArAF0AIABPAHIAZABlAHIAIABzAGwAaQBwACAAcwBlAG4AdAAgAHQAbwAgAHAAcgBpAG4AdABlAHIAOgAgACIAIAArACAAJABwAE4AYQBtAGUAKQAgAC0ARgBvAHIAZQBnAHIAbwB1AG4AZABDAG8AbABvAHIAIABHAHIAZQBlAG4ACgAgACAAIAAgACAAIAAgACAAIAAgAH0AIABjAGEAdABjAGgAIAB7AAoAIAAgACAAIAAgACAAIAAgACAAIAAgACAAVwByAGkAdABlAC0ASABvAHMAdAAgACgAIgAgACAAIABbACEAXQAgAFMAcABvAG8AbAAgAHcAYQByAG4AaQBuAGcAOgAgACIAIAArACAAJABfAC4ARQB4AGMAZQBwAHQAaQBvAG4ALgBNAGUAcwBzAGEAZwBlACkAIAAtAEYAbwByAGUAZwByAG8AdQBuAGQAQwBvAGwAbwByACAAUgBlAGQACgAgACAAIAAgACAAIAAgACAAIAAgAH0ACgAgACAAIAAgACAAIAAgACAAfQAKACAAIAAgACAAIAAgAH0ACgAgACAAIAAgAH0ACgAgACAAfQAgAGMAYQB0AGMAaAAgAHsACgAgACAAIAAgACMAIABOAGUAdAB3AG8AcgBrACAAYgBsAGkAcAAgAC0AIABxAHUAaQBlAHQAbAB5ACAAcgBlAHQAcgB5ACAAbgBlAHgAdAAgAGMAeQBjAGwAZQAKACAAIAB9AAoAIAAgAFMAdABhAHIAdAAtAFMAbABlAGUAcAAgAC0AUwBlAGMAbwBuAGQAcwAgADIACgB9AAoA
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$content=[System.IO.File]::ReadAllText('%~f0', [System.Text.Encoding]::UTF8); Invoke-Expression $content"
+exit /b
+#>
+
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
+Write-Host ""
+Write-Host "======================================================================" -ForegroundColor Cyan
+Write-Host "          PRINT CATALYST - 1-CLICK INSTANT PRINTER BRIDGE" -ForegroundColor Cyan
+Write-Host "======================================================================" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "  Shop Name  : Mahakal Stationary" -ForegroundColor White
+Write-Host "  Shop ID    : shop_1788846558838" -ForegroundColor White
+Write-Host "  Server URL : https://printcatalyst-new.onrender.com" -ForegroundColor White
+Write-Host ""
+Write-Host "  Scanning Windows for installed USB, Wi-Fi and Network Printers..." -ForegroundColor Gray
+Write-Host "----------------------------------------------------------------------" -ForegroundColor DarkGray
+Write-Host ""
+
+$installed = Get-Printer | Select-Object Name, DriverName, Default
+if (-not $installed) {
+  Write-Host "  [!] No printers found. Please ensure your printer is turned on and connected." -ForegroundColor Yellow
+} else {
+  $list = @()
+  foreach ($p in $installed) {
+    $isColor = ($p.Name -match '(?i)color|tank|photo|c3530|l8050|deskjet|inkjet' -or ($p.DriverName -and $p.DriverName -match '(?i)color'))
+    $type = if ($isColor) { 'COLOR_INKJET_PHOTO' } else { 'MONO_LASER' }
+    $list += @{
+      name = $p.Name
+      driver = $p.DriverName
+      isDefault = [bool]$p.Default
+      supportsColor = [bool]$isColor
+      type = $type
+    }
+    Write-Host ("   [+] Detected: " + $p.Name + " (" + $(if ($isColor) {'Color'} else {'Monochrome'}) + ")") -ForegroundColor Green
+  }
+
+  $payload = @{
+    shopId = 'shop_1788846558838'
+    hostname = $env:COMPUTERNAME
+    printers = $list
+  } | ConvertTo-Json -Depth 4
+
+  Write-Host ""
+  Write-Host "[*] Linking detected printers with your online Dashboard..." -ForegroundColor Yellow
+
+  try {
+    [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+    [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12 -bor [System.Net.SecurityProtocolType]::Tls11 -bor [System.Net.SecurityProtocolType]::Tls
+    
+    $res = Invoke-RestMethod -Uri "https://printcatalyst-new.onrender.com/api/v1/printers/auto-detect" -Method Post -Body $payload -ContentType "application/json"
+    
+    Write-Host ""
+    Write-Host "======================================================================" -ForegroundColor Green
+    Write-Host ("  [SUCCESS] All " + $installed.Count + " printer(s) are now LIVE in your Dashboard!") -ForegroundColor Green
+    Write-Host "======================================================================" -ForegroundColor Green
+  } catch {
+    Write-Host ""
+    Write-Host ("  [!] Connection error: " + $_.Exception.Message) -ForegroundColor Red
+  }
+}
+
+Write-Host ""
+Write-Host "======================================================================" -ForegroundColor Cyan
+Write-Host "   >>> PRINT CATALYST BRIDGE IS ACTIVE & LISTENING <<<" -ForegroundColor Green
+Write-Host "   Keep this window open or minimized in the background." -ForegroundColor White
+Write-Host "   Any Test Prints or Print Orders from Dashboard print automatically!" -ForegroundColor Yellow
+Write-Host "   (Press Ctrl+C anytime to close the bridge)" -ForegroundColor DarkGray
+Write-Host "======================================================================" -ForegroundColor Cyan
+Write-Host ""
+
+$toolsDir = Join-Path $env:LOCALAPPDATA "PrintCatalyst\bin"
+if (-not (Test-Path $toolsDir)) { New-Item -ItemType Directory -Path $toolsDir -Force | Out-Null }
+$sumatraExe = Join-Path $toolsDir "SumatraPDF.exe"
+
+if (-not (Test-Path $sumatraExe)) {
+  $existingSumatra = (Get-Command SumatraPDF.exe -ErrorAction SilentlyContinue)
+  if ($existingSumatra) {
+    $sumatraExe = $existingSumatra.Source
+  } else {
+    try {
+      Write-Host "   [*] Preparing direct high-fidelity document engine..." -ForegroundColor DarkGray
+      $dlUrls = @(
+        "https://printcatalyst-new.onrender.com/bin/SumatraPDF.exe",
+        "https://www.sumatrapdfreader.org/dl/rel/3.6.1/SumatraPDF-3.6.1-64.zip"
+      )
+      foreach ($u in $dlUrls) {
+        try {
+          if ($u.EndsWith(".exe")) {
+            Invoke-WebRequest -Uri $u -OutFile $sumatraExe -UseBasicParsing -TimeoutSec 20
+            if (Test-Path $sumatraExe) { break }
+          } elseif ($u.EndsWith(".zip")) {
+            $zp = Join-Path $env:TEMP "sumatra_dl.zip"
+            Invoke-WebRequest -Uri $u -OutFile $zp -UseBasicParsing -TimeoutSec 40
+            Expand-Archive -Path $zp -DestinationPath $toolsDir -Force
+            $found = Get-ChildItem -Path $toolsDir -Filter "SumatraPDF*.exe" | Select-Object -First 1
+            if ($found -and $found.FullName -ne $sumatraExe) {
+              Move-Item -Path $found.FullName -Destination $sumatraExe -Force
+            }
+            Remove-Item -Path $zp -Force -ErrorAction SilentlyContinue
+            if (Test-Path $sumatraExe) { break }
+          }
+        } catch {}
+      }
+    } catch {}
+  }
+}
+if (Test-Path $sumatraExe) {
+  Write-Host "   [+] Direct Document & PDF Engine: ACTIVE" -ForegroundColor Green
+}
+
+$pollUrl = "https://printcatalyst-new.onrender.com/api/v1/agent/pending?shopId=shop_1788846558838"
+
+while ($true) {
+  try {
+    $resp = Invoke-RestMethod -Uri $pollUrl -Method Get -TimeoutSec 10
+    if ($resp -and $resp.actions -and $resp.actions.Count -gt 0) {
+      foreach ($act in $resp.actions) {
+        if ($act.type -eq 'TEST_PRINT') {
+          Write-Host ""
+          Write-Host ("[" + (Get-Date -Format 'HH:mm:ss') + "] [TEST PRINT] Received diagnostic test for: " + $act.printerName) -ForegroundColor Cyan
+          $targetName = $act.printerName
+          $prn = Get-CimInstance Win32_Printer | Where-Object { $_.Name -eq $targetName -or $_.Name -like "*$targetName*" -or $targetName -like "*$($_.Name)*" } | Select-Object -First 1
+          if ($prn) {
+            $resCode = Invoke-CimMethod -InputObject $prn -MethodName PrintTestPage
+            Write-Host ("   [+] Native Windows Test Page dispatched to " + $prn.Name + "! (Status: " + $resCode.ReturnValue + ")") -ForegroundColor Green
+          } else {
+            $testLines = @(
+              "========================================",
+              " PRINT CATALYST - TEST PRINT",
+              " Printer: " + $act.printerName,
+              " Shop: Mahakal Stationary",
+              " Time: " + (Get-Date),
+              " Status: HARDWARE CONNECTION VERIFIED",
+              "========================================"
+            )
+            $testLines -join [Environment]::NewLine | Out-Printer -Name "$targetName"
+            Write-Host "   [+] Diagnostic print ticket dispatched via Out-Printer!" -ForegroundColor Green
+          }
+        } elseif ($act.type -eq 'PRINT_JOB') {
+          $ord = $act.order
+          $pName = if ($act.targetPrinter -and $act.targetPrinter.name) { $act.targetPrinter.name } else { $ord.assignedPrinterName }
+          Write-Host ""
+          Write-Host ("[" + (Get-Date -Format 'HH:mm:ss') + "] [PRINT ORDER] #" + $ord.id + " (" + $ord.customerName + ") -> " + $pName) -ForegroundColor Cyan
+
+          # Create temp folder for downloaded files
+          $tempDir = Join-Path $env:TEMP ("PrintCatalyst_" + $ord.id)
+          if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir -Force | Out-Null }
+
+          # Set target printer as default
+          try {
+            $prObj = Get-CimInstance Win32_Printer | Where-Object { $_.Name -eq $pName -or $_.Name -like "*$pName*" } | Select-Object -First 1
+            if ($prObj) {
+              Invoke-CimMethod -InputObject $prObj -MethodName SetDefaultPrinter | Out-Null
+              Write-Host ("   [*] Set default printer to: " + $prObj.Name) -ForegroundColor DarkGray
+            }
+          } catch {}
+
+          $filesPrinted = 0
+          if ($ord.items -and $ord.items.Count -gt 0) {
+            foreach ($item in $ord.items) {
+              $fUrl = $item.fileUrl
+              if (-not $fUrl) { continue }
+
+              # Build full URL if relative
+              if ($fUrl -and -not $fUrl.StartsWith("http")) {
+                $fUrl = "https://printcatalyst-new.onrender.com" + $fUrl
+              }
+
+              $localName = if ($item.fileName) { $item.fileName } else { Split-Path $fUrl -Leaf }
+              # Sanitize filename
+              $localName = $localName -replace '[<>:"/\\|?*]', '_'
+              $localPath = Join-Path $tempDir $localName
+
+              try {
+                Write-Host ("   [>] Downloading: " + $item.fileName + " ...") -ForegroundColor Yellow
+                Invoke-WebRequest -Uri $fUrl -OutFile $localPath -TimeoutSec 60
+                Write-Host ("   [+] Downloaded: " + $localPath) -ForegroundColor Green
+
+                $copies = if ($item.copies) { [int]$item.copies } else { 1 }
+                $ext = [System.IO.Path]::GetExtension($localPath).ToLower()
+                $printedThisFile = $false
+
+                # Method 1: SumatraPDF high-fidelity silent printing (PDFs, Images, XPS)
+                if (Test-Path $sumatraExe) {
+                  try {
+                    Write-Host ("   [*] Sending to spooler: " + $pName + " (" + $copies + " copy/copies)") -ForegroundColor Cyan
+                    $copySetting = "" + $copies + "x"
+                    $pArgs = @("-print-to", $pName, "-print-settings", $copySetting, "-silent", $localPath)
+                    $p = Start-Process -FilePath $sumatraExe -ArgumentList $pArgs -PassThru -Wait
+                    $printedThisFile = $true
+                    Write-Host ("   [+] Document spooled: " + $item.fileName) -ForegroundColor Green
+                  } catch {
+                    Write-Host ("   [!] Spool engine note: " + $_.Exception.Message) -ForegroundColor DarkGray
+                  }
+                }
+
+                # Method 2: Image fallback via mspaint /pt
+                if (-not $printedThisFile -and ($ext -in @('.jpg', '.jpeg', '.png', '.bmp', '.gif'))) {
+                  try {
+                    for ($c = 1; $c -le $copies; $c++) {
+                      Start-Process -FilePath "mspaint.exe" -ArgumentList @("/pt", $localPath, $pName) -Wait
+                    }
+                    $printedThisFile = $true
+                    Write-Host ("   [+] Dispatched via Windows Paint: " + $item.fileName) -ForegroundColor Green
+                  } catch {}
+                }
+
+                # Method 3: Plain text file fallback
+                if (-not $printedThisFile -and ($ext -eq '.txt')) {
+                  try {
+                    for ($c = 1; $c -le $copies; $c++) {
+                      Get-Content -LiteralPath $localPath | Out-Printer -Name $pName
+                    }
+                    $printedThisFile = $true
+                    Write-Host ("   [+] Dispatched via Out-Printer: " + $item.fileName) -ForegroundColor Green
+                  } catch {}
+                }
+
+                # Method 4: Shell verb print fallback
+                if (-not $printedThisFile) {
+                  for ($c = 1; $c -le $copies; $c++) {
+                    Start-Process -FilePath $localPath -Verb Print -ErrorAction Stop
+                  }
+                  $printedThisFile = $true
+                  Write-Host ("   [+] Dispatched via Windows Shell Print: " + $item.fileName) -ForegroundColor Green
+                }
+
+                if ($printedThisFile) {
+                  $filesPrinted++
+                }
+              } catch {
+                Write-Host ("   [!] Print error for " + $item.fileName + ": " + $_.Exception.Message) -ForegroundColor Red
+              }
+            }
+          }
+
+          if ($filesPrinted -eq 0) {
+            Write-Host "   [!] No files could be printed, printing order summary slip instead" -ForegroundColor Yellow
+            $ticketLines = @(
+              "========================================",
+              " PRINT CATALYST - ORDER TICKET",
+              "========================================",
+              " Order ID: #" + $ord.id,
+              " Customer: " + $ord.customerName,
+              " Phone   : " + $ord.customerPhone,
+              " Amount  : Rs. " + $ord.finalAmount,
+              " Time    : " + (Get-Date),
+              "========================================"
+            )
+            $ticketLines -join [Environment]::NewLine | Out-Printer -Name "$pName"
+          } else {
+            Write-Host ("   [SUCCESS] " + $filesPrinted + " document(s) printed on: " + $pName) -ForegroundColor Green
+          }
+        }
+      }
+    }
+  } catch {
+    # Network blip - quietly retry next cycle
+  }
+  Start-Sleep -Seconds 2
+}
+

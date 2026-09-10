@@ -1174,15 +1174,17 @@ while ($true) {
 }
 `;
 
-  const encodedPs = Buffer.from(psScript, 'utf16le').toString('base64');
-
-  const batScript = `@echo off\r
-setlocal\r
-chcp 65001 >nul\r
-title Print Catalyst - 1-Click Printer Bridge\r
-color 0B\r
-cls\r
-powershell -NoProfile -ExecutionPolicy Bypass -EncodedCommand ${encodedPs}\r
+  const batScript = `<# :
+@echo off
+setlocal
+chcp 65001 >nul
+title Print Catalyst - 1-Click Printer Bridge
+color 0B
+cls
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$content=[System.IO.File]::ReadAllText('%~f0', [System.Text.Encoding]::UTF8); Invoke-Expression $content"
+exit /b
+#>
+${psScript}
 `;
 
   res.setHeader('Content-Disposition', `attachment; filename="PrintCatalyst-AutoConnect-${shopId}.bat"`);

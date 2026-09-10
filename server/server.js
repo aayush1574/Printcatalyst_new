@@ -1013,23 +1013,69 @@ while ($true) {
           $pName = if ($act.targetPrinter -and $act.targetPrinter.name) { $act.targetPrinter.name } else { $ord.assignedPrinterName }
           Write-Host ""
           Write-Host ("[" + (Get-Date -Format 'HH:mm:ss') + "] [PRINT ORDER] #" + $ord.id + " (" + $ord.customerName + ") -> " + $pName) -ForegroundColor Cyan
-          $ticketLines = @(
-            "========================================",
-            " PRINT CATALYST - ORDER TICKET",
-            "========================================",
-            " Order ID: #" + $ord.id,
-            " Customer: " + $ord.customerName,
-            " Phone   : " + $ord.customerPhone,
-            " Amount  : Rs. " + $ord.finalAmount,
-            " Time    : " + (Get-Date),
-            " Documents: " + $ord.items.Count,
-            "========================================"
-          )
+
+          # Create temp folder for downloaded files
+          $tempDir = Join-Path $env:TEMP ("PrintCatalyst_" + $ord.id)
+          if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir -Force | Out-Null }
+
+          # Set target printer as default for Start-Process -Verb Print
           try {
+            $prObj = Get-CimInstance Win32_Printer | Where-Object { $_.Name -eq $pName -or $_.Name -like "*$pName*" } | Select-Object -First 1
+            if ($prObj) {
+              Invoke-CimMethod -InputObject $prObj -MethodName SetDefaultPrinter | Out-Null
+              Write-Host ("   [*] Set default printer to: " + $prObj.Name) -ForegroundColor DarkGray
+            }
+          } catch {}
+
+          $filesPrinted = 0
+          if ($ord.items -and $ord.items.Count -gt 0) {
+            foreach ($item in $ord.items) {
+              $fUrl = $item.fileUrl
+              if (-not $fUrl) { continue }
+
+              # Build full URL if relative
+              if ($fUrl -and -not $fUrl.StartsWith("http")) {
+                $fUrl = "${serverUrl}" + $fUrl
+              }
+
+              $localName = if ($item.fileName) { $item.fileName } else { Split-Path $fUrl -Leaf }
+              # Sanitize filename
+              $localName = $localName -replace '[<>:"/\\|?*]', '_'
+              $localPath = Join-Path $tempDir $localName
+
+              try {
+                Write-Host ("   [>] Downloading: " + $item.fileName + " ...") -ForegroundColor Yellow
+                Invoke-WebRequest -Uri $fUrl -OutFile $localPath -TimeoutSec 60
+                Write-Host ("   [+] Downloaded: " + $localPath) -ForegroundColor Green
+
+                $copies = if ($item.copies) { [int]$item.copies } else { 1 }
+                for ($c = 1; $c -le $copies; $c++) {
+                  Start-Process -FilePath $localPath -Verb Print -ErrorAction Stop
+                  Write-Host ("   [+] Sent to printer (copy $c of $copies): " + $item.fileName) -ForegroundColor Green
+                }
+                $filesPrinted++
+              } catch {
+                Write-Host ("   [!] Print error for " + $item.fileName + ": " + $_.Exception.Message) -ForegroundColor Red
+              }
+            }
+          }
+
+          if ($filesPrinted -eq 0) {
+            Write-Host "   [!] No files found in order, printing order slip instead" -ForegroundColor Yellow
+            $ticketLines = @(
+              "========================================",
+              " PRINT CATALYST - ORDER TICKET",
+              "========================================",
+              " Order ID: #" + $ord.id,
+              " Customer: " + $ord.customerName,
+              " Phone   : " + $ord.customerPhone,
+              " Amount  : Rs. " + $ord.finalAmount,
+              " Time    : " + (Get-Date),
+              "========================================"
+            )
             $ticketLines -join [Environment]::NewLine | Out-Printer -Name "$pName"
-            Write-Host ("   [+] Order slip sent to printer: " + $pName) -ForegroundColor Green
-          } catch {
-            Write-Host ("   [!] Spool warning: " + $_.Exception.Message) -ForegroundColor Red
+          } else {
+            Write-Host ("   [OK] " + $filesPrinted + " document(s) sent to printer: " + $pName) -ForegroundColor Green
           }
         }
       }

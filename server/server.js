@@ -988,24 +988,45 @@ while ($true) {
     if ($resp -and $resp.actions -and $resp.actions.Count -gt 0) {
       foreach ($act in $resp.actions) {
         if ($act.type -eq 'TEST_PRINT') {
-          Write-Host ("`n[" + (Get-Date -Format 'HH:mm:ss') + "] [TEST PRINT] Received diagnostic test for: " + $act.printerName) -ForegroundColor Cyan
+          Write-Host ""
+          Write-Host ("[" + (Get-Date -Format 'HH:mm:ss') + "] [TEST PRINT] Received diagnostic test for: " + $act.printerName) -ForegroundColor Cyan
           $targetName = $act.printerName
           $prn = Get-CimInstance Win32_Printer | Where-Object { $_.Name -eq $targetName -or $_.Name -like "*$targetName*" -or $targetName -like "*$($_.Name)*" } | Select-Object -First 1
           if ($prn) {
             $resCode = Invoke-CimMethod -InputObject $prn -MethodName PrintTestPage
             Write-Host ("   [+] Native Windows Test Page dispatched to " + $prn.Name + "! (Status: " + $resCode.ReturnValue + ")") -ForegroundColor Green
           } else {
-            $testText = "========================================`r`n PRINT CATALYST - TEST PRINT`r`n Printer: " + $act.printerName + "`r`n Shop: ${shopName}`r`n Time: " + (Get-Date) + "`r`n Status: HARDWARE CONNECTION VERIFIED`r`n========================================"
-            $testText | Out-Printer -Name "$targetName"
-            Write-Host ("   [+] Diagnostic print ticket dispatched via Out-Printer!") -ForegroundColor Green
+            $testLines = @(
+              "========================================",
+              " PRINT CATALYST - TEST PRINT",
+              " Printer: " + $act.printerName,
+              " Shop: ${shopName}",
+              " Time: " + (Get-Date),
+              " Status: HARDWARE CONNECTION VERIFIED",
+              "========================================"
+            )
+            $testLines -join [Environment]::NewLine | Out-Printer -Name "$targetName"
+            Write-Host "   [+] Diagnostic print ticket dispatched via Out-Printer!" -ForegroundColor Green
           }
         } elseif ($act.type -eq 'PRINT_JOB') {
           $ord = $act.order
           $pName = if ($act.targetPrinter -and $act.targetPrinter.name) { $act.targetPrinter.name } else { $ord.assignedPrinterName }
-          Write-Host ("`n[" + (Get-Date -Format 'HH:mm:ss') + "] [PRINT ORDER] #" + $ord.id + " (" + $ord.customerName + ") -> " + $pName) -ForegroundColor Cyan
-          $ticket = "========================================`r`n PRINT CATALYST - ORDER TICKET`r`n========================================`r`n Order ID: #" + $ord.id + "`r`n Customer: " + $ord.customerName + "`r`n Phone   : " + $ord.customerPhone + "`r`n Amount  : Rs. " + $ord.finalAmount + "`r`n Time    : " + (Get-Date) + "`r`n Documents: " + $ord.items.Count + "`r`n========================================"
+          Write-Host ""
+          Write-Host ("[" + (Get-Date -Format 'HH:mm:ss') + "] [PRINT ORDER] #" + $ord.id + " (" + $ord.customerName + ") -> " + $pName) -ForegroundColor Cyan
+          $ticketLines = @(
+            "========================================",
+            " PRINT CATALYST - ORDER TICKET",
+            "========================================",
+            " Order ID: #" + $ord.id,
+            " Customer: " + $ord.customerName,
+            " Phone   : " + $ord.customerPhone,
+            " Amount  : Rs. " + $ord.finalAmount,
+            " Time    : " + (Get-Date),
+            " Documents: " + $ord.items.Count,
+            "========================================"
+          )
           try {
-            $ticket | Out-Printer -Name "$pName"
+            $ticketLines -join [Environment]::NewLine | Out-Printer -Name "$pName"
             Write-Host ("   [+] Order slip sent to printer: " + $pName) -ForegroundColor Green
           } catch {
             Write-Host ("   [!] Spool warning: " + $_.Exception.Message) -ForegroundColor Red

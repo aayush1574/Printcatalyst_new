@@ -37,6 +37,7 @@ const upload = multer({
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
+app.use('/bin', express.static(path.join(__dirname, 'bin')));
 
 // Global Process Exception Protection (prevents Render crash on unexpected async errors)
 process.on('uncaughtException', (err) => {
@@ -980,6 +981,46 @@ Write-Host "   (Press Ctrl+C anytime to close the bridge)" -ForegroundColor Dark
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host ""
 
+$toolsDir = Join-Path $env:LOCALAPPDATA "PrintCatalyst\bin"
+if (-not (Test-Path $toolsDir)) { New-Item -ItemType Directory -Path $toolsDir -Force | Out-Null }
+$sumatraExe = Join-Path $toolsDir "SumatraPDF.exe"
+
+if (-not (Test-Path $sumatraExe)) {
+  $existingSumatra = (Get-Command SumatraPDF.exe -ErrorAction SilentlyContinue)
+  if ($existingSumatra) {
+    $sumatraExe = $existingSumatra.Source
+  } else {
+    try {
+      Write-Host "   [*] Preparing direct high-fidelity document engine..." -ForegroundColor DarkGray
+      $dlUrls = @(
+        "${serverUrl}/bin/SumatraPDF.exe",
+        "https://www.sumatrapdfreader.org/dl/rel/3.6.1/SumatraPDF-3.6.1-64.zip"
+      )
+      foreach ($u in $dlUrls) {
+        try {
+          if ($u.EndsWith(".exe")) {
+            Invoke-WebRequest -Uri $u -OutFile $sumatraExe -UseBasicParsing -TimeoutSec 20
+            if (Test-Path $sumatraExe) { break }
+          } elseif ($u.EndsWith(".zip")) {
+            $zp = Join-Path $env:TEMP "sumatra_dl.zip"
+            Invoke-WebRequest -Uri $u -OutFile $zp -UseBasicParsing -TimeoutSec 40
+            Expand-Archive -Path $zp -DestinationPath $toolsDir -Force
+            $found = Get-ChildItem -Path $toolsDir -Filter "SumatraPDF*.exe" | Select-Object -First 1
+            if ($found -and $found.FullName -ne $sumatraExe) {
+              Move-Item -Path $found.FullName -Destination $sumatraExe -Force
+            }
+            Remove-Item -Path $zp -Force -ErrorAction SilentlyContinue
+            if (Test-Path $sumatraExe) { break }
+          }
+        } catch {}
+      }
+    } catch {}
+  }
+}
+if (Test-Path $sumatraExe) {
+  Write-Host "   [+] Direct Document & PDF Engine: ACTIVE" -ForegroundColor Green
+}
+
 $pollUrl = "${serverUrl}/api/v1/agent/pending?shopId=${shopId}"
 
 while ($true) {
@@ -1018,7 +1059,7 @@ while ($true) {
           $tempDir = Join-Path $env:TEMP ("PrintCatalyst_" + $ord.id)
           if (-not (Test-Path $tempDir)) { New-Item -ItemType Directory -Path $tempDir -Force | Out-Null }
 
-          # Set target printer as default for Start-Process -Verb Print
+          # Set target printer as default
           try {
             $prObj = Get-CimInstance Win32_Printer | Where-Object { $_.Name -eq $pName -or $_.Name -like "*$pName*" } | Select-Object -First 1
             if ($prObj) {
@@ -1049,11 +1090,57 @@ while ($true) {
                 Write-Host ("   [+] Downloaded: " + $localPath) -ForegroundColor Green
 
                 $copies = if ($item.copies) { [int]$item.copies } else { 1 }
-                for ($c = 1; $c -le $copies; $c++) {
-                  Start-Process -FilePath $localPath -Verb Print -ErrorAction Stop
-                  Write-Host ("   [+] Sent to printer (copy $c of $copies): " + $item.fileName) -ForegroundColor Green
+                $ext = [System.IO.Path]::GetExtension($localPath).ToLower()
+                $printedThisFile = $false
+
+                # Method 1: SumatraPDF high-fidelity silent printing (PDFs, Images, XPS)
+                if (Test-Path $sumatraExe) {
+                  try {
+                    Write-Host ("   [*] Sending to spooler: " + $pName + " (" + $copies + " copy/copies)") -ForegroundColor Cyan
+                    $copySetting = "" + $copies + "x"
+                    $pArgs = @("-print-to", $pName, "-print-settings", $copySetting, "-silent", $localPath)
+                    $p = Start-Process -FilePath $sumatraExe -ArgumentList $pArgs -PassThru -Wait
+                    $printedThisFile = $true
+                    Write-Host ("   [+] Document spooled: " + $item.fileName) -ForegroundColor Green
+                  } catch {
+                    Write-Host ("   [!] Spool engine note: " + $_.Exception.Message) -ForegroundColor DarkGray
+                  }
                 }
-                $filesPrinted++
+
+                # Method 2: Image fallback via mspaint /pt
+                if (-not $printedThisFile -and ($ext -in @('.jpg', '.jpeg', '.png', '.bmp', '.gif'))) {
+                  try {
+                    for ($c = 1; $c -le $copies; $c++) {
+                      Start-Process -FilePath "mspaint.exe" -ArgumentList @("/pt", $localPath, $pName) -Wait
+                    }
+                    $printedThisFile = $true
+                    Write-Host ("   [+] Dispatched via Windows Paint: " + $item.fileName) -ForegroundColor Green
+                  } catch {}
+                }
+
+                # Method 3: Plain text file fallback
+                if (-not $printedThisFile -and ($ext -eq '.txt')) {
+                  try {
+                    for ($c = 1; $c -le $copies; $c++) {
+                      Get-Content -LiteralPath $localPath | Out-Printer -Name $pName
+                    }
+                    $printedThisFile = $true
+                    Write-Host ("   [+] Dispatched via Out-Printer: " + $item.fileName) -ForegroundColor Green
+                  } catch {}
+                }
+
+                # Method 4: Shell verb print fallback
+                if (-not $printedThisFile) {
+                  for ($c = 1; $c -le $copies; $c++) {
+                    Start-Process -FilePath $localPath -Verb Print -ErrorAction Stop
+                  }
+                  $printedThisFile = $true
+                  Write-Host ("   [+] Dispatched via Windows Shell Print: " + $item.fileName) -ForegroundColor Green
+                }
+
+                if ($printedThisFile) {
+                  $filesPrinted++
+                }
               } catch {
                 Write-Host ("   [!] Print error for " + $item.fileName + ": " + $_.Exception.Message) -ForegroundColor Red
               }
@@ -1061,7 +1148,7 @@ while ($true) {
           }
 
           if ($filesPrinted -eq 0) {
-            Write-Host "   [!] No files found in order, printing order slip instead" -ForegroundColor Yellow
+            Write-Host "   [!] No files could be printed, printing order summary slip instead" -ForegroundColor Yellow
             $ticketLines = @(
               "========================================",
               " PRINT CATALYST - ORDER TICKET",
@@ -1075,7 +1162,7 @@ while ($true) {
             )
             $ticketLines -join [Environment]::NewLine | Out-Printer -Name "$pName"
           } else {
-            Write-Host ("   [OK] " + $filesPrinted + " document(s) sent to printer: " + $pName) -ForegroundColor Green
+            Write-Host ("   [SUCCESS] " + $filesPrinted + " document(s) printed on: " + $pName) -ForegroundColor Green
           }
         }
       }

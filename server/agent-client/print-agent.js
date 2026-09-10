@@ -138,22 +138,35 @@ function printJob(order, targetPrinter, ws) {
           const copies = item.copies || 1;
           let copyNum = 0;
 
-          const doPrintCopy = () => {
-            if (copyNum >= copies) {
-              printed++;
-              return printNext(idx + 1);
-            }
-            copyNum++;
-            exec(`powershell -NoProfile -Command "Start-Process -FilePath '${localPath.replace(/'/g, "''")}' -Verb Print"`, (err) => {
+          const sumatraPath = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'PrintCatalyst', 'bin', 'SumatraPDF.exe');
+          if (fs.existsSync(sumatraPath)) {
+            exec(`"${sumatraPath}" -print-to "${pName}" -print-settings "${copies}x" -silent "${localPath}"`, (err) => {
               if (err) {
-                console.error(`   ❌ Print error (copy ${copyNum}): ${err.message}`);
+                console.error(`   ❌ Print error: ${err.message}`);
               } else {
-                console.log(`   ✅ Sent to printer (copy ${copyNum}/${copies}): ${fileName}`);
+                printed++;
+                console.log(`   ✅ Sent ${copies} copy/copies to printer: ${fileName}`);
               }
-              setTimeout(doPrintCopy, 1500); // small delay between copies
+              printNext(idx + 1);
             });
-          };
-          doPrintCopy();
+          } else {
+            const doPrintCopy = () => {
+              if (copyNum >= copies) {
+                printed++;
+                return printNext(idx + 1);
+              }
+              copyNum++;
+              exec(`powershell -NoProfile -Command "Start-Process -FilePath '${localPath.replace(/'/g, "''")}' -Verb Print"`, (err) => {
+                if (err) {
+                  console.error(`   ❌ Print error (copy ${copyNum}): ${err.message}`);
+                } else {
+                  console.log(`   ✅ Sent to printer (copy ${copyNum}/${copies}): ${fileName}`);
+                }
+                setTimeout(doPrintCopy, 1500);
+              });
+            };
+            doPrintCopy();
+          }
         })
         .catch((err) => {
           console.error(`   ❌ Download failed for ${fileName}: ${err.message}`);

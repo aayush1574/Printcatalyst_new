@@ -114,7 +114,7 @@ export default function MerchantDashboardPage() {
     }
   }, [latestEvent]);
 
-  // Release Order to printer
+  // Release Order to printer — also trigger browser print for the actual document
   const handleReleaseOrder = async (orderId, targetPrinterId) => {
     try {
       const res = await fetch(`${API_BASE}/api/v1/jobs/release/${orderId}`, {

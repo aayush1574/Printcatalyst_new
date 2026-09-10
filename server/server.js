@@ -37,6 +37,24 @@ const upload = multer({
 app.use(cors());
 app.use(express.json());
 app.use('/uploads', express.static(UPLOADS_DIR));
+app.get('/uploads/:filename', async (req, res, next) => {
+  try {
+    const mongoDb = db.getMongoDb ? db.getMongoDb() : null;
+    if (mongoDb) {
+      const doc = await mongoDb.collection('uploaded_files').findOne({ filename: req.params.filename });
+      if (doc && doc.data) {
+        const buffer = Buffer.from(doc.data, 'base64');
+        const diskPath = path.join(UPLOADS_DIR, req.params.filename);
+        try { fs.writeFileSync(diskPath, buffer); } catch (_) {}
+        res.setHeader('Content-Type', doc.mimetype || 'application/pdf');
+        return res.send(buffer);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to retrieve file from MongoDB Atlas:', err.message);
+  }
+  next();
+});
 app.use('/bin', express.static(path.join(__dirname, 'bin')));
 
 // Global Process Exception Protection (prevents Render crash on unexpected async errors)
@@ -469,6 +487,24 @@ app.post('/api/v1/upload', upload.array('files', 10), (req, res) => {
       pageCount: estimatedPages
     };
   });
+
+  // Async persist files to MongoDB Atlas so ephemeral disk resets never delete customer files
+  try {
+    const mongoDb = db.getMongoDb ? db.getMongoDb() : null;
+    if (mongoDb && req.files) {
+      for (const f of req.files) {
+        fs.readFile(f.path, (err, buf) => {
+          if (!err && buf) {
+            mongoDb.collection('uploaded_files').updateOne(
+              { filename: f.filename },
+              { $set: { filename: f.filename, originalname: f.originalname, mimetype: f.mimetype, size: f.size, data: buf.toString('base64'), updatedAt: new Date() } },
+              { upsert: true }
+            ).catch(() => {});
+          }
+        });
+      }
+    }
+  } catch (_) {}
 
   res.json({
     success: true,
@@ -1084,11 +1120,22 @@ while ($true) {
               $localName = $localName -replace '[<>:"/\\\\|?*\'\']', '_'
               $localPath = Join-Path $tempDir $localName
 
-              try {
-                Write-Host ("   [>] Downloading: " + $item.fileName + " ...") -ForegroundColor Yellow
-                Invoke-WebRequest -Uri $fUrl -OutFile $localPath -TimeoutSec 60
-                Write-Host ("   [+] Downloaded: " + $localPath) -ForegroundColor Green
+              # Check if local cached copy already exists and is non-empty
+              $hasValidLocal = (Test-Path $localPath) -and ((Get-Item $localPath).Length -gt 0)
+              if ($hasValidLocal) {
+                Write-Host ("   [*] Using cached file: " + $localName) -ForegroundColor Cyan
+              } else {
+                try {
+                  Write-Host ("   [>] Downloading: " + $item.fileName + " ...") -ForegroundColor Yellow
+                  Invoke-WebRequest -Uri $fUrl -OutFile $localPath -TimeoutSec 60
+                  Write-Host ("   [+] Downloaded: " + $localPath) -ForegroundColor Green
+                  $hasValidLocal = (Test-Path $localPath) -and ((Get-Item $localPath).Length -gt 0)
+                } catch {
+                  Write-Host ("   [!] Download notice: " + $_.Exception.Message) -ForegroundColor DarkGray
+                }
+              }
 
+              if ($hasValidLocal) {
                 $copies = if ($item.copies) { [int]$item.copies } else { 1 }
                 $ext = [System.IO.Path]::GetExtension($localPath).ToLower()
                 $printedThisFile = $false
@@ -1149,8 +1196,8 @@ while ($true) {
                 if ($printedThisFile) {
                   $filesPrinted++
                 }
-              } catch {
-                Write-Host ("   [!] Print error for " + $item.fileName + ": " + $_.Exception.Message) -ForegroundColor Red
+              } else {
+                Write-Host ("   [!] File not available locally or on server: " + $item.fileName) -ForegroundColor Red
               }
             }
           }

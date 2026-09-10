@@ -372,6 +372,10 @@ class Database {
     return Boolean(_mongoDb);
   }
 
+  getMongoDb() {
+    return _mongoDb;
+  }
+
   getShops() { return this.data.shops || []; }
   
   getShopById(id) { 

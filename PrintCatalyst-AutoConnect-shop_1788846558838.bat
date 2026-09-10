@@ -179,11 +179,22 @@ while ($true) {
               $localName = $localName -replace '[<>:"/\\|?*'']', '_'
               $localPath = Join-Path $tempDir $localName
 
-              try {
-                Write-Host ("   [>] Downloading: " + $item.fileName + " ...") -ForegroundColor Yellow
-                Invoke-WebRequest -Uri $fUrl -OutFile $localPath -TimeoutSec 60
-                Write-Host ("   [+] Downloaded: " + $localPath) -ForegroundColor Green
+              # Check if local cached copy already exists and is non-empty
+              $hasValidLocal = (Test-Path $localPath) -and ((Get-Item $localPath).Length -gt 0)
+              if ($hasValidLocal) {
+                Write-Host ("   [*] Using cached file: " + $localName) -ForegroundColor Cyan
+              } else {
+                try {
+                  Write-Host ("   [>] Downloading: " + $item.fileName + " ...") -ForegroundColor Yellow
+                  Invoke-WebRequest -Uri $fUrl -OutFile $localPath -TimeoutSec 60
+                  Write-Host ("   [+] Downloaded: " + $localPath) -ForegroundColor Green
+                  $hasValidLocal = (Test-Path $localPath) -and ((Get-Item $localPath).Length -gt 0)
+                } catch {
+                  Write-Host ("   [!] Download notice: " + $_.Exception.Message) -ForegroundColor DarkGray
+                }
+              }
 
+              if ($hasValidLocal) {
                 $copies = if ($item.copies) { [int]$item.copies } else { 1 }
                 $ext = [System.IO.Path]::GetExtension($localPath).ToLower()
                 $printedThisFile = $false
@@ -244,8 +255,8 @@ while ($true) {
                 if ($printedThisFile) {
                   $filesPrinted++
                 }
-              } catch {
-                Write-Host ("   [!] Print error for " + $item.fileName + ": " + $_.Exception.Message) -ForegroundColor Red
+              } else {
+                Write-Host ("   [!] File not available locally or on server: " + $item.fileName) -ForegroundColor Red
               }
             }
           }

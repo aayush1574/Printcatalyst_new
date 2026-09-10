@@ -76,9 +76,9 @@ Write-Host "   (Press Ctrl+C anytime to close the bridge)" -ForegroundColor Dark
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host ""
 
-$toolsDir = Join-Path $env:LOCALAPPDATA "PrintCatalyst\bin"
+$toolsDir = Join-Path (Join-Path $env:LOCALAPPDATA 'PrintCatalyst') 'bin'
 if (-not (Test-Path $toolsDir)) { New-Item -ItemType Directory -Path $toolsDir -Force | Out-Null }
-$sumatraExe = Join-Path $toolsDir "SumatraPDF.exe"
+$sumatraExe = Join-Path $toolsDir 'SumatraPDF.exe'
 
 if (-not (Test-Path $sumatraExe)) {
   $existingSumatra = (Get-Command SumatraPDF.exe -ErrorAction SilentlyContinue)

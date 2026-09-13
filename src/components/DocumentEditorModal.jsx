@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   X, RotateCw, RotateCcw, FlipHorizontal, FlipVertical,
   Crop, Maximize2, Sliders, Sun, Contrast, Check, RefreshCw,
-  Sparkles, Layers, Move, AlertCircle, CheckCircle2, ShieldCheck
+  Sparkles, Layers, Move, ShieldCheck, CheckCircle2
 } from 'lucide-react';
 
 const ASPECT_RATIOS = [
@@ -55,17 +55,14 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   const containerRef = useRef(null);
   const previewCanvasRef = useRef(null);
 
-  // Body Scroll-Lock when modal is active
+  // Body Scroll-Lock when modal is active (prevents background body scroll only)
   useEffect(() => {
     if (isOpen) {
       const prevOverflow = document.body.style.overflow;
-      const prevOverscroll = document.body.style.overscrollBehavior;
       document.body.style.overflow = 'hidden';
-      document.body.style.overscrollBehavior = 'none';
 
       return () => {
         document.body.style.overflow = prevOverflow || '';
-        document.body.style.overscrollBehavior = prevOverscroll || '';
       };
     }
   }, [isOpen]);
@@ -90,7 +87,6 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     };
 
     img.onerror = () => {
-      // Fallback generator for non-image documents (e.g. PDFs)
       const fallbackCanvas = document.createElement('canvas');
       fallbackCanvas.width = 1240;
       fallbackCanvas.height = 1754;
@@ -397,10 +393,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   if (grayscale) activeEditsList.push('Monochrome B&W Filter');
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/90 backdrop-blur-md animate-fadeIn overflow-hidden touch-none"
-      style={{ overscrollBehavior: 'none', touchAction: 'none' }}
-    >
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/90 backdrop-blur-md animate-fadeIn overflow-hidden">
       <div className="bg-slate-900 border border-slate-700/80 rounded-2xl sm:rounded-3xl w-full max-w-5xl h-[96vh] sm:h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
         
         {/* Modal Header */}
@@ -446,7 +439,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
         {/* Modal Content Body */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 min-h-0 overflow-hidden">
           
-          {/* Main Visual Canvas Area */}
+          {/* Main Visual Canvas Area (Cols 7 on Desktop, Top Box on Phone) */}
           <div className="lg:col-span-7 bg-slate-950 p-2 sm:p-6 flex flex-col items-center justify-center relative select-none border-b lg:border-b-0 lg:border-r border-slate-800/80 h-[38vh] sm:h-[45vh] lg:h-auto overflow-hidden">
             
             {/* Live Size & Resolution Badge */}
@@ -531,8 +524,11 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
             </p>
           </div>
 
-          {/* Tool Control Panel Sidebar */}
-          <div className="lg:col-span-5 bg-slate-900 p-3 sm:p-5 flex flex-col justify-between overflow-y-auto space-y-4 sm:space-y-6 flex-1 min-h-0">
+          {/* Tool Control Panel Sidebar - Smooth Scrollable Panel */}
+          <div
+            className="lg:col-span-5 bg-slate-900 p-3 sm:p-5 flex flex-col justify-between overflow-y-auto space-y-4 sm:space-y-6 flex-1 min-h-0 touch-pan-y"
+            style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
+          >
             
             {/* Top Tool Navigation Tabs */}
             <div className="space-y-3 sm:space-y-4">
@@ -875,7 +871,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
         </div>
 
-        {/* ═══ Confirmation Card Overlay ═══ */}
+        {/* Confirmation Card Overlay */}
         {showConfirmModal && (
           <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
             <div className="bg-slate-900 border-2 border-indigo-500/60 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5">

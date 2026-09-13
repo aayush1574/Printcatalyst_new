@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { X, Printer, RotateCw, Eye, CheckCircle, FileText, Settings, Sliders, AlertTriangle } from 'lucide-react';
+import { X, Printer, RotateCw, Eye, CheckCircle, FileText, Settings, Sliders, AlertTriangle, Crop } from 'lucide-react';
+import DocumentEditorModal from './DocumentEditorModal';
 
 export default function DocumentStudioModal({ order, printers, isOpen, onClose, onRelease }) {
   const [selectedPrinterId, setSelectedPrinterId] = useState(order?.assignedPrinterId || (printers[0]?.id || ''));
@@ -7,6 +8,7 @@ export default function DocumentStudioModal({ order, printers, isOpen, onClose, 
   const [previewMono, setPreviewMono] = useState(order?.items[0]?.colorMode === 'BLACK_AND_WHITE');
   const [selectedPages, setSelectedPages] = useState('ALL');
   const [releasing, setReleasing] = useState(false);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   if (!isOpen || !order) return null;
 
@@ -83,6 +85,15 @@ export default function DocumentStudioModal({ order, printers, isOpen, onClose, 
                 >
                   <Eye className="w-3.5 h-3.5 text-cyan-400" />
                   <span>{previewMono ? 'Monochrome Mode (B&W)' : 'Color Mode'}</span>
+                </button>
+
+                <button
+                  onClick={() => setIsEditorOpen(true)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 font-medium transition-colors border border-indigo-500/30"
+                  title="Crop, Resize, Rotate & Enhance document"
+                >
+                  <Crop className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Crop & Edit Studio</span>
                 </button>
               </div>
 
@@ -218,6 +229,24 @@ export default function DocumentStudioModal({ order, printers, isOpen, onClose, 
         </div>
 
       </div>
+
+      {/* Full Document Editor Modal */}
+      {isEditorOpen && (
+        <DocumentEditorModal
+          item={item}
+          isOpen={isEditorOpen}
+          onClose={() => setIsEditorOpen(false)}
+          onSave={(editedItem) => {
+            if (editedItem.editState?.rotation !== undefined) {
+              setRotation(editedItem.editState.rotation);
+            }
+            if (editedItem.editState?.grayscale !== undefined) {
+              setPreviewMono(editedItem.editState.grayscale);
+            }
+            setIsEditorOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }

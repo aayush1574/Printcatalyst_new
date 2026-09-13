@@ -2,11 +2,12 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Printer, Upload, FileText, CheckCircle2, QrCode,
-  ShieldCheck, Check, Copy, ArrowRight, RefreshCw, Sparkles, FileUp, Zap, LayoutGrid
+  ShieldCheck, Check, Copy, ArrowRight, RefreshCw, Sparkles, FileUp, Zap, LayoutGrid, Crop
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { API_BASE } from '../config';
 import MultiPhotoComposerModal from '../components/MultiPhotoComposerModal';
+import DocumentEditorModal from '../components/DocumentEditorModal';
 
 export default function CustomerPortalPage() {
   const { shopId = 'printsupport-hub' } = useParams();
@@ -21,6 +22,8 @@ export default function CustomerPortalPage() {
   const [copiedUpi, setCopiedUpi] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [isMultiPhotoOpen, setIsMultiPhotoOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [isEditorOpen, setIsEditorOpen] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -131,6 +134,17 @@ export default function CustomerPortalPage() {
 
   const removeItem = (id) => {
     setFiles((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleOpenEditor = (item) => {
+    setEditingItem(item);
+    setIsEditorOpen(true);
+  };
+
+  const handleSaveEditedItem = (editedItem) => {
+    setFiles((prev) =>
+      prev.map((item) => (item.id === editedItem.id ? editedItem : item))
+    );
   };
 
   // Handler for composed multi-photo items from the composer modal
@@ -403,16 +417,35 @@ export default function CustomerPortalPage() {
                             <FileText className="w-4 h-4 sm:w-5 sm:h-5" />
                           </div>
                           <div className="min-w-0">
-                            <h4 className="text-xs sm:text-sm font-bold text-white truncate">{item.fileName}</h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="text-xs sm:text-sm font-bold text-white truncate">{item.fileName}</h4>
+                              {item.isEdited && (
+                                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-semibold border border-emerald-500/30">
+                                  {item.editSummary || 'Edited'}
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[10px] sm:text-[11px] text-slate-400">{item.fileSize} · {item.pageCount} page(s)</p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => removeItem(item.id)}
-                          className="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-colors flex-shrink-0"
-                        >
-                          Remove
-                        </button>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditor(item)}
+                            className="text-xs text-indigo-300 hover:text-white font-semibold px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 transition-colors border border-indigo-500/30 flex items-center gap-1.5"
+                            title="Crop, Resize, Rotate & Enhance document"
+                          >
+                            <Crop className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Edit Document</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => removeItem(item.id)}
+                            className="text-xs text-rose-400 hover:text-rose-300 font-semibold px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-colors"
+                          >
+                            Remove
+                          </button>
+                        </div>
                       </div>
 
                       {/* Print Options Controls Grid */}
@@ -589,6 +622,19 @@ export default function CustomerPortalPage() {
               onClose={() => setIsMultiPhotoOpen(false)}
               onAddComposedItem={handleAddComposedItem}
             />
+
+            {/* Document Editor Modal for Crop / Resize / Rotate */}
+            {editingItem && (
+              <DocumentEditorModal
+                item={editingItem}
+                isOpen={isEditorOpen}
+                onClose={() => {
+                  setIsEditorOpen(false);
+                  setEditingItem(null);
+                }}
+                onSave={handleSaveEditedItem}
+              />
+            )}
           </>
         )}
 

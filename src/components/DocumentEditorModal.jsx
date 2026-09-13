@@ -393,14 +393,17 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   if (grayscale) activeEditsList.push('Monochrome B&W Filter');
 
   return (
-    /* Outer Native Scroll Overlay: overflow-y-auto ensures 100% fluid touch scrolling on mobile phones */
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/90 backdrop-blur-md animate-fadeIn flex flex-col items-center justify-start lg:justify-center p-0 sm:p-4 md:p-6">
+    /* Outer Native Mobile Overlay: z-[100] ensures high priority, overflow-y-auto ensures fluid mobile touch scrolling */
+    <div
+      className="fixed inset-0 z-[100] overflow-y-auto bg-black/95 backdrop-blur-md animate-fadeIn flex flex-col items-center justify-start lg:justify-center p-0 sm:p-4 md:p-6 scroll-smooth"
+      style={{ WebkitOverflowScrolling: 'touch' }}
+    >
       
       {/* Modal Box Container */}
       <div className="bg-slate-900 border-0 sm:border border-slate-700/80 rounded-none sm:rounded-3xl w-full max-w-5xl min-h-screen sm:min-h-0 sm:h-[90vh] flex flex-col shadow-2xl relative my-0 sm:my-auto overflow-hidden">
         
         {/* Modal Header: Sticky at top of mobile screen */}
-        <div className="sticky top-0 z-30 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/95 backdrop-blur-md flex-shrink-0">
+        <div className="sticky top-0 z-40 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/95 backdrop-blur-md flex-shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-600/30 flex-shrink-0">
               <Crop className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -523,7 +526,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
           </div>
 
           {/* Controls Section: Natural smooth scrolling below canvas on mobile */}
-          <div className="lg:col-span-5 bg-slate-900 p-4 sm:p-5 flex flex-col justify-between space-y-5 flex-shrink-0 lg:flex-1 lg:overflow-y-auto">
+          <div className="lg:col-span-5 bg-slate-900 p-4 sm:p-5 flex flex-col justify-between space-y-5 flex-shrink-0 lg:flex-1 lg:overflow-y-auto pb-24 sm:pb-6">
             
             {/* Top Tool Navigation Tabs */}
             <div className="space-y-4">
@@ -844,20 +847,22 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
               )}
             </div>
 
-            {/* Bottom Action Footer */}
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3 flex-shrink-0">
+            {/* Bottom Action Footer: Sticky at bottom of mobile screen */}
+            <div className="sticky bottom-0 z-40 bg-slate-950/95 backdrop-blur-md px-4 py-3 sm:py-4 border-t border-slate-800 flex items-center justify-between gap-3 flex-shrink-0 shadow-2xl -mx-4 sm:-mx-5 -mb-4 sm:-mb-5 mt-4">
               <button
+                type="button"
                 onClick={onClose}
-                className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+                className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors border border-slate-700 flex-1 sm:flex-none"
               >
                 Cancel
               </button>
 
               <button
+                type="button"
                 onClick={() => setShowConfirmModal(true)}
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 via-blue-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs sm:text-sm font-black shadow-xl shadow-indigo-600/40 transition-all flex items-center justify-center gap-2 flex-2 sm:flex-none border border-indigo-400/30 active:scale-95"
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-300" />
                 <span>Save & Apply Edits</span>
               </button>
             </div>
@@ -868,7 +873,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
         {/* Confirmation Card Overlay */}
         {showConfirmModal && (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
             <div className="bg-slate-900 border-2 border-indigo-500/60 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5">
               <div className="text-center space-y-2">
                 <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/20">

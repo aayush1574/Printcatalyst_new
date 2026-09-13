@@ -640,8 +640,8 @@ export default function CustomerPortalPage() {
 
       </main>
 
-      {/* Persistent Floating Bottom Action Bar for Instant Print Order */}
-      {files.length > 0 && !placedOrder && (
+      {/* Persistent Floating Bottom Action Bar for Instant Print Order (Hidden when Document Editor Modal is open) */}
+      {files.length > 0 && !placedOrder && !isEditorOpen && (
         <div className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 max-w-2xl w-[calc(100%-1.5rem)] glass-card rounded-2xl p-3 sm:p-4 border-2 border-indigo-500/50 shadow-2xl backdrop-blur-xl bg-slate-950/95 flex items-center justify-between gap-2.5 animate-fadeIn">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-500 text-white flex items-center justify-center font-bold shadow-md shadow-indigo-600/30 flex-shrink-0">

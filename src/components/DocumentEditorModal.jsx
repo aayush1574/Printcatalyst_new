@@ -2,17 +2,25 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   X, RotateCw, RotateCcw, FlipHorizontal, FlipVertical,
   Crop, Maximize2, Sliders, Sun, Contrast, Check, RefreshCw,
-  Sparkles, Layers, FileText, ArrowLeftRight, ArrowUpDown, Move
+  Sparkles, Layers, Move, Touchpad
 } from 'lucide-react';
 
 const ASPECT_RATIOS = [
   { id: 'free', label: 'Freeform', ratio: null },
-  { id: 'a4', label: 'A4 Page (1:1.41)', ratio: 1 / 1.414 },
+  { id: 'a4', label: 'A4 (1:1.41)', ratio: 1 / 1.414 },
   { id: 'square', label: '1:1 Square', ratio: 1 },
   { id: '4:3', label: '4:3 Standard', ratio: 4 / 3 },
-  { id: '16:9', label: '16:9 Widescreen', ratio: 16 / 9 },
+  { id: '16:9', label: '16:9 Wide', ratio: 16 / 9 },
   { id: '4:6', label: '4×6 Photo', ratio: 4 / 6 },
 ];
+
+// Helper to extract x, y from mouse or touch event
+function getPointFromEvent(e) {
+  if (e.touches && e.touches.length > 0) {
+    return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+  }
+  return { x: e.clientX, y: e.clientY };
+}
 
 export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   const [activeTab, setActiveTab] = useState('crop'); // 'crop' | 'resize' | 'rotate' | 'enhance'
@@ -21,7 +29,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   const [naturalSize, setNaturalSize] = useState({ width: 800, height: 1000 });
 
   // Transform states
-  const [rotation, setRotation] = useState(item?.editState?.rotation || 0); // degrees
+  const [rotation, setRotation] = useState(item?.editState?.rotation || 0);
   const [flipH, setFlipH] = useState(item?.editState?.flipH || false);
   const [flipV, setFlipV] = useState(item?.editState?.flipV || false);
   const [scale, setScale] = useState(item?.editState?.scale || 1.0);
@@ -55,7 +63,6 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     
-    // For PDFs or non-image documents, render placeholder / sample canvas preview if fileUrl is not direct image
     const src = item.fileUrl || item.previewUrl || '';
     img.src = src;
 
@@ -68,31 +75,27 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     };
 
     img.onerror = () => {
-      // Fallback generator for documents without direct image URL (e.g. PDFs)
+      // Fallback generator for non-image documents (e.g. PDFs)
       const fallbackCanvas = document.createElement('canvas');
       fallbackCanvas.width = 1240;
       fallbackCanvas.height = 1754;
       const ctx = fallbackCanvas.getContext('2d');
 
-      // Draw paper background
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, 1240, 1754);
 
-      // Header stripe
       ctx.fillStyle = '#4f46e5';
       ctx.fillRect(40, 40, 1160, 120);
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 36px sans-serif';
       ctx.fillText(item.fileName || 'DOCUMENT PREVIEW', 80, 110);
 
-      // Simulated document content text lines
       ctx.fillStyle = '#334155';
       for (let i = 0; i < 24; i++) {
         const w = 400 + Math.sin(i * 1.5) * 350;
         ctx.fillRect(80, 220 + i * 55, Math.min(1080, Math.max(300, w)), 18);
       }
 
-      // Stamp
       ctx.strokeStyle = '#059669';
       ctx.lineWidth = 6;
       ctx.strokeRect(800, 1450, 360, 160);
@@ -149,7 +152,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     const preset = ASPECT_RATIOS.find((r) => r.id === presetId);
     if (!preset || !preset.ratio) return;
 
-    const targetRatio = preset.ratio; // width / height
+    const targetRatio = preset.ratio;
     let newWidth = crop.width;
     let newHeight = newWidth / targetRatio;
 
@@ -172,24 +175,18 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     const canvas = previewCanvasRef.current;
     const ctx = canvas.getContext('2d');
 
-    // Set preview canvas internal dimension
     canvas.width = 600;
     canvas.height = 700;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
 
-    // Center origin
     ctx.translate(canvas.width / 2, canvas.height / 2);
-
-    // Apply rotation & flip
     ctx.rotate((rotation * Math.PI) / 180);
     ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
 
-    // Apply brightness / contrast filters
     ctx.filter = `brightness(${brightness}%) contrast(${contrast}%) ${grayscale ? 'grayscale(100%)' : ''}`;
 
-    // Fit image inside preview box preserving aspect ratio
     const imgRatio = imgElement.width / imgElement.height;
     const boxRatio = (canvas.width * 0.8) / (canvas.height * 0.8);
     let drawW, drawH;
@@ -206,24 +203,30 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     ctx.restore();
   }, [imageLoaded, imgElement, rotation, flipH, flipV, brightness, contrast, grayscale]);
 
-  // Crop interaction handlers (Mouse / Touch)
-  const handleMouseDown = (e, handle) => {
-    e.preventDefault();
+  // Unified Mouse & Touch Interaction Handlers
+  const handleDragStart = (e, handle) => {
+    if (e.cancelable && e.type !== 'touchstart') {
+      e.preventDefault();
+    }
     e.stopPropagation();
+    const pt = getPointFromEvent(e);
     setIsDragging(true);
     setDragHandle(handle);
-    setDragStart({ x: e.clientX, y: e.clientY });
+    setDragStart(pt);
     setCropStart({ ...crop });
   };
 
-  const handleMouseMove = useCallback((e) => {
+  const handleDragMove = useCallback((e) => {
     if (!isDragging || !containerRef.current) return;
+    if (e.cancelable) e.preventDefault();
 
     const rect = containerRef.current.getBoundingClientRect();
-    const deltaXPercent = ((e.clientX - dragStart.x) / rect.width) * 100;
-    const deltaYPercent = ((e.clientY - dragStart.y) / rect.height) * 100;
+    const pt = getPointFromEvent(e);
 
-    setCrop((prev) => {
+    const deltaXPercent = ((pt.x - dragStart.x) / rect.width) * 100;
+    const deltaYPercent = ((pt.y - dragStart.y) / rect.height) * 100;
+
+    setCrop(() => {
       let { x, y, width, height } = cropStart;
 
       if (dragHandle === 'move') {
@@ -254,21 +257,25 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     });
   }, [isDragging, dragHandle, dragStart, cropStart]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleDragEnd = useCallback(() => {
     setIsDragging(false);
     setDragHandle(null);
   }, []);
 
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('mousemove', handleDragMove, { passive: false });
+      window.addEventListener('mouseup', handleDragEnd);
+      window.addEventListener('touchmove', handleDragMove, { passive: false });
+      window.addEventListener('touchend', handleDragEnd);
       return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener('mousemove', handleDragMove);
+        window.removeEventListener('mouseup', handleDragEnd);
+        window.removeEventListener('touchmove', handleDragMove);
+        window.removeEventListener('touchend', handleDragEnd);
       };
     }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+  }, [isDragging, handleDragMove, handleDragEnd]);
 
   // Reset all editing parameters
   const handleReset = () => {
@@ -291,11 +298,9 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   const handleSaveEdits = () => {
     if (!imgElement) return;
 
-    // 1. Create offscreen canvas for final processed image
     const origW = imgElement.naturalWidth || 800;
     const origH = imgElement.naturalHeight || 1000;
 
-    // Determine bounding box dimension after rotation
     const rad = (rotation * Math.PI) / 180;
     const absCos = Math.abs(Math.cos(rad));
     const absSin = Math.abs(Math.sin(rad));
@@ -303,7 +308,6 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     const rotatedW = Math.round(origW * absCos + origH * absSin);
     const rotatedH = Math.round(origW * absSin + origH * absCos);
 
-    // Canvas for rotation, flip & filter
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = rotatedW;
     tempCanvas.height = rotatedH;
@@ -317,13 +321,11 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     tempCtx.drawImage(imgElement, -origW / 2, -origH / 2, origW, origH);
     tempCtx.restore();
 
-    // 2. Apply crop bounding rectangle
     const cropX = Math.round((crop.x / 100) * rotatedW);
     const cropY = Math.round((crop.y / 100) * rotatedH);
     const cropW = Math.max(10, Math.round((crop.width / 100) * rotatedW));
     const cropH = Math.max(10, Math.round((crop.height / 100) * rotatedH));
 
-    // 3. Final output canvas (resized to target dimensions if scaled)
     const outW = Math.round(cropW * scale);
     const outH = Math.round(cropH * scale);
 
@@ -332,7 +334,6 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     finalCanvas.height = outH;
     const finalCtx = finalCanvas.getContext('2d');
 
-    // Draw cropped region with high quality image smoothing
     finalCtx.imageSmoothingEnabled = true;
     finalCtx.imageSmoothingQuality = 'high';
     finalCtx.drawImage(
@@ -343,7 +344,6 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
     const editedDataUrl = finalCanvas.toDataURL('image/png');
 
-    // Summary description of edits
     const edits = [];
     if (rotation !== 0) edits.push(`Rotated ${rotation}°`);
     if (flipH || flipV) edits.push('Flipped');
@@ -370,40 +370,37 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   if (!isOpen || !item) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/85 backdrop-blur-md animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-3xl w-full max-w-5xl h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/90 backdrop-blur-md animate-fadeIn overflow-hidden">
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl sm:rounded-3xl w-full max-w-5xl h-[96vh] sm:h-[90vh] flex flex-col shadow-2xl overflow-hidden">
         
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-600/30">
-              <Crop className="w-5 h-5" />
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 flex-shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-600/30 flex-shrink-0">
+              <Crop className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h3 className="text-base font-extrabold text-white flex items-center gap-2 font-['Outfit']">
+            <div className="min-w-0">
+              <h3 className="text-xs sm:text-base font-extrabold text-white flex items-center gap-2 font-['Outfit'] truncate">
                 Document Studio Editor
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-mono border border-indigo-500/30">
-                  {item.fileName}
-                </span>
               </h3>
-              <p className="text-xs text-slate-400">
-                Interactive Crop, Resize, Rotation & Contrast Enhancer for High-Quality Printing
+              <p className="text-[10px] sm:text-xs text-slate-400 truncate">
+                Touch crop, rotate & adjust for printing
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
               onClick={handleReset}
-              className="text-xs text-slate-400 hover:text-white flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 transition-colors border border-slate-700"
+              className="text-[11px] sm:text-xs text-slate-400 hover:text-white flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 transition-colors border border-slate-700"
               title="Reset all modifications"
             >
-              <RefreshCw className="w-3.5 h-3.5" />
+              <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
               <span>Reset</span>
             </button>
             <button
               onClick={onClose}
-              className="p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
+              className="p-1.5 sm:p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>
@@ -413,46 +410,45 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
         {/* Modal Content Body */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 min-h-0 overflow-hidden">
           
-          {/* Main Visual Canvas Area (Cols 7 on Desktop) */}
-          <div className="lg:col-span-7 bg-slate-950 p-4 sm:p-6 flex flex-col items-center justify-center relative select-none border-b lg:border-b-0 lg:border-r border-slate-800/80 overflow-hidden">
+          {/* Main Visual Canvas Area (Responsive top box on phone) */}
+          <div className="lg:col-span-7 bg-slate-950 p-2 sm:p-6 flex flex-col items-center justify-center relative select-none border-b lg:border-b-0 lg:border-r border-slate-800/80 h-[38vh] sm:h-[45vh] lg:h-auto overflow-hidden">
             
             {/* Live Size & Resolution Badge */}
-            <div className="absolute top-4 left-4 z-10 flex items-center gap-2 text-[11px] font-mono text-slate-400 bg-slate-900/90 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-800 shadow-lg">
-              <Layers className="w-3.5 h-3.5 text-cyan-400" />
-              <span>Output: {targetWidth} × {targetHeight} px</span>
+            <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono text-slate-400 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-xl border border-slate-800 shadow-lg">
+              <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
+              <span>{targetWidth}×{targetHeight}px</span>
               <span className="text-slate-600">|</span>
-              <span className="text-emerald-400">Scale: {Math.round(scale * 100)}%</span>
+              <span className="text-emerald-400">{Math.round(scale * 100)}%</span>
             </div>
 
-            {/* Canvas Container with Interactive Crop Box */}
+            {/* Canvas Container with Touch-Optimized Interactive Crop Box */}
             <div
               ref={containerRef}
-              className="relative max-w-full max-h-[55vh] lg:max-h-[68vh] flex items-center justify-center rounded-2xl p-2 bg-slate-900/40 border border-slate-800 shadow-2xl"
+              className="relative max-w-full max-h-[32vh] sm:max-h-[50vh] lg:max-h-[68vh] flex items-center justify-center rounded-xl p-1.5 bg-slate-900/40 border border-slate-800 shadow-2xl touch-none select-none"
+              style={{ touchAction: 'none' }}
             >
               {/* Preview Canvas */}
               <canvas
                 ref={previewCanvasRef}
-                className="max-w-full max-h-[50vh] lg:max-h-[62vh] rounded-lg object-contain shadow-2xl"
+                className="max-w-full max-h-[30vh] sm:max-h-[48vh] lg:max-h-[62vh] rounded-lg object-contain shadow-2xl"
               />
 
-              {/* Interactive Crop Selection Overlay (Only active when in 'crop' tab or visible) */}
+              {/* Interactive Crop Selection Overlay */}
               {activeTab === 'crop' && (
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{
-                    padding: '8px'
-                  }}
-                >
-                  {/* Dimmed Background Shading Outside Crop */}
+                <div className="absolute inset-0 pointer-events-none p-2">
+                  
+                  {/* Dimmed Background Shading Outside Crop Box */}
                   <div
-                    className="absolute border-2 border-indigo-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.65)] pointer-events-auto cursor-move transition-shadow"
+                    className="absolute border-2 border-indigo-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] pointer-events-auto cursor-move transition-shadow touch-none"
                     style={{
                       left: `${crop.x}%`,
                       top: `${crop.y}%`,
                       width: `${crop.width}%`,
                       height: `${crop.height}%`,
+                      touchAction: 'none'
                     }}
-                    onMouseDown={(e) => handleMouseDown(e, 'move')}
+                    onMouseDown={(e) => handleDragStart(e, 'move')}
+                    onTouchStart={(e) => handleDragStart(e, 'move')}
                   >
                     {/* Grid Guide Lines */}
                     <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-40">
@@ -467,106 +463,106 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       <div></div>
                     </div>
 
-                    {/* 8 Resizing Drag Handles */}
-                    {['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'].map((h) => {
-                      const positions = {
-                        nw: '-top-2 -left-2 cursor-nwse-resize',
-                        n: '-top-2 left-1/2 -translate-x-1/2 cursor-ns-resize',
-                        ne: '-top-2 -right-2 cursor-nesw-resize',
-                        e: 'top-1/2 -right-2 -translate-y-1/2 cursor-ew-resize',
-                        se: '-bottom-2 -right-2 cursor-nwse-resize',
-                        s: '-bottom-2 left-1/2 -translate-x-1/2 cursor-ns-resize',
-                        sw: '-bottom-2 -left-2 cursor-nesw-resize',
-                        w: 'top-1/2 -left-2 -translate-y-1/2 cursor-ew-resize',
-                      };
-                      return (
-                        <div
-                          key={h}
-                          className={`absolute w-4 h-4 bg-indigo-500 border-2 border-white rounded-full shadow-md z-20 hover:scale-125 transition-transform ${positions[h]}`}
-                          onMouseDown={(e) => handleMouseDown(e, h)}
-                        />
-                      );
-                    })}
+                    {/* Touch & Mouse Resizing Drag Handles */}
+                    {[
+                      { id: 'nw', class: '-top-3 -left-3 cursor-nwse-resize' },
+                      { id: 'n',  class: '-top-3 left-1/2 -translate-x-1/2 cursor-ns-resize' },
+                      { id: 'ne', class: '-top-3 -right-3 cursor-nesw-resize' },
+                      { id: 'e',  class: 'top-1/2 -right-3 -translate-y-1/2 cursor-ew-resize' },
+                      { id: 'se', class: '-bottom-3 -right-3 cursor-nwse-resize' },
+                      { id: 's',  class: '-bottom-3 left-1/2 -translate-x-1/2 cursor-ns-resize' },
+                      { id: 'sw', class: '-bottom-3 -left-3 cursor-nesw-resize' },
+                      { id: 'w',  class: 'top-1/2 -left-3 -translate-y-1/2 cursor-ew-resize' },
+                    ].map((h) => (
+                      <div
+                        key={h.id}
+                        className={`absolute w-7 h-7 sm:w-6 sm:h-6 bg-indigo-500 border-2 border-white rounded-full shadow-lg z-30 flex items-center justify-center active:scale-125 touch-none ${h.class}`}
+                        style={{ touchAction: 'none' }}
+                        onMouseDown={(e) => handleDragStart(e, h.id)}
+                        onTouchStart={(e) => handleDragStart(e, h.id)}
+                      >
+                        <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Quick Helper Text */}
-            <p className="text-[11px] text-slate-500 mt-3 font-medium flex items-center gap-1.5">
-              <Move className="w-3.5 h-3.5 text-indigo-400" />
-              <span>Drag corners or middle handles to adjust crop frame. Changes update real-time.</span>
+            <p className="text-[10px] text-slate-500 mt-1.5 font-medium flex items-center gap-1 sm:hidden">
+              <Move className="w-3 h-3 text-indigo-400" />
+              <span>Touch handles or frame to drag & crop</span>
             </p>
           </div>
 
-          {/* Tool Control Panel Sidebar (Cols 5 on Desktop) */}
-          <div className="lg:col-span-5 bg-slate-900 p-5 flex flex-col justify-between overflow-y-auto space-y-6">
+          {/* Tool Control Panel Sidebar */}
+          <div className="lg:col-span-5 bg-slate-900 p-3 sm:p-5 flex flex-col justify-between overflow-y-auto space-y-4 sm:space-y-6 flex-1 min-h-0">
             
             {/* Top Tool Navigation Tabs */}
-            <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-950 rounded-2xl border border-slate-800">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950 rounded-xl sm:rounded-2xl border border-slate-800">
                 <button
                   onClick={() => setActiveTab('crop')}
-                  className={`flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                     activeTab === 'crop'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <Crop className="w-4 h-4" />
+                  <Crop className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Crop</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('resize')}
-                  className={`flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                     activeTab === 'resize'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <Maximize2 className="w-4 h-4" />
+                  <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Resize</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('rotate')}
-                  className={`flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                     activeTab === 'rotate'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <RotateCw className="w-4 h-4" />
+                  <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Rotate</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('enhance')}
-                  className={`flex flex-col items-center gap-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                     activeTab === 'enhance'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <Sliders className="w-4 h-4" />
+                  <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Enhance</span>
                 </button>
               </div>
 
               {/* TAB 1: CROP CONTROLS */}
               {activeTab === 'crop' && (
-                <div className="space-y-4 animate-fadeIn">
+                <div className="space-y-3 sm:space-y-4 animate-fadeIn">
                   <div>
-                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
-                      Crop Aspect Ratio Presets
+                    <label className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                      Aspect Ratio Presets
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-3 sm:grid-cols-2 gap-1.5 sm:gap-2">
                       {ASPECT_RATIOS.map((item) => (
                         <button
                           key={item.id}
                           onClick={() => applyAspectRatioPreset(item.id)}
-                          className={`px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition-all border ${
+                          className={`px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold text-center sm:text-left transition-all border ${
                             aspectRatio === item.id
                               ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-md'
                               : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
@@ -578,20 +574,20 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800 space-y-3">
-                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                  <div className="pt-2 sm:pt-3 border-t border-slate-800 space-y-2 sm:space-y-3">
+                    <label className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider block">
                       Quick Selection Frames
                     </label>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setCrop({ x: 0, y: 0, width: 100, height: 100 })}
-                        className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 text-xs font-medium transition-colors"
+                        className="flex-1 px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 text-[11px] sm:text-xs font-medium transition-colors"
                       >
                         Full Page (100%)
                       </button>
                       <button
                         onClick={() => setCrop({ x: 10, y: 10, width: 80, height: 80 })}
-                        className="flex-1 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 text-xs font-medium transition-colors"
+                        className="flex-1 px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 text-[11px] sm:text-xs font-medium transition-colors"
                       >
                         Center Margin (80%)
                       </button>
@@ -602,9 +598,9 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
               {/* TAB 2: RESIZE & SCALE CONTROLS */}
               {activeTab === 'resize' && (
-                <div className="space-y-4 animate-fadeIn">
+                <div className="space-y-3 sm:space-y-4 animate-fadeIn">
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                    <div className="flex justify-between text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                       <span>Scale Multiplier</span>
                       <span className="text-indigo-400 font-mono">{Math.round(scale * 100)}%</span>
                     </div>
@@ -618,57 +614,57 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       className="w-full accent-indigo-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
                     />
                     <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
-                      <span>20% (Compact)</span>
-                      <span>100% (Original)</span>
-                      <span>200% (HD Zoom)</span>
+                      <span>20%</span>
+                      <span>100%</span>
+                      <span>200%</span>
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800 space-y-3">
+                  <div className="pt-2 sm:pt-3 border-t border-slate-800 space-y-2 sm:space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                        Custom Pixel Dimensions
+                      <label className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider">
+                        Custom Dimensions (px)
                       </label>
                       <button
                         onClick={() => setLockAspect(!lockAspect)}
-                        className={`text-[11px] px-2.5 py-1 rounded-lg border font-semibold flex items-center gap-1 transition-colors ${
+                        className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-lg border font-semibold flex items-center gap-1 transition-colors ${
                           lockAspect
                             ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
                             : 'bg-slate-800 border-slate-700 text-slate-400'
                         }`}
                       >
-                        {lockAspect ? '🔒 Aspect Locked' : '🔓 Aspect Unlocked'}
+                        {lockAspect ? '🔒 Locked' : '🔓 Unlocked'}
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
                       <div>
-                        <label className="text-[11px] text-slate-400 block mb-1">Width (px)</label>
+                        <label className="text-[10px] sm:text-[11px] text-slate-400 block mb-1">Width</label>
                         <input
                           type="number"
                           value={targetWidth}
                           onChange={(e) => handleWidthChange(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
+                          className="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
                         />
                       </div>
                       <div>
-                        <label className="text-[11px] text-slate-400 block mb-1">Height (px)</label>
+                        <label className="text-[10px] sm:text-[11px] text-slate-400 block mb-1">Height</label>
                         <input
                           type="number"
                           value={targetHeight}
                           onChange={(e) => handleHeightChange(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
+                          className="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
                         />
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex gap-1.5 pt-1">
                     {[0.5, 0.75, 1.0, 1.25, 1.5].map((s) => (
                       <button
                         key={s}
                         onClick={() => handleScaleChange(s)}
-                        className={`flex-1 py-1.5 rounded-lg border text-xs font-mono transition-colors ${
+                        className={`flex-1 py-1.5 rounded-lg border text-[11px] font-mono transition-colors ${
                           scale === s
                             ? 'bg-indigo-600 border-indigo-500 text-white font-bold'
                             : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
@@ -683,38 +679,38 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
               {/* TAB 3: ROTATE & FLIP CONTROLS */}
               {activeTab === 'rotate' && (
-                <div className="space-y-4 animate-fadeIn">
+                <div className="space-y-3 sm:space-y-4 animate-fadeIn">
                   <div>
-                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
+                    <label className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
                       Quick Rotation
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
                       <button
                         onClick={() => setRotation((prev) => (prev - 90 + 360) % 360)}
-                        className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-xs font-semibold transition-all"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-[11px] sm:text-xs font-semibold transition-all"
                       >
-                        <RotateCcw className="w-4 h-4 text-indigo-400" />
+                        <RotateCcw className="w-3.5 h-3.5 text-indigo-400" />
                         <span>-90° Left</span>
                       </button>
                       <button
                         onClick={() => setRotation((prev) => (prev + 90) % 360)}
-                        className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-xs font-semibold transition-all"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-[11px] sm:text-xs font-semibold transition-all"
                       >
-                        <RotateCw className="w-4 h-4 text-indigo-400" />
+                        <RotateCw className="w-3.5 h-3.5 text-indigo-400" />
                         <span>+90° Right</span>
                       </button>
                       <button
                         onClick={() => setRotation((prev) => (prev + 180) % 360)}
-                        className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-xs font-semibold transition-all"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-[11px] sm:text-xs font-semibold transition-all"
                       >
-                        <RefreshCw className="w-4 h-4 text-indigo-400" />
+                        <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
                         <span>180° Flip</span>
                       </button>
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800 space-y-2">
-                    <div className="flex justify-between text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  <div className="pt-2 sm:pt-3 border-t border-slate-800 space-y-1.5">
+                    <div className="flex justify-between text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider">
                       <span>Fine Angle Tuning</span>
                       <span className="text-indigo-400 font-mono">{rotation}°</span>
                     </div>
@@ -729,32 +725,32 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                     />
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800 space-y-2">
-                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
+                  <div className="pt-2 sm:pt-3 border-t border-slate-800 space-y-1.5">
+                    <label className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
                       Mirror & Flip Options
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setFlipH(!flipH)}
-                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                        className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all ${
                           flipH
                             ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
                             : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                         }`}
                       >
-                        <FlipHorizontal className="w-4 h-4" />
+                        <FlipHorizontal className="w-3.5 h-3.5" />
                         <span>Flip Horizontal</span>
                       </button>
 
                       <button
                         onClick={() => setFlipV(!flipV)}
-                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                        className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all ${
                           flipV
                             ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
                             : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                         }`}
                       >
-                        <FlipVertical className="w-4 h-4" />
+                        <FlipVertical className="w-3.5 h-3.5" />
                         <span>Flip Vertical</span>
                       </button>
                     </div>
@@ -764,9 +760,9 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
               {/* TAB 4: ENHANCE & SCAN FILTERS */}
               {activeTab === 'enhance' && (
-                <div className="space-y-4 animate-fadeIn">
+                <div className="space-y-3 sm:space-y-4 animate-fadeIn">
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                    <div className="flex justify-between text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                       <span className="flex items-center gap-1.5">
                         <Sun className="w-3.5 h-3.5 text-amber-400" /> Brightness
                       </span>
@@ -784,9 +780,9 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                    <div className="flex justify-between text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
                       <span className="flex items-center gap-1.5">
-                        <Contrast className="w-3.5 h-3.5 text-cyan-400" /> Contrast (Text Clarity)
+                        <Contrast className="w-3.5 h-3.5 text-cyan-400" /> Contrast
                       </span>
                       <span className="text-indigo-400 font-mono">{contrast}%</span>
                     </div>
@@ -801,41 +797,38 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                     />
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800">
+                  <div className="pt-2 sm:pt-3 border-t border-slate-800">
                     <button
                       onClick={() => setGrayscale(!grayscale)}
-                      className={`w-full flex items-center justify-between p-3 rounded-xl border text-xs font-bold transition-all ${
+                      className={`w-full flex items-center justify-between p-2.5 sm:p-3 rounded-xl border text-[11px] sm:text-xs font-bold transition-all ${
                         grayscale
                           ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       <span className="flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-emerald-400" />
-                        <span>Document B&W Scan Enhancer</span>
+                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>B&W Scan Enhancer</span>
                       </span>
                       <span>{grayscale ? 'ENABLED' : 'OFF'}</span>
                     </button>
-                    <p className="text-[10px] text-slate-500 mt-1.5">
-                      Converts gray background noise to high-contrast monochrome for crisp, clean document printing.
-                    </p>
                   </div>
                 </div>
               )}
             </div>
 
             {/* Bottom Action Footer */}
-            <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+            <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2.5 flex-shrink-0">
               <button
                 onClick={onClose}
-                className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+                className="px-4 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
               >
                 Cancel
               </button>
 
               <button
                 onClick={handleSaveEdits}
-                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
+                className="px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5"
               >
                 <Check className="w-4 h-4" />
                 <span>Save & Apply Edits</span>

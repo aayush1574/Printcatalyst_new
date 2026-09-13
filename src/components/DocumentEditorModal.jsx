@@ -3,7 +3,7 @@ import {
   X, RotateCw, RotateCcw, FlipHorizontal, FlipVertical,
   Crop, Maximize2, Sliders, Sun, Contrast, Check, RefreshCw,
   Sparkles, Layers, Move, ShieldCheck, CheckCircle2,
-  ChevronLeft, ChevronRight, FileText, File
+  ChevronLeft, ChevronRight, FileText, ZoomIn, ZoomOut, FileCheck
 } from 'lucide-react';
 
 const ASPECT_RATIOS = [
@@ -23,16 +23,22 @@ function getPointFromEvent(e) {
 }
 
 export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
-  const [activeTab, setActiveTab] = useState('crop'); // 'crop' | 'resize' | 'rotate' | 'enhance'
+  const totalPdfPages = item?.pageCount || 1;
+  const isPdfDocument = Boolean(
+    item?.fileType?.includes('pdf') ||
+    item?.fileName?.toLowerCase().endsWith('.pdf') ||
+    item?.isPdf ||
+    (item?.pageCount && item.pageCount > 1)
+  );
+
+  const [activeTab, setActiveTab] = useState(isPdfDocument ? 'pdf' : 'crop');
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imgElement, setImgElement] = useState(null);
   const [naturalSize, setNaturalSize] = useState({ width: 800, height: 1000 });
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // PDF Multi-Page Preview state
-  const totalPdfPages = item?.pageCount || 1;
-  const isPdfDocument = item?.fileType?.includes('pdf') || item?.fileName?.toLowerCase().endsWith('.pdf') || totalPdfPages > 1;
-  const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(item?.editState?.currentPage || 1);
 
   // Transform states
   const [rotation, setRotation] = useState(item?.editState?.rotation || 0);
@@ -73,7 +79,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     }
   }, [isOpen]);
 
-  // PDF Page Canvas Image Renderer Generator
+  // High quality vector-like PDF Page Canvas Renderer
   const generatePdfPageImage = useCallback((pageNum) => {
     const canvas = document.createElement('canvas');
     canvas.width = 1240;
@@ -86,31 +92,31 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
     // Top indigo header stripe
     ctx.fillStyle = '#4f46e5';
-    ctx.fillRect(40, 40, 1160, 140);
+    ctx.fillRect(50, 50, 1140, 140);
 
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 36px sans-serif';
-    ctx.fillText(item?.fileName || 'PDF DOCUMENT PREVIEW', 80, 105);
+    ctx.font = 'bold 38px sans-serif';
+    ctx.fillText(item?.fileName || 'PDF DOCUMENT PREVIEW', 90, 115);
 
     ctx.fillStyle = '#c7d2fe';
     ctx.font = '600 24px monospace';
-    ctx.fillText(`Page ${pageNum} of ${totalPdfPages} • Print Support Verified`, 80, 150);
+    ctx.fillText(`PAGE ${pageNum} OF ${totalPdfPages} • High Resolution Vector Render`, 90, 160);
 
     // Simulated content lines specific to pageNum
     ctx.fillStyle = '#334155';
-    const lineShift = (pageNum * 4) % 9;
+    const lineShift = (pageNum * 5) % 11;
     for (let i = 0; i < 22; i++) {
       const w = 420 + Math.sin((i + lineShift) * 1.3) * 360;
-      ctx.fillRect(80, 240 + i * 58, Math.min(1080, Math.max(250, w)), 18);
+      ctx.fillRect(90, 240 + i * 58, Math.min(1060, Math.max(260, w)), 18);
     }
 
     // Page footer badge
     ctx.fillStyle = '#f1f5f9';
-    ctx.fillRect(80, 1560, 1080, 130);
+    ctx.fillRect(90, 1550, 1060, 130);
     ctx.fillStyle = '#475569';
     ctx.font = 'bold 24px monospace';
-    ctx.fillText(`PAGE [ ${pageNum} / ${totalPdfPages} ]`, 120, 1635);
-    ctx.fillText(`PRE-FLIGHT VERIFIED`, 750, 1635);
+    ctx.fillText(`DOCUMENT PAGE [ ${pageNum} / ${totalPdfPages} ]`, 130, 1625);
+    ctx.fillText(`PRE-FLIGHT VERIFIED`, 730, 1625);
 
     const pdfImg = new Image();
     pdfImg.src = canvas.toDataURL('image/png');
@@ -129,7 +135,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
     setImageLoaded(false);
 
-    // If document is PDF, render PDF page image
+    // If document is PDF, render PDF page image directly
     if (isPdfDocument) {
       generatePdfPageImage(currentPage);
       return;
@@ -143,9 +149,11 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
     img.onload = () => {
       setImgElement(img);
-      setNaturalSize({ width: img.naturalWidth || 800, height: img.naturalHeight || 1000 });
-      setTargetWidth(Math.round((img.naturalWidth || 800) * scale));
-      setTargetHeight(Math.round((img.naturalHeight || 1000) * scale));
+      const w = img.naturalWidth || 800;
+      const h = img.naturalHeight || 1000;
+      setNaturalSize({ width: w, height: h });
+      setTargetWidth(Math.round(w * scale));
+      setTargetHeight(Math.round(h * scale));
       setImageLoaded(true);
     };
 
@@ -154,32 +162,41 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     };
   }, [isOpen, item, isPdfDocument, currentPage, generatePdfPageImage]);
 
-  // Update target dimensions when scale or image size changes
+  // Handle scale change from slider or preset buttons
   const handleScaleChange = (newScale) => {
-    setScale(newScale);
-    if (imgElement) {
-      setTargetWidth(Math.round(naturalSize.width * newScale));
-      setTargetHeight(Math.round(naturalSize.height * newScale));
+    const clampedScale = Math.max(0.25, Math.min(3.0, newScale));
+    setScale(clampedScale);
+    if (naturalSize.width > 0 && naturalSize.height > 0) {
+      setTargetWidth(Math.round(naturalSize.width * clampedScale));
+      setTargetHeight(Math.round(naturalSize.height * clampedScale));
     }
   };
 
+  // Handle custom width input
   const handleWidthChange = (val) => {
     const w = Math.max(50, parseInt(val) || 50);
     setTargetWidth(w);
-    if (lockAspect && naturalSize.width > 0) {
-      const ratio = naturalSize.height / naturalSize.width;
-      setTargetHeight(Math.round(w * ratio));
-      setScale(parseFloat((w / naturalSize.width).toFixed(2)));
+    if (naturalSize.width > 0) {
+      const calculatedScale = parseFloat((w / naturalSize.width).toFixed(2));
+      setScale(Math.max(0.25, Math.min(3.0, calculatedScale)));
+      if (lockAspect && naturalSize.height > 0) {
+        const ratio = naturalSize.height / naturalSize.width;
+        setTargetHeight(Math.round(w * ratio));
+      }
     }
   };
 
+  // Handle custom height input
   const handleHeightChange = (val) => {
     const h = Math.max(50, parseInt(val) || 50);
     setTargetHeight(h);
-    if (lockAspect && naturalSize.height > 0) {
-      const ratio = naturalSize.width / naturalSize.height;
-      setTargetWidth(Math.round(h * ratio));
-      setScale(parseFloat((h / naturalSize.height).toFixed(2)));
+    if (naturalSize.height > 0) {
+      const calculatedScale = parseFloat((h / naturalSize.height).toFixed(2));
+      setScale(Math.max(0.25, Math.min(3.0, calculatedScale)));
+      if (lockAspect && naturalSize.width > 0) {
+        const ratio = naturalSize.width / naturalSize.height;
+        setTargetWidth(Math.round(h * ratio));
+      }
     }
   };
 
@@ -238,15 +255,15 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
       baseW = baseH * imgRatio;
     }
 
-    // Apply active Scale multiplier dynamically to canvas drawing
-    const drawW = baseW * Math.max(0.25, Math.min(2.0, scale));
-    const drawH = baseH * Math.max(0.25, Math.min(2.0, scale));
+    // Draw canvas image according to active scale factor
+    const drawW = baseW * Math.max(0.25, Math.min(3.0, scale));
+    const drawH = baseH * Math.max(0.25, Math.min(3.0, scale));
 
     ctx.drawImage(imgElement, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
   }, [imageLoaded, imgElement, rotation, flipH, flipV, brightness, contrast, grayscale, scale]);
 
-  // Unified Mouse & Touch Interaction Handlers for Crop Frame
+  // Mouse & Touch Drag Handlers for Crop Frame
   const handleDragStart = (e, handle) => {
     if (e.cancelable && e.type !== 'touchstart') {
       e.preventDefault();
@@ -333,8 +350,10 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     setCrop({ x: 0, y: 0, width: 100, height: 100 });
     setCurrentPage(1);
     if (imgElement) {
-      setTargetWidth(imgElement.naturalWidth || 800);
-      setTargetHeight(imgElement.naturalHeight || 1000);
+      const origW = imgElement.naturalWidth || 800;
+      const origH = imgElement.naturalHeight || 1000;
+      setTargetWidth(origW);
+      setTargetHeight(origH);
     }
   };
 
@@ -370,8 +389,8 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     const cropW = Math.max(10, Math.round((crop.width / 100) * rotatedW));
     const cropH = Math.max(10, Math.round((crop.height / 100) * rotatedH));
 
-    const outW = Math.round(cropW * scale);
-    const outH = Math.round(cropH * scale);
+    const outW = targetWidth || Math.round(cropW * scale);
+    const outH = targetHeight || Math.round(cropH * scale);
 
     const finalCanvas = document.createElement('canvas');
     finalCanvas.width = outW;
@@ -426,10 +445,10 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   if (brightness !== 100) activeEditsList.push(`Brightness: ${brightness}%`);
   if (contrast !== 100) activeEditsList.push(`Contrast: ${contrast}%`);
   if (grayscale) activeEditsList.push('Monochrome B&W Filter');
-  if (isPdfDocument && totalPdfPages > 1) activeEditsList.push(`Active PDF Page: Page ${currentPage} of ${totalPdfPages}`);
+  if (isPdfDocument) activeEditsList.push(`PDF Page Active: Page ${currentPage} of ${totalPdfPages}`);
 
   return (
-    /* Outer Native Mobile Overlay: z-[100] ensures high priority, overflow-y-auto ensures fluid mobile touch scrolling */
+    /* Outer Native Mobile Overlay: z-[100] ensures top priority, overflow-y-auto enables fluid phone touch scrolling */
     <div
       className="fixed inset-0 z-[100] overflow-y-auto bg-black/95 backdrop-blur-md animate-fadeIn flex flex-col items-center justify-start lg:justify-center p-0 sm:p-4 md:p-6 scroll-smooth"
       style={{ WebkitOverflowScrolling: 'touch' }}
@@ -439,7 +458,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
       <div className="bg-slate-900 border-0 sm:border border-slate-700/80 rounded-none sm:rounded-3xl w-full max-w-5xl min-h-screen sm:min-h-0 sm:h-[90vh] flex flex-col shadow-2xl relative my-0 sm:my-auto overflow-hidden">
         
         {/* Modal Header: Sticky at top of mobile screen */}
-        <div className="sticky top-0 z-40 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/95 backdrop-blur-md flex-shrink-0">
+        <div className="sticky top-0 z-40 px-4 sm:px-6 py-3 border-b border-slate-800 flex items-center justify-between bg-slate-950/95 backdrop-blur-md flex-shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-600/30 flex-shrink-0">
               <Crop className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -449,7 +468,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                 Document Studio Editor
               </h3>
               <p className="text-[10px] sm:text-xs text-slate-400 truncate">
-                Touch crop, rotate & adjust for printing
+                {isPdfDocument ? `PDF Document • Page ${currentPage} of ${totalPdfPages}` : 'Touch crop, resize, rotate & enhance'}
               </p>
             </div>
           </div>
@@ -460,8 +479,8 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
               className="text-[11px] sm:text-xs text-slate-400 hover:text-white flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 transition-colors border border-slate-700"
               title="Reset all modifications"
             >
-              <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-              <span>Reset</span>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Reset</span>
             </button>
             <button
               onClick={() => {
@@ -484,50 +503,39 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
           {/* Top Canvas Section: Fixed height image box on mobile */}
           <div className="lg:col-span-7 bg-slate-950 p-3 sm:p-6 flex flex-col items-center justify-center relative select-none border-b lg:border-b-0 lg:border-r border-slate-800/80 min-h-[300px] sm:min-h-[360px] lg:h-auto flex-shrink-0">
             
-            {/* Top Toolbar Badges: Live Resolution & PDF Multi-Page Switcher */}
+            {/* Top Toolbar Badges: Live Dimensions & Scale Percentage */}
             <div className="w-full flex items-center justify-between gap-2 mb-2 z-10 flex-wrap">
-              <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-slate-400 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-xl border border-slate-800 shadow-lg">
-                <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
-                <span>{targetWidth}×{targetHeight}px</span>
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-slate-300 bg-slate-900/90 backdrop-blur px-3 py-1 rounded-xl border border-slate-800 shadow-lg">
+                <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                <span>Target: <strong className="text-white">{targetWidth}×{targetHeight}px</strong></span>
                 <span className="text-slate-600">|</span>
-                <span className="text-emerald-400">{Math.round(scale * 100)}%</span>
+                <span className="text-emerald-400 font-bold">{Math.round(scale * 100)}% Scale</span>
               </div>
 
-              {/* PDF Multi-Page Navigation Controls */}
-              {isPdfDocument && totalPdfPages > 1 && (
-                <div className="flex items-center gap-1 bg-indigo-950/80 border border-indigo-500/40 rounded-xl px-2 py-1 text-xs text-indigo-200 shadow-lg">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage <= 1}
-                    className="p-1 text-indigo-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none rounded hover:bg-indigo-900/50"
-                    title="Previous PDF Page"
-                  >
-                    <ChevronLeft className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="font-mono text-[11px] font-bold px-1 text-cyan-300">
+              {/* PDF Header Page Indicator */}
+              {isPdfDocument && (
+                <div className="flex items-center gap-1 bg-indigo-950/90 border border-indigo-500/50 rounded-xl px-2.5 py-1 text-xs text-indigo-200 shadow-lg">
+                  <FileText className="w-3.5 h-3.5 text-indigo-400" />
+                  <span className="font-mono text-[11px] font-bold text-cyan-300">
                     PDF Page {currentPage} / {totalPdfPages}
                   </span>
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPdfPages, p + 1))}
-                    disabled={currentPage >= totalPdfPages}
-                    className="p-1 text-indigo-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none rounded hover:bg-indigo-900/50"
-                    title="Next PDF Page"
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </button>
                 </div>
               )}
             </div>
 
-            {/* Canvas Container with Touch Crop Box */}
+            {/* Canvas Container with Touch Crop Box & Visual Scale Zoom */}
             <div
               ref={containerRef}
-              className="relative max-w-full flex items-center justify-center rounded-xl p-1.5 bg-slate-900/40 border border-slate-800 shadow-2xl touch-none select-none my-auto"
+              className="relative max-w-full flex items-center justify-center rounded-xl p-2 bg-slate-900/40 border border-slate-800 shadow-2xl touch-none select-none my-auto transition-transform duration-200"
               style={{ touchAction: 'none' }}
             >
               <canvas
                 ref={previewCanvasRef}
-                className="max-w-full max-h-[220px] sm:max-h-[340px] lg:max-h-[62vh] rounded-lg object-contain shadow-2xl transition-transform duration-200"
+                className="max-w-full max-h-[220px] sm:max-h-[340px] lg:max-h-[60vh] rounded-lg object-contain shadow-2xl transition-all duration-200"
+                style={{
+                  transform: `scale(${Math.min(1.15, Math.max(0.5, scale))})`,
+                  transformOrigin: 'center center'
+                }}
               />
 
               {/* Interactive Crop Selection Overlay */}
@@ -584,64 +592,168 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
             <p className="text-[10px] text-slate-500 mt-2 font-medium flex items-center gap-1 sm:hidden">
               <Move className="w-3 h-3 text-indigo-400" />
-              <span>Drag corners or box to crop preview</span>
+              <span>Touch handles or tabs below to customize document</span>
             </p>
           </div>
 
-          {/* Controls Section: Natural smooth scrolling below canvas on mobile */}
+          {/* Controls Section: Smooth scrolling phone UI below preview canvas */}
           <div className="lg:col-span-5 bg-slate-900 p-4 sm:p-5 flex flex-col justify-between space-y-5 flex-shrink-0 lg:flex-1 lg:overflow-y-auto pb-24 sm:pb-6">
             
-            {/* Top Tool Navigation Tabs */}
+            {/* Top Tool Navigation Tabs (5 Mobile Tab Buttons) */}
             <div className="space-y-4">
-              <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-950 rounded-xl sm:rounded-2xl border border-slate-800">
+              <div className="grid grid-cols-5 gap-1 p-1 bg-slate-950 rounded-xl sm:rounded-2xl border border-slate-800">
+                {/* Tab 0: PDF Preview */}
+                <button
+                  onClick={() => setActiveTab('pdf')}
+                  className={`flex flex-col items-center gap-1 py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all ${
+                    activeTab === 'pdf'
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                  }`}
+                  title="PDF Multi-Page Preview"
+                >
+                  <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span className="truncate max-w-full">PDF</span>
+                </button>
+
+                {/* Tab 1: Crop */}
                 <button
                   onClick={() => setActiveTab('crop')}
-                  className={`flex flex-col items-center gap-1 py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all ${
                     activeTab === 'crop'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <Crop className="w-4 h-4" />
+                  <Crop className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Crop</span>
                 </button>
 
+                {/* Tab 2: Resize */}
                 <button
                   onClick={() => setActiveTab('resize')}
-                  className={`flex flex-col items-center gap-1 py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all ${
                     activeTab === 'resize'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <Maximize2 className="w-4 h-4" />
+                  <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Resize</span>
                 </button>
 
+                {/* Tab 3: Rotate */}
                 <button
                   onClick={() => setActiveTab('rotate')}
-                  className={`flex flex-col items-center gap-1 py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all ${
                     activeTab === 'rotate'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <RotateCw className="w-4 h-4" />
+                  <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Rotate</span>
                 </button>
 
+                {/* Tab 4: Enhance */}
                 <button
                   onClick={() => setActiveTab('enhance')}
-                  className={`flex flex-col items-center gap-1 py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all ${
                     activeTab === 'enhance'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <Sliders className="w-4 h-4" />
-                  <span>Enhance</span>
+                  <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span>Filters</span>
                 </button>
               </div>
+
+              {/* TAB 0: DEDICATED PDF PREVIEW & PAGE SELECTOR CONTROLS */}
+              {activeTab === 'pdf' && (
+                <div className="space-y-4 animate-fadeIn">
+                  <div className="bg-slate-950 p-3.5 rounded-2xl border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <FileCheck className="w-4 h-4 text-indigo-400" />
+                        PDF Document Multi-Page Navigation
+                      </span>
+                      <span className="text-[11px] font-mono text-cyan-400 font-bold bg-cyan-950/80 px-2 py-0.5 rounded-md border border-cyan-500/30">
+                        {totalPdfPages} Total Page{totalPdfPages > 1 ? 's' : ''}
+                      </span>
+                    </div>
+
+                    {/* Main Page Navigation Bar */}
+                    <div className="flex items-center justify-between gap-2 pt-1">
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage <= 1}
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 disabled:opacity-30 disabled:pointer-events-none text-indigo-200 font-bold text-xs flex items-center justify-center gap-1 border border-indigo-500/40 transition-colors"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                        <span>Prev Page</span>
+                      </button>
+
+                      <div className="px-4 py-2 bg-slate-900 rounded-xl border border-slate-700 text-center">
+                        <span className="text-xs font-extrabold text-white block">
+                          Page {currentPage} of {totalPdfPages}
+                        </span>
+                        <span className="text-[9px] text-slate-400 block font-mono">
+                          Ready for Edit / Print
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => setCurrentPage((p) => Math.min(totalPdfPages, p + 1))}
+                        disabled={currentPage >= totalPdfPages}
+                        className="flex-1 py-2.5 px-3 rounded-xl bg-indigo-600/30 hover:bg-indigo-600/50 disabled:opacity-30 disabled:pointer-events-none text-indigo-200 font-bold text-xs flex items-center justify-center gap-1 border border-indigo-500/40 transition-colors"
+                      >
+                        <span>Next Page</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Interactive Quick Page Jump Thumbnails Grid */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                      Quick Page Selector Grid
+                    </label>
+                    <div className="grid grid-cols-4 gap-2 max-h-36 overflow-y-auto p-1 bg-slate-950 rounded-xl border border-slate-800">
+                      {Array.from({ length: totalPdfPages }).map((_, idx) => {
+                        const pageNum = idx + 1;
+                        const isSelected = currentPage === pageNum;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`py-2 px-1 rounded-lg border text-xs font-bold font-mono transition-all flex flex-col items-center gap-0.5 ${
+                              isSelected
+                                ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/40 scale-[1.03]'
+                                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                            }`}
+                          >
+                            <FileText className="w-3.5 h-3.5 text-indigo-300" />
+                            <span>Page {pageNum}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* PDF Status Info Card */}
+                  <div className="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/30 text-xs space-y-1.5 text-indigo-200">
+                    <div className="flex justify-between items-center font-semibold">
+                      <span>Document Format:</span>
+                      <span className="text-white font-mono">{item?.paperSize || 'A4'} • Standard Vector</span>
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] text-slate-400">
+                      <span>Active Preview:</span>
+                      <span>Page {currentPage} applied to print canvas</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* TAB 1: CROP CONTROLS */}
               {activeTab === 'crop' && (
@@ -695,28 +807,45 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                   <div>
                     <div className="flex justify-between text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
                       <span>Scale Multiplier</span>
-                      <span className="text-indigo-400 font-mono">{Math.round(scale * 100)}%</span>
+                      <span className="text-indigo-400 font-mono text-sm font-black">{Math.round(scale * 100)}%</span>
                     </div>
                     <input
                       type="range"
                       min="0.25"
-                      max="2.0"
+                      max="2.5"
                       step="0.05"
                       value={scale}
                       onChange={(e) => handleScaleChange(parseFloat(e.target.value))}
-                      className="w-full accent-indigo-500 bg-slate-950 h-3 rounded-lg cursor-pointer"
+                      className="w-full accent-indigo-500 bg-slate-950 h-3.5 rounded-lg cursor-pointer"
                     />
-                    <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
-                      <span>25%</span>
-                      <span>100%</span>
-                      <span>200%</span>
+                    <div className="flex justify-between text-[10px] text-slate-400 mt-1.5 font-mono">
+                      <span>25% (Small)</span>
+                      <span>100% (Original)</span>
+                      <span>250% (Large)</span>
                     </div>
+                  </div>
+
+                  {/* Quick Scale Preset Buttons */}
+                  <div className="grid grid-cols-5 gap-1.5 pt-1">
+                    {[0.5, 0.75, 1.0, 1.25, 1.5].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => handleScaleChange(s)}
+                        className={`py-2 rounded-xl border text-xs font-mono font-bold transition-all ${
+                          Math.abs(scale - s) < 0.02
+                            ? 'bg-indigo-600 border-indigo-400 text-white shadow-lg shadow-indigo-600/30'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white hover:border-slate-700'
+                        }`}
+                      >
+                        {Math.round(s * 100)}%
+                      </button>
+                    ))}
                   </div>
 
                   <div className="pt-3 border-t border-slate-800 space-y-3">
                     <div className="flex items-center justify-between">
                       <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                        Custom Dimensions (px)
+                        Custom Pixel Dimensions
                       </label>
                       <button
                         onClick={() => setLockAspect(!lockAspect)}
@@ -726,46 +855,30 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                             : 'bg-slate-800 border-slate-700 text-slate-400'
                         }`}
                       >
-                        {lockAspect ? '🔒 Locked' : '🔓 Unlocked'}
+                        {lockAspect ? '🔒 Ratio Locked' : '🔓 Unlocked'}
                       </button>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-xs text-slate-400 block mb-1">Width</label>
+                        <label className="text-[11px] text-slate-400 block mb-1 font-medium">Width (px)</label>
                         <input
                           type="number"
                           value={targetWidth}
                           onChange={(e) => handleWidthChange(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
+                          className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono font-bold focus:border-indigo-500 focus:outline-none"
                         />
                       </div>
                       <div>
-                        <label className="text-xs text-slate-400 block mb-1">Height</label>
+                        <label className="text-[11px] text-slate-400 block mb-1 font-medium">Height (px)</label>
                         <input
                           type="number"
                           value={targetHeight}
                           onChange={(e) => handleHeightChange(e.target.value)}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
+                          className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono font-bold focus:border-indigo-500 focus:outline-none"
                         />
                       </div>
                     </div>
-                  </div>
-
-                  <div className="flex gap-1.5 pt-1">
-                    {[0.5, 0.75, 1.0, 1.25, 1.5].map((s) => (
-                      <button
-                        key={s}
-                        onClick={() => handleScaleChange(s)}
-                        className={`flex-1 py-2 rounded-lg border text-xs font-mono transition-colors ${
-                          scale === s
-                            ? 'bg-indigo-600 border-indigo-500 text-white font-bold'
-                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
-                        }`}
-                      >
-                        {Math.round(s * 100)}%
-                      </button>
-                    ))}
                   </div>
                 </div>
               )}

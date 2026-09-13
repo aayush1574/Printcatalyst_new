@@ -55,7 +55,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   const containerRef = useRef(null);
   const previewCanvasRef = useRef(null);
 
-  // Body Scroll-Lock when modal is active (prevents main webpage scrolling behind modal)
+  // Body Scroll-Lock when modal is active
   useEffect(() => {
     if (isOpen) {
       const prevOverflow = document.body.style.overflow;
@@ -393,12 +393,14 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   if (grayscale) activeEditsList.push('Monochrome B&W Filter');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/90 backdrop-blur-md animate-fadeIn">
-      {/* Modal Box */}
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl sm:rounded-3xl w-full max-w-5xl h-[95vh] sm:h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
+    /* Outer Native Scroll Overlay: overflow-y-auto ensures 100% fluid touch scrolling on mobile phones */
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black/90 backdrop-blur-md animate-fadeIn flex flex-col items-center justify-start lg:justify-center p-0 sm:p-4 md:p-6">
+      
+      {/* Modal Box Container */}
+      <div className="bg-slate-900 border-0 sm:border border-slate-700/80 rounded-none sm:rounded-3xl w-full max-w-5xl min-h-screen sm:min-h-0 sm:h-[90vh] flex flex-col shadow-2xl relative my-0 sm:my-auto overflow-hidden">
         
-        {/* Modal Header */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 flex-shrink-0">
+        {/* Modal Header: Sticky at top of mobile screen */}
+        <div className="sticky top-0 z-30 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/95 backdrop-blur-md flex-shrink-0">
           <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-cyan-400 flex items-center justify-center text-white font-bold shadow-lg shadow-indigo-600/30 flex-shrink-0">
               <Crop className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -437,11 +439,11 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
           </div>
         </div>
 
-        {/* Modal Content Body: Responsive Flex Scroll Container for Mobile Phones */}
-        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-0 min-h-0 overflow-y-auto lg:overflow-hidden">
+        {/* Modal Content Body */}
+        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-0 overflow-y-auto lg:overflow-hidden min-h-0">
           
-          {/* Top Canvas Section: Fixed height header block on phones */}
-          <div className="lg:col-span-7 bg-slate-950 p-2 sm:p-6 flex flex-col items-center justify-center relative select-none border-b lg:border-b-0 lg:border-r border-slate-800/80 min-h-[280px] h-[34vh] sm:h-[42vh] lg:h-auto flex-shrink-0">
+          {/* Top Canvas Section: Fixed height image box on mobile */}
+          <div className="lg:col-span-7 bg-slate-950 p-3 sm:p-6 flex flex-col items-center justify-center relative select-none border-b lg:border-b-0 lg:border-r border-slate-800/80 min-h-[300px] sm:min-h-[360px] lg:h-auto flex-shrink-0">
             
             {/* Live Size & Resolution Badge */}
             <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono text-slate-400 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-xl border border-slate-800 shadow-lg">
@@ -454,12 +456,12 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
             {/* Canvas Container with Touch Crop Box */}
             <div
               ref={containerRef}
-              className="relative max-w-full max-h-[26vh] sm:max-h-[38vh] lg:max-h-[68vh] flex items-center justify-center rounded-xl p-1.5 bg-slate-900/40 border border-slate-800 shadow-2xl touch-none select-none"
+              className="relative max-w-full flex items-center justify-center rounded-xl p-1.5 bg-slate-900/40 border border-slate-800 shadow-2xl touch-none select-none my-auto"
               style={{ touchAction: 'none' }}
             >
               <canvas
                 ref={previewCanvasRef}
-                className="max-w-full max-h-[24vh] sm:max-h-[36vh] lg:max-h-[62vh] rounded-lg object-contain shadow-2xl"
+                className="max-w-full max-h-[220px] sm:max-h-[340px] lg:max-h-[62vh] rounded-lg object-contain shadow-2xl"
               />
 
               {/* Interactive Crop Selection Overlay */}
@@ -514,80 +516,80 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
               )}
             </div>
 
-            <p className="text-[10px] text-slate-500 mt-1 font-medium flex items-center gap-1 sm:hidden">
+            <p className="text-[10px] text-slate-500 mt-2 font-medium flex items-center gap-1 sm:hidden">
               <Move className="w-3 h-3 text-indigo-400" />
-              <span>Touch handles or box to drag & crop</span>
+              <span>Drag corners or box to crop preview</span>
             </p>
           </div>
 
-          {/* Controls Sidebar Section: Smooth Scrollable Controls on Mobile */}
-          <div className="lg:col-span-5 bg-slate-900 p-3 sm:p-5 flex flex-col justify-between space-y-4 sm:space-y-6 flex-shrink-0 lg:flex-1 lg:overflow-y-auto">
+          {/* Controls Section: Natural smooth scrolling below canvas on mobile */}
+          <div className="lg:col-span-5 bg-slate-900 p-4 sm:p-5 flex flex-col justify-between space-y-5 flex-shrink-0 lg:flex-1 lg:overflow-y-auto">
             
             {/* Top Tool Navigation Tabs */}
-            <div className="space-y-3 sm:space-y-4">
-              <div className="grid grid-cols-4 gap-1 p-1 bg-slate-950 rounded-xl sm:rounded-2xl border border-slate-800">
+            <div className="space-y-4">
+              <div className="grid grid-cols-4 gap-1.5 p-1 bg-slate-950 rounded-xl sm:rounded-2xl border border-slate-800">
                 <button
                   onClick={() => setActiveTab('crop')}
-                  className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                     activeTab === 'crop'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <Crop className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <Crop className="w-4 h-4" />
                   <span>Crop</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('resize')}
-                  className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                     activeTab === 'resize'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <Maximize2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <Maximize2 className="w-4 h-4" />
                   <span>Resize</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('rotate')}
-                  className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                     activeTab === 'rotate'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <RotateCw className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <RotateCw className="w-4 h-4" />
                   <span>Rotate</span>
                 </button>
 
                 <button
                   onClick={() => setActiveTab('enhance')}
-                  className={`flex flex-col items-center gap-0.5 sm:gap-1 py-2 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
+                  className={`flex flex-col items-center gap-1 py-2.5 rounded-lg sm:rounded-xl text-[11px] sm:text-xs font-bold transition-all ${
                     activeTab === 'enhance'
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
                   }`}
                 >
-                  <Sliders className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <Sliders className="w-4 h-4" />
                   <span>Enhance</span>
                 </button>
               </div>
 
               {/* TAB 1: CROP CONTROLS */}
               {activeTab === 'crop' && (
-                <div className="space-y-3 sm:space-y-4 animate-fadeIn">
+                <div className="space-y-4 animate-fadeIn">
                   <div>
-                    <label className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
                       Aspect Ratio Presets
                     </label>
-                    <div className="grid grid-cols-3 sm:grid-cols-2 gap-1.5 sm:gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       {ASPECT_RATIOS.map((item) => (
                         <button
                           key={item.id}
                           onClick={() => applyAspectRatioPreset(item.id)}
-                          className={`px-2.5 py-2 rounded-xl text-[11px] sm:text-xs font-semibold text-center sm:text-left transition-all border ${
+                          className={`px-3 py-2.5 rounded-xl text-xs font-semibold text-left transition-all border ${
                             aspectRatio === item.id
                               ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300 shadow-md'
                               : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
@@ -599,20 +601,20 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                     </div>
                   </div>
 
-                  <div className="pt-2 sm:pt-3 border-t border-slate-800 space-y-2 sm:space-y-3">
-                    <label className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider block">
+                  <div className="pt-3 border-t border-slate-800 space-y-3">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block">
                       Quick Selection Frames
                     </label>
                     <div className="flex gap-2">
                       <button
                         onClick={() => setCrop({ x: 0, y: 0, width: 100, height: 100 })}
-                        className="flex-1 px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 text-[11px] sm:text-xs font-medium transition-colors"
+                        className="flex-1 px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 text-xs font-medium transition-colors"
                       >
                         Full Page (100%)
                       </button>
                       <button
                         onClick={() => setCrop({ x: 10, y: 10, width: 80, height: 80 })}
-                        className="flex-1 px-2.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 text-[11px] sm:text-xs font-medium transition-colors"
+                        className="flex-1 px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:bg-slate-800 text-xs font-medium transition-colors"
                       >
                         Center Margin (80%)
                       </button>
@@ -623,9 +625,9 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
               {/* TAB 2: RESIZE & SCALE CONTROLS */}
               {activeTab === 'resize' && (
-                <div className="space-y-3 sm:space-y-4 animate-fadeIn">
+                <div className="space-y-4 animate-fadeIn">
                   <div>
-                    <div className="flex justify-between text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    <div className="flex justify-between text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
                       <span>Scale Multiplier</span>
                       <span className="text-indigo-400 font-mono">{Math.round(scale * 100)}%</span>
                     </div>
@@ -636,7 +638,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       step="0.05"
                       value={scale}
                       onChange={(e) => handleScaleChange(parseFloat(e.target.value))}
-                      className="w-full accent-indigo-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-indigo-500 bg-slate-950 h-3 rounded-lg cursor-pointer"
                     />
                     <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
                       <span>20%</span>
@@ -645,14 +647,14 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                     </div>
                   </div>
 
-                  <div className="pt-2 sm:pt-3 border-t border-slate-800 space-y-2 sm:space-y-3">
+                  <div className="pt-3 border-t border-slate-800 space-y-3">
                     <div className="flex items-center justify-between">
-                      <label className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider">
+                      <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
                         Custom Dimensions (px)
                       </label>
                       <button
                         onClick={() => setLockAspect(!lockAspect)}
-                        className={`text-[10px] sm:text-[11px] px-2 py-0.5 rounded-lg border font-semibold flex items-center gap-1 transition-colors ${
+                        className={`text-xs px-2.5 py-1 rounded-lg border font-semibold flex items-center gap-1 transition-colors ${
                           lockAspect
                             ? 'bg-indigo-500/20 border-indigo-500/40 text-indigo-300'
                             : 'bg-slate-800 border-slate-700 text-slate-400'
@@ -662,23 +664,23 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[10px] sm:text-[11px] text-slate-400 block mb-1">Width</label>
+                        <label className="text-xs text-slate-400 block mb-1">Width</label>
                         <input
                           type="number"
                           value={targetWidth}
                           onChange={(e) => handleWidthChange(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] sm:text-[11px] text-slate-400 block mb-1">Height</label>
+                        <label className="text-xs text-slate-400 block mb-1">Height</label>
                         <input
                           type="number"
                           value={targetHeight}
                           onChange={(e) => handleHeightChange(e.target.value)}
-                          className="w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
+                          className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono focus:border-indigo-500 focus:outline-none"
                         />
                       </div>
                     </div>
@@ -689,7 +691,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       <button
                         key={s}
                         onClick={() => handleScaleChange(s)}
-                        className={`flex-1 py-1.5 rounded-lg border text-[11px] font-mono transition-colors ${
+                        className={`flex-1 py-2 rounded-lg border text-xs font-mono transition-colors ${
                           scale === s
                             ? 'bg-indigo-600 border-indigo-500 text-white font-bold'
                             : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
@@ -704,38 +706,38 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
               {/* TAB 3: ROTATE & FLIP CONTROLS */}
               {activeTab === 'rotate' && (
-                <div className="space-y-3 sm:space-y-4 animate-fadeIn">
+                <div className="space-y-4 animate-fadeIn">
                   <div>
-                    <label className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1.5">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-2">
                       Quick Rotation
                     </label>
-                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         onClick={() => setRotation((prev) => (prev - 90 + 360) % 360)}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-[11px] sm:text-xs font-semibold transition-all"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-xs font-semibold transition-all"
                       >
-                        <RotateCcw className="w-3.5 h-3.5 text-indigo-400" />
+                        <RotateCcw className="w-4 h-4 text-indigo-400" />
                         <span>-90° Left</span>
                       </button>
                       <button
                         onClick={() => setRotation((prev) => (prev + 90) % 360)}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-[11px] sm:text-xs font-semibold transition-all"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-xs font-semibold transition-all"
                       >
-                        <RotateCw className="w-3.5 h-3.5 text-indigo-400" />
+                        <RotateCw className="w-4 h-4 text-indigo-400" />
                         <span>+90° Right</span>
                       </button>
                       <button
                         onClick={() => setRotation((prev) => (prev + 180) % 360)}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-[11px] sm:text-xs font-semibold transition-all"
+                        className="flex flex-col sm:flex-row items-center justify-center gap-1.5 py-3 rounded-xl bg-slate-950 border border-slate-800 hover:border-slate-700 text-slate-200 text-xs font-semibold transition-all"
                       >
-                        <RefreshCw className="w-3.5 h-3.5 text-indigo-400" />
+                        <RefreshCw className="w-4 h-4 text-indigo-400" />
                         <span>180° Flip</span>
                       </button>
                     </div>
                   </div>
 
-                  <div className="pt-2 sm:pt-3 border-t border-slate-800 space-y-1.5">
-                    <div className="flex justify-between text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider">
+                  <div className="pt-3 border-t border-slate-800 space-y-2">
+                    <div className="flex justify-between text-xs font-bold text-slate-300 uppercase tracking-wider">
                       <span>Fine Angle Tuning</span>
                       <span className="text-indigo-400 font-mono">{rotation}°</span>
                     </div>
@@ -746,36 +748,36 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       step="1"
                       value={rotation}
                       onChange={(e) => setRotation(parseInt(e.target.value) || 0)}
-                      className="w-full accent-indigo-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-indigo-500 bg-slate-950 h-3 rounded-lg cursor-pointer"
                     />
                   </div>
 
-                  <div className="pt-2 sm:pt-3 border-t border-slate-800 space-y-1.5">
-                    <label className="text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
+                  <div className="pt-3 border-t border-slate-800 space-y-2">
+                    <label className="text-xs font-bold text-slate-300 uppercase tracking-wider block mb-1">
                       Mirror & Flip Options
                     </label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
                         onClick={() => setFlipH(!flipH)}
-                        className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all ${
+                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
                           flipH
                             ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
                             : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                         }`}
                       >
-                        <FlipHorizontal className="w-3.5 h-3.5" />
+                        <FlipHorizontal className="w-4 h-4" />
                         <span>Flip Horizontal</span>
                       </button>
 
                       <button
                         onClick={() => setFlipV(!flipV)}
-                        className={`flex items-center justify-center gap-1.5 py-2 rounded-xl border text-[11px] sm:text-xs font-semibold transition-all ${
+                        className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
                           flipV
                             ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300'
                             : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                         }`}
                       >
-                        <FlipVertical className="w-3.5 h-3.5" />
+                        <FlipVertical className="w-4 h-4" />
                         <span>Flip Vertical</span>
                       </button>
                     </div>
@@ -785,11 +787,11 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
               {/* TAB 4: ENHANCE & SCAN FILTERS */}
               {activeTab === 'enhance' && (
-                <div className="space-y-3 sm:space-y-4 animate-fadeIn">
+                <div className="space-y-4 animate-fadeIn">
                   <div>
-                    <div className="flex justify-between text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    <div className="flex justify-between text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
                       <span className="flex items-center gap-1.5">
-                        <Sun className="w-3.5 h-3.5 text-amber-400" /> Brightness
+                        <Sun className="w-4 h-4 text-amber-400" /> Brightness
                       </span>
                       <span className="text-indigo-400 font-mono">{brightness}%</span>
                     </div>
@@ -800,14 +802,14 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       step="1"
                       value={brightness}
                       onChange={(e) => setBrightness(parseInt(e.target.value))}
-                      className="w-full accent-indigo-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-indigo-500 bg-slate-950 h-3 rounded-lg cursor-pointer"
                     />
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-[11px] sm:text-xs font-bold text-slate-300 uppercase tracking-wider mb-1.5">
+                    <div className="flex justify-between text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
                       <span className="flex items-center gap-1.5">
-                        <Contrast className="w-3.5 h-3.5 text-cyan-400" /> Contrast
+                        <Contrast className="w-4 h-4 text-cyan-400" /> Contrast
                       </span>
                       <span className="text-indigo-400 font-mono">{contrast}%</span>
                     </div>
@@ -818,21 +820,21 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       step="1"
                       value={contrast}
                       onChange={(e) => setContrast(parseInt(e.target.value))}
-                      className="w-full accent-indigo-500 bg-slate-950 h-2 rounded-lg cursor-pointer"
+                      className="w-full accent-indigo-500 bg-slate-950 h-3 rounded-lg cursor-pointer"
                     />
                   </div>
 
-                  <div className="pt-2 sm:pt-3 border-t border-slate-800">
+                  <div className="pt-3 border-t border-slate-800">
                     <button
                       onClick={() => setGrayscale(!grayscale)}
-                      className={`w-full flex items-center justify-between p-2.5 sm:p-3 rounded-xl border text-[11px] sm:text-xs font-bold transition-all ${
+                      className={`w-full flex items-center justify-between p-3 rounded-xl border text-xs font-bold transition-all ${
                         grayscale
                           ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
                           : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
                       }`}
                     >
                       <span className="flex items-center gap-2">
-                        <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                        <Sparkles className="w-4 h-4 text-emerald-400" />
                         <span>B&W Scan Enhancer</span>
                       </span>
                       <span>{grayscale ? 'ENABLED' : 'OFF'}</span>
@@ -843,17 +845,17 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
             </div>
 
             {/* Bottom Action Footer */}
-            <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2.5 flex-shrink-0">
+            <div className="pt-4 border-t border-slate-800 flex items-center justify-end gap-3 flex-shrink-0">
               <button
                 onClick={onClose}
-                className="px-4 py-2 sm:py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+                className="px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
               >
                 Cancel
               </button>
 
               <button
                 onClick={() => setShowConfirmModal(true)}
-                className="px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5"
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2"
               >
                 <Check className="w-4 h-4" />
                 <span>Save & Apply Edits</span>
@@ -866,7 +868,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
         {/* Confirmation Card Overlay */}
         {showConfirmModal && (
-          <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
             <div className="bg-slate-900 border-2 border-indigo-500/60 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5">
               <div className="text-center space-y-2">
                 <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/20">
@@ -901,7 +903,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
               <div className="space-y-2.5 pt-1">
                 <button
                   onClick={executeSaveEdits}
-                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
                 >
                   <Check className="w-4 h-4" />
                   <span>Confirm & Save Edits</span>
@@ -910,13 +912,13 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     onClick={() => setShowConfirmModal(false)}
-                    className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+                    className="py-3 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
                   >
                     Keep Editing
                   </button>
                   <button
                     onClick={onClose}
-                    className="py-2.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-semibold transition-colors"
+                    className="py-3 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-semibold transition-colors"
                   >
                     Discard Changes
                   </button>

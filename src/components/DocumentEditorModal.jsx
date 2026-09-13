@@ -55,7 +55,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   const containerRef = useRef(null);
   const previewCanvasRef = useRef(null);
 
-  // Body Scroll-Lock when modal is active (prevents background body scroll only)
+  // Body Scroll-Lock when modal is active (prevents main webpage scrolling behind modal)
   useEffect(() => {
     if (isOpen) {
       const prevOverflow = document.body.style.overflow;
@@ -214,7 +214,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     ctx.restore();
   }, [imageLoaded, imgElement, rotation, flipH, flipV, brightness, contrast, grayscale]);
 
-  // Unified Mouse & Touch Interaction Handlers
+  // Unified Mouse & Touch Interaction Handlers for Crop Frame
   const handleDragStart = (e, handle) => {
     if (e.cancelable && e.type !== 'touchstart') {
       e.preventDefault();
@@ -393,8 +393,9 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   if (grayscale) activeEditsList.push('Monochrome B&W Filter');
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/90 backdrop-blur-md animate-fadeIn overflow-hidden">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl sm:rounded-3xl w-full max-w-5xl h-[96vh] sm:h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-black/90 backdrop-blur-md animate-fadeIn">
+      {/* Modal Box */}
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl sm:rounded-3xl w-full max-w-5xl h-[95vh] sm:h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
         
         {/* Modal Header */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 flex-shrink-0">
@@ -436,11 +437,11 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
           </div>
         </div>
 
-        {/* Modal Content Body */}
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 min-h-0 overflow-hidden">
+        {/* Modal Content Body: Responsive Flex Scroll Container for Mobile Phones */}
+        <div className="flex-1 flex flex-col lg:grid lg:grid-cols-12 gap-0 min-h-0 overflow-y-auto lg:overflow-hidden">
           
-          {/* Main Visual Canvas Area (Cols 7 on Desktop, Top Box on Phone) */}
-          <div className="lg:col-span-7 bg-slate-950 p-2 sm:p-6 flex flex-col items-center justify-center relative select-none border-b lg:border-b-0 lg:border-r border-slate-800/80 h-[38vh] sm:h-[45vh] lg:h-auto overflow-hidden">
+          {/* Top Canvas Section: Fixed height header block on phones */}
+          <div className="lg:col-span-7 bg-slate-950 p-2 sm:p-6 flex flex-col items-center justify-center relative select-none border-b lg:border-b-0 lg:border-r border-slate-800/80 min-h-[280px] h-[34vh] sm:h-[42vh] lg:h-auto flex-shrink-0">
             
             {/* Live Size & Resolution Badge */}
             <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono text-slate-400 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-xl border border-slate-800 shadow-lg">
@@ -450,23 +451,20 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
               <span className="text-emerald-400">{Math.round(scale * 100)}%</span>
             </div>
 
-            {/* Canvas Container with Touch-Optimized Interactive Crop Box */}
+            {/* Canvas Container with Touch Crop Box */}
             <div
               ref={containerRef}
-              className="relative max-w-full max-h-[32vh] sm:max-h-[50vh] lg:max-h-[68vh] flex items-center justify-center rounded-xl p-1.5 bg-slate-900/40 border border-slate-800 shadow-2xl touch-none select-none"
+              className="relative max-w-full max-h-[26vh] sm:max-h-[38vh] lg:max-h-[68vh] flex items-center justify-center rounded-xl p-1.5 bg-slate-900/40 border border-slate-800 shadow-2xl touch-none select-none"
               style={{ touchAction: 'none' }}
             >
-              {/* Preview Canvas */}
               <canvas
                 ref={previewCanvasRef}
-                className="max-w-full max-h-[30vh] sm:max-h-[48vh] lg:max-h-[62vh] rounded-lg object-contain shadow-2xl"
+                className="max-w-full max-h-[24vh] sm:max-h-[36vh] lg:max-h-[62vh] rounded-lg object-contain shadow-2xl"
               />
 
               {/* Interactive Crop Selection Overlay */}
               {activeTab === 'crop' && (
                 <div className="absolute inset-0 pointer-events-none p-2">
-                  
-                  {/* Dimmed Background Shading Outside Crop Box */}
                   <div
                     className="absolute border-2 border-indigo-400 shadow-[0_0_0_9999px_rgba(0,0,0,0.7)] pointer-events-auto cursor-move transition-shadow touch-none"
                     style={{
@@ -479,7 +477,6 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                     onMouseDown={(e) => handleDragStart(e, 'move')}
                     onTouchStart={(e) => handleDragStart(e, 'move')}
                   >
-                    {/* Grid Guide Lines */}
                     <div className="absolute inset-0 grid grid-cols-3 grid-rows-3 pointer-events-none opacity-40">
                       <div className="border-r border-b border-indigo-300/60"></div>
                       <div className="border-r border-b border-indigo-300/60"></div>
@@ -492,7 +489,6 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       <div></div>
                     </div>
 
-                    {/* Touch & Mouse Resizing Drag Handles */}
                     {[
                       { id: 'nw', class: '-top-3 -left-3 cursor-nwse-resize' },
                       { id: 'n',  class: '-top-3 left-1/2 -translate-x-1/2 cursor-ns-resize' },
@@ -518,17 +514,14 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
               )}
             </div>
 
-            <p className="text-[10px] text-slate-500 mt-1.5 font-medium flex items-center gap-1 sm:hidden">
+            <p className="text-[10px] text-slate-500 mt-1 font-medium flex items-center gap-1 sm:hidden">
               <Move className="w-3 h-3 text-indigo-400" />
-              <span>Touch handles or frame to drag & crop</span>
+              <span>Touch handles or box to drag & crop</span>
             </p>
           </div>
 
-          {/* Tool Control Panel Sidebar - Smooth Scrollable Panel */}
-          <div
-            className="lg:col-span-5 bg-slate-900 p-3 sm:p-5 flex flex-col justify-between overflow-y-auto space-y-4 sm:space-y-6 flex-1 min-h-0 touch-pan-y"
-            style={{ touchAction: 'pan-y', WebkitOverflowScrolling: 'touch' }}
-          >
+          {/* Controls Sidebar Section: Smooth Scrollable Controls on Mobile */}
+          <div className="lg:col-span-5 bg-slate-900 p-3 sm:p-5 flex flex-col justify-between space-y-4 sm:space-y-6 flex-shrink-0 lg:flex-1 lg:overflow-y-auto">
             
             {/* Top Tool Navigation Tabs */}
             <div className="space-y-3 sm:space-y-4">

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   X, RotateCw, RotateCcw, FlipHorizontal, FlipVertical,
   Crop, Maximize2, Sliders, Sun, Contrast, Check, RefreshCw,
-  Sparkles, Layers, Move, Touchpad
+  Sparkles, Layers, Move, AlertCircle, CheckCircle2, ShieldCheck
 } from 'lucide-react';
 
 const ASPECT_RATIOS = [
@@ -14,7 +14,6 @@ const ASPECT_RATIOS = [
   { id: '4:6', label: '4×6 Photo', ratio: 4 / 6 },
 ];
 
-// Helper to extract x, y from mouse or touch event
 function getPointFromEvent(e) {
   if (e.touches && e.touches.length > 0) {
     return { x: e.touches[0].clientX, y: e.touches[0].clientY };
@@ -27,6 +26,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [imgElement, setImgElement] = useState(null);
   const [naturalSize, setNaturalSize] = useState({ width: 800, height: 1000 });
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   // Transform states
   const [rotation, setRotation] = useState(item?.editState?.rotation || 0);
@@ -54,6 +54,21 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
   const containerRef = useRef(null);
   const previewCanvasRef = useRef(null);
+
+  // Body Scroll-Lock when modal is active
+  useEffect(() => {
+    if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
+      const prevOverscroll = document.body.style.overscrollBehavior;
+      document.body.style.overflow = 'hidden';
+      document.body.style.overscrollBehavior = 'none';
+
+      return () => {
+        document.body.style.overflow = prevOverflow || '';
+        document.body.style.overscrollBehavior = prevOverscroll || '';
+      };
+    }
+  }, [isOpen]);
 
   // Load document / image source
   useEffect(() => {
@@ -295,7 +310,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   };
 
   // High-Resolution Export Engine
-  const handleSaveEdits = () => {
+  const executeSaveEdits = () => {
     if (!imgElement) return;
 
     const origW = imgElement.naturalWidth || 800;
@@ -369,9 +384,24 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
   if (!isOpen || !item) return null;
 
+  // Build human-readable edits list for confirmation modal
+  const activeEditsList = [];
+  if (rotation !== 0) activeEditsList.push(`Rotation: ${rotation}°`);
+  if (flipH || flipV) activeEditsList.push(`Flipped: ${flipH ? 'Horizontal' : ''} ${flipV ? 'Vertical' : ''}`);
+  if (crop.width < 98 || crop.height < 98 || crop.x > 2 || crop.y > 2) {
+    activeEditsList.push(`Cropped Region: ${Math.round(crop.width)}% × ${Math.round(crop.height)}%`);
+  }
+  if (scale !== 1.0) activeEditsList.push(`Resized Scale: ${Math.round(scale * 100)}% (${targetWidth}×${targetHeight}px)`);
+  if (brightness !== 100) activeEditsList.push(`Brightness: ${brightness}%`);
+  if (contrast !== 100) activeEditsList.push(`Contrast: ${contrast}%`);
+  if (grayscale) activeEditsList.push('Monochrome B&W Filter');
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/90 backdrop-blur-md animate-fadeIn overflow-hidden">
-      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl sm:rounded-3xl w-full max-w-5xl h-[96vh] sm:h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-6 bg-black/90 backdrop-blur-md animate-fadeIn overflow-hidden touch-none"
+      style={{ overscrollBehavior: 'none', touchAction: 'none' }}
+    >
+      <div className="bg-slate-900 border border-slate-700/80 rounded-2xl sm:rounded-3xl w-full max-w-5xl h-[96vh] sm:h-[90vh] flex flex-col shadow-2xl overflow-hidden relative">
         
         {/* Modal Header */}
         <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 flex-shrink-0">
@@ -399,7 +429,13 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
               <span>Reset</span>
             </button>
             <button
-              onClick={onClose}
+              onClick={() => {
+                if (activeEditsList.length > 0) {
+                  setShowConfirmModal(true);
+                } else {
+                  onClose();
+                }
+              }}
               className="p-1.5 sm:p-2 text-slate-400 hover:text-white rounded-xl hover:bg-slate-800 transition-colors"
             >
               <X className="w-5 h-5" />
@@ -410,7 +446,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
         {/* Modal Content Body */}
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-0 min-h-0 overflow-hidden">
           
-          {/* Main Visual Canvas Area (Responsive top box on phone) */}
+          {/* Main Visual Canvas Area */}
           <div className="lg:col-span-7 bg-slate-950 p-2 sm:p-6 flex flex-col items-center justify-center relative select-none border-b lg:border-b-0 lg:border-r border-slate-800/80 h-[38vh] sm:h-[45vh] lg:h-auto overflow-hidden">
             
             {/* Live Size & Resolution Badge */}
@@ -827,7 +863,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
               </button>
 
               <button
-                onClick={handleSaveEdits}
+                onClick={() => setShowConfirmModal(true)}
                 className="px-5 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-1.5"
               >
                 <Check className="w-4 h-4" />
@@ -838,6 +874,68 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
           </div>
 
         </div>
+
+        {/* ═══ Confirmation Card Overlay ═══ */}
+        {showConfirmModal && (
+          <div className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+            <div className="bg-slate-900 border-2 border-indigo-500/60 rounded-3xl p-6 max-w-md w-full shadow-2xl space-y-5">
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center mx-auto shadow-lg shadow-indigo-600/20">
+                  <ShieldCheck className="w-8 h-8" />
+                </div>
+                <h3 className="text-lg font-black text-white font-['Outfit']">Confirm & Save Edits?</h3>
+                <p className="text-xs text-slate-400">
+                  Are you sure you want to apply these custom edits to your document before sending it to the printer queue?
+                </p>
+              </div>
+
+              {/* Summary Box */}
+              <div className="bg-slate-950 p-4 rounded-2xl border border-slate-800 space-y-2">
+                <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider block border-b border-slate-800 pb-1.5">
+                  Applied Modifications Summary:
+                </span>
+                {activeEditsList.length > 0 ? (
+                  <ul className="space-y-1.5 text-xs text-slate-300">
+                    {activeEditsList.map((edit, idx) => (
+                      <li key={idx} className="flex items-center gap-2">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                        <span>{edit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="text-xs text-slate-500 italic">No custom modifications applied (Original settings preserved).</p>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2.5 pt-1">
+                <button
+                  onClick={executeSaveEdits}
+                  className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>Confirm & Save Edits</span>
+                </button>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setShowConfirmModal(false)}
+                    className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors"
+                  >
+                    Keep Editing
+                  </button>
+                  <button
+                    onClick={onClose}
+                    className="py-2.5 px-3 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/20 text-xs font-semibold transition-colors"
+                  >
+                    Discard Changes
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

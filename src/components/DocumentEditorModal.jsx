@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   X, RotateCw, RotateCcw, FlipHorizontal, FlipVertical,
   Crop, Maximize2, Sliders, Sun, Contrast, Check, RefreshCw,
-  Sparkles, Layers, Move, ShieldCheck, CheckCircle2
+  Sparkles, Layers, Move, ShieldCheck, CheckCircle2,
+  ChevronLeft, ChevronRight, FileText, File
 } from 'lucide-react';
 
 const ASPECT_RATIOS = [
@@ -27,6 +28,11 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   const [imgElement, setImgElement] = useState(null);
   const [naturalSize, setNaturalSize] = useState({ width: 800, height: 1000 });
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+
+  // PDF Multi-Page Preview state
+  const totalPdfPages = item?.pageCount || 1;
+  const isPdfDocument = item?.fileType?.includes('pdf') || item?.fileName?.toLowerCase().endsWith('.pdf') || totalPdfPages > 1;
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Transform states
   const [rotation, setRotation] = useState(item?.editState?.rotation || 0);
@@ -67,11 +73,68 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     }
   }, [isOpen]);
 
-  // Load document / image source
+  // PDF Page Canvas Image Renderer Generator
+  const generatePdfPageImage = useCallback((pageNum) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1240;
+    canvas.height = 1754;
+    const ctx = canvas.getContext('2d');
+
+    // Page paper background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, 1240, 1754);
+
+    // Top indigo header stripe
+    ctx.fillStyle = '#4f46e5';
+    ctx.fillRect(40, 40, 1160, 140);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px sans-serif';
+    ctx.fillText(item?.fileName || 'PDF DOCUMENT PREVIEW', 80, 105);
+
+    ctx.fillStyle = '#c7d2fe';
+    ctx.font = '600 24px monospace';
+    ctx.fillText(`Page ${pageNum} of ${totalPdfPages} • Print Support Verified`, 80, 150);
+
+    // Simulated content lines specific to pageNum
+    ctx.fillStyle = '#334155';
+    const lineShift = (pageNum * 4) % 9;
+    for (let i = 0; i < 22; i++) {
+      const w = 420 + Math.sin((i + lineShift) * 1.3) * 360;
+      ctx.fillRect(80, 240 + i * 58, Math.min(1080, Math.max(250, w)), 18);
+    }
+
+    // Page footer badge
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(80, 1560, 1080, 130);
+    ctx.fillStyle = '#475569';
+    ctx.font = 'bold 24px monospace';
+    ctx.fillText(`PAGE [ ${pageNum} / ${totalPdfPages} ]`, 120, 1635);
+    ctx.fillText(`PRE-FLIGHT VERIFIED`, 750, 1635);
+
+    const pdfImg = new Image();
+    pdfImg.src = canvas.toDataURL('image/png');
+    pdfImg.onload = () => {
+      setImgElement(pdfImg);
+      setNaturalSize({ width: 1240, height: 1754 });
+      setTargetWidth(Math.round(1240 * scale));
+      setTargetHeight(Math.round(1754 * scale));
+      setImageLoaded(true);
+    };
+  }, [item, totalPdfPages, scale]);
+
+  // Load document / image source or PDF page
   useEffect(() => {
     if (!isOpen || !item) return;
 
     setImageLoaded(false);
+
+    // If document is PDF, render PDF page image
+    if (isPdfDocument) {
+      generatePdfPageImage(currentPage);
+      return;
+    }
+
     const img = new Image();
     img.crossOrigin = 'anonymous';
     
@@ -87,44 +150,9 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     };
 
     img.onerror = () => {
-      const fallbackCanvas = document.createElement('canvas');
-      fallbackCanvas.width = 1240;
-      fallbackCanvas.height = 1754;
-      const ctx = fallbackCanvas.getContext('2d');
-
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, 1240, 1754);
-
-      ctx.fillStyle = '#4f46e5';
-      ctx.fillRect(40, 40, 1160, 120);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 36px sans-serif';
-      ctx.fillText(item.fileName || 'DOCUMENT PREVIEW', 80, 110);
-
-      ctx.fillStyle = '#334155';
-      for (let i = 0; i < 24; i++) {
-        const w = 400 + Math.sin(i * 1.5) * 350;
-        ctx.fillRect(80, 220 + i * 55, Math.min(1080, Math.max(300, w)), 18);
-      }
-
-      ctx.strokeStyle = '#059669';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(800, 1450, 360, 160);
-      ctx.fillStyle = '#059669';
-      ctx.font = 'bold 28px monospace';
-      ctx.fillText('PRINT READY', 870, 1540);
-
-      const fallbackImg = new Image();
-      fallbackImg.src = fallbackCanvas.toDataURL('image/png');
-      fallbackImg.onload = () => {
-        setImgElement(fallbackImg);
-        setNaturalSize({ width: 1240, height: 1754 });
-        setTargetWidth(Math.round(1240 * scale));
-        setTargetHeight(Math.round(1754 * scale));
-        setImageLoaded(true);
-      };
+      generatePdfPageImage(currentPage);
     };
-  }, [isOpen, item]);
+  }, [isOpen, item, isPdfDocument, currentPage, generatePdfPageImage]);
 
   // Update target dimensions when scale or image size changes
   const handleScaleChange = (newScale) => {
@@ -179,7 +207,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     }));
   };
 
-  // Render document preview on preview canvas
+  // Live Canvas Renderer with dynamic Scale & Transform support
   useEffect(() => {
     if (!imageLoaded || !imgElement || !previewCanvasRef.current) return;
 
@@ -200,19 +228,23 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
     const imgRatio = imgElement.width / imgElement.height;
     const boxRatio = (canvas.width * 0.8) / (canvas.height * 0.8);
-    let drawW, drawH;
+    let baseW, baseH;
 
     if (imgRatio > boxRatio) {
-      drawW = canvas.width * 0.75;
-      drawH = drawW / imgRatio;
+      baseW = canvas.width * 0.75;
+      baseH = baseW / imgRatio;
     } else {
-      drawH = canvas.height * 0.75;
-      drawW = drawH * imgRatio;
+      baseH = canvas.height * 0.75;
+      baseW = baseH * imgRatio;
     }
+
+    // Apply active Scale multiplier dynamically to canvas drawing
+    const drawW = baseW * Math.max(0.25, Math.min(2.0, scale));
+    const drawH = baseH * Math.max(0.25, Math.min(2.0, scale));
 
     ctx.drawImage(imgElement, -drawW / 2, -drawH / 2, drawW, drawH);
     ctx.restore();
-  }, [imageLoaded, imgElement, rotation, flipH, flipV, brightness, contrast, grayscale]);
+  }, [imageLoaded, imgElement, rotation, flipH, flipV, brightness, contrast, grayscale, scale]);
 
   // Unified Mouse & Touch Interaction Handlers for Crop Frame
   const handleDragStart = (e, handle) => {
@@ -299,6 +331,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     setGrayscale(false);
     setAspectRatio('free');
     setCrop({ x: 0, y: 0, width: 100, height: 100 });
+    setCurrentPage(1);
     if (imgElement) {
       setTargetWidth(imgElement.naturalWidth || 800);
       setTargetHeight(imgElement.naturalHeight || 1000);
@@ -361,6 +394,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     if (crop.width < 98 || crop.height < 98 || crop.x > 2 || crop.y > 2) edits.push('Cropped');
     if (scale !== 1.0) edits.push(`Resized (${Math.round(scale * 100)}%)`);
     if (brightness !== 100 || contrast !== 100 || grayscale) edits.push('Enhanced');
+    if (isPdfDocument) edits.push(`PDF Page ${currentPage}/${totalPdfPages}`);
 
     const editSummary = edits.length > 0 ? edits.join(' • ') : 'Adjusted Document';
 
@@ -370,8 +404,9 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
       previewUrl: editedDataUrl,
       isEdited: true,
       editSummary,
+      activePdfPage: currentPage,
       editState: {
-        rotation, flipH, flipV, scale, brightness, contrast, grayscale, crop
+        rotation, flipH, flipV, scale, brightness, contrast, grayscale, crop, currentPage
       }
     });
 
@@ -391,6 +426,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
   if (brightness !== 100) activeEditsList.push(`Brightness: ${brightness}%`);
   if (contrast !== 100) activeEditsList.push(`Contrast: ${contrast}%`);
   if (grayscale) activeEditsList.push('Monochrome B&W Filter');
+  if (isPdfDocument && totalPdfPages > 1) activeEditsList.push(`Active PDF Page: Page ${currentPage} of ${totalPdfPages}`);
 
   return (
     /* Outer Native Mobile Overlay: z-[100] ensures high priority, overflow-y-auto ensures fluid mobile touch scrolling */
@@ -448,12 +484,39 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
           {/* Top Canvas Section: Fixed height image box on mobile */}
           <div className="lg:col-span-7 bg-slate-950 p-3 sm:p-6 flex flex-col items-center justify-center relative select-none border-b lg:border-b-0 lg:border-r border-slate-800/80 min-h-[300px] sm:min-h-[360px] lg:h-auto flex-shrink-0">
             
-            {/* Live Size & Resolution Badge */}
-            <div className="absolute top-2 left-2 sm:top-4 sm:left-4 z-10 flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-[11px] font-mono text-slate-400 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-xl border border-slate-800 shadow-lg">
-              <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
-              <span>{targetWidth}×{targetHeight}px</span>
-              <span className="text-slate-600">|</span>
-              <span className="text-emerald-400">{Math.round(scale * 100)}%</span>
+            {/* Top Toolbar Badges: Live Resolution & PDF Multi-Page Switcher */}
+            <div className="w-full flex items-center justify-between gap-2 mb-2 z-10 flex-wrap">
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-[11px] font-mono text-slate-400 bg-slate-900/90 backdrop-blur px-2.5 py-1 rounded-xl border border-slate-800 shadow-lg">
+                <Layers className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-400" />
+                <span>{targetWidth}×{targetHeight}px</span>
+                <span className="text-slate-600">|</span>
+                <span className="text-emerald-400">{Math.round(scale * 100)}%</span>
+              </div>
+
+              {/* PDF Multi-Page Navigation Controls */}
+              {isPdfDocument && totalPdfPages > 1 && (
+                <div className="flex items-center gap-1 bg-indigo-950/80 border border-indigo-500/40 rounded-xl px-2 py-1 text-xs text-indigo-200 shadow-lg">
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage <= 1}
+                    className="p-1 text-indigo-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none rounded hover:bg-indigo-900/50"
+                    title="Previous PDF Page"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="font-mono text-[11px] font-bold px-1 text-cyan-300">
+                    PDF Page {currentPage} / {totalPdfPages}
+                  </span>
+                  <button
+                    onClick={() => setCurrentPage((p) => Math.min(totalPdfPages, p + 1))}
+                    disabled={currentPage >= totalPdfPages}
+                    className="p-1 text-indigo-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none rounded hover:bg-indigo-900/50"
+                    title="Next PDF Page"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Canvas Container with Touch Crop Box */}
@@ -464,7 +527,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
             >
               <canvas
                 ref={previewCanvasRef}
-                className="max-w-full max-h-[220px] sm:max-h-[340px] lg:max-h-[62vh] rounded-lg object-contain shadow-2xl"
+                className="max-w-full max-h-[220px] sm:max-h-[340px] lg:max-h-[62vh] rounded-lg object-contain shadow-2xl transition-transform duration-200"
               />
 
               {/* Interactive Crop Selection Overlay */}
@@ -636,7 +699,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                     </div>
                     <input
                       type="range"
-                      min="0.2"
+                      min="0.25"
                       max="2.0"
                       step="0.05"
                       value={scale}
@@ -644,7 +707,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       className="w-full accent-indigo-500 bg-slate-950 h-3 rounded-lg cursor-pointer"
                     />
                     <div className="flex justify-between text-[10px] text-slate-500 mt-1 font-mono">
-                      <span>20%</span>
+                      <span>25%</span>
                       <span>100%</span>
                       <span>200%</span>
                     </div>

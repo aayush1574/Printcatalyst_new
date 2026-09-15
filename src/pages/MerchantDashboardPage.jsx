@@ -627,25 +627,41 @@ export default function MerchantDashboardPage() {
                               </span>
                             </div>
 
-                            {/* Print / Reprint Button */}
-                            {ord.status !== 'CANCELLED' && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleReleaseOrder(ord.id);
-                                }}
-                                className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-white font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all ${
-                                  ord.status === 'PRINTING' || ord.status === 'IN_SPOOL'
-                                    ? 'bg-indigo-600 hover:bg-indigo-500'
-                                    : ord.status === 'COMPLETED'
-                                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                                    : 'bg-emerald-600 hover:bg-emerald-500 active:scale-95'
-                                }`}
-                              >
-                                <Printer className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                <span>{ord.status === 'PRINTING' || ord.status === 'IN_SPOOL' ? 'Printing...' : ord.status === 'COMPLETED' ? 'Reprint' : 'Print'}</span>
-                              </button>
-                            )}
+                            <div className="flex items-center gap-1.5">
+                              {/* Download Document Button */}
+                              {item.fileUrl && (
+                                <a
+                                  href={item.fileUrl.startsWith('http') ? item.fileUrl : `${API_BASE}${item.fileUrl}`}
+                                  download={item.fileName || 'document'}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-cyan-200 font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all border border-slate-700 hover:border-cyan-500/40"
+                                  title="Download document"
+                                >
+                                  <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                  <span className="hidden sm:inline">Download</span>
+                                </a>
+                              )}
+
+                              {/* Print / Reprint Button */}
+                              {ord.status !== 'CANCELLED' && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleReleaseOrder(ord.id);
+                                  }}
+                                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-white font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all ${
+                                    ord.status === 'PRINTING' || ord.status === 'IN_SPOOL'
+                                      ? 'bg-indigo-600 hover:bg-indigo-500'
+                                      : ord.status === 'COMPLETED'
+                                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                                      : 'bg-emerald-600 hover:bg-emerald-500 active:scale-95'
+                                  }`}
+                                >
+                                  <Printer className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                  <span>{ord.status === 'PRINTING' || ord.status === 'IN_SPOOL' ? 'Printing...' : ord.status === 'COMPLETED' ? 'Reprint' : 'Print'}</span>
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -1266,6 +1282,18 @@ function OrderDetailPanel({ selectedOrder, onOpenStudio, onRelease, onReject, on
         <Eye className="w-4 h-4 text-indigo-400" />
         <span>Open Document Studio</span>
       </button>
+
+      {/* Download Document */}
+      {selectedOrder.items?.[0]?.fileUrl && (
+        <a
+          href={selectedOrder.items[0].fileUrl.startsWith('http') ? selectedOrder.items[0].fileUrl : `${API_BASE}${selectedOrder.items[0].fileUrl}`}
+          download={selectedOrder.items[0].fileName || 'document'}
+          className="w-full py-2.5 px-3 rounded-xl bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white font-bold flex items-center justify-center gap-2 border border-cyan-500/30 hover:border-cyan-400 transition-all shadow-sm"
+        >
+          <Download className="w-4 h-4" />
+          <span>Download Document</span>
+        </a>
+      )}
 
       {/* Specs */}
       <div className="space-y-2">

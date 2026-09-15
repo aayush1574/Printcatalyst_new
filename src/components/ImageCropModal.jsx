@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { X, ZoomIn, ZoomOut, RotateCw, Check, Crop, Move, Maximize2 } from 'lucide-react';
+import { API_BASE } from '../config';
 
 /**
  * Dynamic Image Crop & Zoom Modal
@@ -48,20 +49,37 @@ export default function ImageCropModal({ imageUrl, fileName, isOpen, onClose, on
   // Load image
   useEffect(() => {
     if (!isOpen || !imageUrl) return;
+    setImgLoaded(false);
+
+    const resolvedUrl = imageUrl.startsWith('http') || imageUrl.startsWith('data:') || imageUrl.startsWith('blob:')
+      ? imageUrl
+      : `${API_BASE}${imageUrl.startsWith('/') ? '' : '/'}${imageUrl}`;
+
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
       imgRef.current = img;
-      setImgNatW(img.naturalWidth);
-      setImgNatH(img.naturalHeight);
+      setImgNatW(img.naturalWidth || 800);
+      setImgNatH(img.naturalHeight || 1000);
       setImgLoaded(true);
       setZoom(1);
       setPanX(0);
       setPanY(0);
       setRotation(0);
     };
-    img.src = imageUrl;
-    return () => { img.onload = null; };
+    img.onerror = () => {
+      // Retry without anonymous crossOrigin if CORS blocks canvas
+      const imgNoCors = new Image();
+      imgNoCors.onload = () => {
+        imgRef.current = imgNoCors;
+        setImgNatW(imgNoCors.naturalWidth || 800);
+        setImgNatH(imgNoCors.naturalHeight || 1000);
+        setImgLoaded(true);
+      };
+      imgNoCors.src = resolvedUrl;
+    };
+    img.src = resolvedUrl;
+    return () => { img.onload = null; img.onerror = null; };
   }, [isOpen, imageUrl]);
 
   // Calculate display dimensions when image or container changes

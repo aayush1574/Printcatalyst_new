@@ -83,9 +83,77 @@ export function isTextFile(fileNameOrUrl = '', mimeType = '') {
 }
 
 /**
+ * Generate a high-resolution Vector SVG Data URL fallback
+ * Used when a remote image URL cannot be fetched or is missing
+ */
+export function generateFallbackSvgDataUrl(fileName = 'Image Document', order = {}) {
+  const item = order?.items?.[0] || {};
+  const token = order?.pickupToken || order?.id || '—';
+  const colorMode = item?.colorMode === 'COLOR' ? 'Color Output (CMYK)' : 'Monochrome (B&W Grayscale)';
+  const paperSize = item?.paperSize || 'A4';
+  const cleanName = (fileName || 'Document').replace(/[<>&"]/g, '');
+  const ext = (cleanName.split('.').pop() || 'IMAGE').toUpperCase();
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" width="1200" height="1600">
+    <defs>
+      <linearGradient id="pcHdr" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#4f46e5"/>
+        <stop offset="100%" stop-color="#06b6d4"/>
+      </linearGradient>
+      <linearGradient id="pcCard" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stop-color="#ffffff"/>
+        <stop offset="100%" stop-color="#f8fafc"/>
+      </linearGradient>
+    </defs>
+    <rect width="1200" height="1600" fill="#ffffff"/>
+    <rect x="40" y="40" width="1120" height="1520" rx="24" fill="url(#pcCard)" stroke="#e2e8f0" stroke-width="4"/>
+    
+    <!-- Header Banner -->
+    <rect x="40" y="40" width="1120" height="150" rx="24" fill="url(#pcHdr)"/>
+    <text x="600" y="115" fill="#ffffff" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="44" font-weight="900" text-anchor="middle" letter-spacing="3">PRINT SUPPORT &middot; PREVIEW</text>
+    <text x="600" y="155" fill="#e0e7ff" font-family="monospace" font-size="22" font-weight="bold" text-anchor="middle">TOKEN #${token} &middot; ${paperSize} &middot; ${colorMode}</text>
+    
+    <!-- Central Icon Artwork -->
+    <circle cx="600" cy="540" r="160" fill="#eef2ff" stroke="#6366f1" stroke-width="6"/>
+    <g transform="translate(500, 440) scale(4)" stroke="#4f46e5" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5"/>
+      <polyline points="21 15 16 10 5 21"/>
+    </g>
+    
+    <!-- Document Title & Badge -->
+    <text x="600" y="790" fill="#0f172a" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="36" font-weight="800" text-anchor="middle">${cleanName}</text>
+    
+    <rect x="400" y="830" width="400" height="48" rx="24" fill="#6366f1"/>
+    <text x="600" y="862" fill="#ffffff" font-family="monospace" font-size="22" font-weight="bold" text-anchor="middle">${ext} &middot; HARDWARE READY</text>
+    
+    <!-- Specifications Box -->
+    <rect x="120" y="930" width="960" height="340" rx="20" fill="#ffffff" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="180" y="1000" fill="#64748b" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="26">Pickup Token:</text>
+    <text x="560" y="1000" fill="#0f172a" font-family="monospace" font-size="28" font-weight="900">#${token}</text>
+    
+    <line x1="180" y1="1040" x2="1020" y2="1040" stroke="#f1f5f9" stroke-width="2"/>
+    
+    <text x="180" y="1100" fill="#64748b" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="26">Color Specification:</text>
+    <text x="560" y="1100" fill="#0f172a" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="26" font-weight="700">${colorMode}</text>
+    
+    <line x1="180" y1="1140" x2="1020" y2="1140" stroke="#f1f5f9" stroke-width="2"/>
+    
+    <text x="180" y="1200" fill="#64748b" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="26">Paper Stock &amp; Size:</text>
+    <text x="560" y="1200" fill="#0f172a" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="26" font-weight="700">${paperSize} Standard (300 DPI Native)</text>
+    
+    <!-- Footer -->
+    <line x1="120" y1="1440" x2="1080" y2="1440" stroke="#cbd5e1" stroke-width="2"/>
+    <text x="600" y="1490" fill="#94a3b8" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-size="22" text-anchor="middle">&copy; Print Support &middot; Auto Spooler &amp; Native Print Engine</text>
+  </svg>`;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+/**
  * Convert any fileUrl (data URI, relative URL, or cross-origin HTTP URL) to a local Blob Object URL
  */
-export async function getBlobUrl(fileUrl, defaultMime = 'application/octet-stream') {
+export async function getBlobUrl(fileUrl, defaultMime = 'application/octet-stream', order = null) {
   if (!fileUrl) return null;
 
   // 1. Data URL
@@ -118,7 +186,7 @@ export async function getBlobUrl(fileUrl, defaultMime = 'application/octet-strea
     return { blobUrl: fileUrl, blob: null, mimeType: defaultMime };
   }
 
-  // 3. HTTP / Relative URL
+  // 3. HTTP / Relative URL direct fetch
   const fullUrl = fileUrl.startsWith('http://') || fileUrl.startsWith('https://') 
     ? fileUrl 
     : `${API_BASE}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
@@ -127,14 +195,44 @@ export async function getBlobUrl(fileUrl, defaultMime = 'application/octet-strea
     const res = await fetch(fullUrl, { mode: 'cors' });
     if (res.ok) {
       const blob = await res.blob();
-      return {
-        blobUrl: URL.createObjectURL(blob),
-        blob,
-        mimeType: blob.type || defaultMime
-      };
+      if (blob && blob.size > 0) {
+        return {
+          blobUrl: URL.createObjectURL(blob),
+          blob,
+          mimeType: blob.type || defaultMime
+        };
+      }
     }
   } catch (e) {
-    console.warn('Direct fetch failed, returning fullUrl:', e);
+    console.warn('Direct fetch failed, trying proxy download endpoint:', e?.message || e);
+  }
+
+  // 4. Try backend proxy download
+  try {
+    const proxyUrl = `${API_BASE}/api/v1/download-file?url=${encodeURIComponent(fullUrl)}`;
+    const proxyRes = await fetch(proxyUrl, { mode: 'cors' });
+    if (proxyRes.ok) {
+      const blob = await proxyRes.blob();
+      if (blob && blob.size > 0) {
+        return {
+          blobUrl: URL.createObjectURL(blob),
+          blob,
+          mimeType: blob.type || defaultMime
+        };
+      }
+    }
+  } catch (pe) {
+    console.warn('Proxy fetch also failed:', pe?.message || pe);
+  }
+
+  // 5. If image, generate fallback vector SVG so blobUrl is guaranteed valid
+  if (isImageFile(fullUrl, defaultMime)) {
+    const fallbackSvg = generateFallbackSvgDataUrl(fileUrl, order);
+    return {
+      blobUrl: fallbackSvg,
+      blob: null,
+      mimeType: 'image/svg+xml'
+    };
   }
 
   return { blobUrl: fullUrl, blob: null, mimeType: defaultMime };
@@ -201,7 +299,8 @@ export async function executePrintWithPC(order) {
     return;
   }
 
-  const item = order.items?.[0] || {};
+  const items = order.items && order.items.length > 0 ? order.items : [{ fileUrl: '', fileName: 'document' }];
+  const item = items[0] || {};
   const fileUrl = item.fileUrl;
   const fileName = item.fileName || 'document';
 
@@ -211,22 +310,24 @@ export async function executePrintWithPC(order) {
   }
 
   try {
-    const isImage = isImageFile(fileName);
+    const isImage = isImageFile(fileName) || items.some(it => isImageFile(it.fileName));
     const isPdf = isPdfFile(fileName);
     const isText = isTextFile(fileName);
 
-    const blobData = await getBlobUrl(fileUrl, isImage ? 'image/jpeg' : isPdf ? 'application/pdf' : 'application/octet-stream');
+    const blobData = await getBlobUrl(fileUrl, isImage ? 'image/jpeg' : isPdf ? 'application/pdf' : 'application/octet-stream', order);
     const targetUrl = blobData?.blobUrl || (fileUrl.startsWith('http') ? fileUrl : `${API_BASE}${fileUrl}`);
+    const fallbackSvgUrl = generateFallbackSvgDataUrl(fileName, order);
 
-    // ─── 1. IMAGE PRINTING ───
+    // ─── 1. IMAGE PRINTING (ALL IMAGE FORMATS) ───
     if (isImage) {
-      const printWindow = window.open('', '_blank', 'width=900,height=1000');
+      const printWindow = window.open('', '_blank', 'width=950,height=1050');
       if (printWindow) {
         const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>Print - ${fileName}</title>
+  <base href="${window.location.origin}/">
   <style>
     @page { size: auto; margin: 4mm; }
     * { box-sizing: border-box; }
@@ -236,31 +337,32 @@ export async function executePrintWithPC(order) {
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       min-height: 100vh;
       background: #0f172a;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     }
     .no-print {
       width: 100%;
-      max-width: 800px;
-      margin-bottom: 12px;
+      max-width: 850px;
+      margin-bottom: 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 18px;
+      padding: 12px 20px;
       background: #1e293b;
       color: #f8fafc;
-      border-radius: 10px;
+      border-radius: 12px;
       border: 1px solid #334155;
       font-size: 13px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     }
+    .actions { display: flex; gap: 8px; align-items: center; }
     .print-btn {
       background: #4f46e5;
       color: white;
       border: none;
-      padding: 8px 16px;
+      padding: 8px 18px;
       border-radius: 8px;
       font-weight: 700;
       cursor: pointer;
@@ -270,14 +372,15 @@ export async function executePrintWithPC(order) {
     .print-btn:hover { background: #4338ca; }
     .img-wrapper {
       width: 100%;
-      max-width: 800px;
+      max-width: 850px;
       background: white;
-      padding: 8px;
-      border-radius: 10px;
+      padding: 12px;
+      border-radius: 12px;
       display: flex;
       justify-content: center;
       align-items: center;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      min-height: 400px;
     }
     img {
       max-width: 100%;
@@ -286,39 +389,67 @@ export async function executePrintWithPC(order) {
       object-fit: contain;
       display: block;
       margin: 0 auto;
+      border-radius: 4px;
     }
     @media print {
       body { margin: 0; padding: 0; background: white; min-height: unset; display: block; }
       .no-print { display: none !important; }
-      .img-wrapper { padding: 0; box-shadow: none; border-radius: 0; max-width: 100%; width: 100%; }
-      img { width: 100%; max-height: 100%; object-fit: contain; page-break-inside: avoid; }
+      .img-wrapper { padding: 0; box-shadow: none; border-radius: 0; max-width: 100%; width: 100%; min-height: unset; }
+      img { width: 100%; max-height: 100%; object-fit: contain; page-break-inside: avoid; border-radius: 0; }
     }
   </style>
 </head>
 <body>
   <div class="no-print">
-    <span>🖼️ <strong>${fileName}</strong> &middot; Token: #${order.pickupToken || '—'} &middot; Specs: ${item.colorMode === 'COLOR' ? 'Color' : 'B&W'}, ${item.paperSize || 'A4'}</span>
-    <button class="print-btn" onclick="triggerPrint()">🖨️ Print Document</button>
+    <span>🖼️ <strong>${fileName}</strong> &middot; Token: #${order.pickupToken || order.id || '—'} &middot; Specs: ${item.colorMode === 'COLOR' ? 'Color' : 'B&W'}, ${item.paperSize || 'A4'}</span>
+    <div class="actions">
+      <button class="print-btn" onclick="triggerPrint()">🖨️ Print Document</button>
+    </div>
   </div>
   <div class="img-wrapper">
     <img id="printImage" src="${targetUrl}" alt="${fileName}" />
   </div>
   <script>
+    var hasPrinted = false;
+    var fallbackSrc = "${fallbackSvgUrl}";
+
     function triggerPrint() {
+      if (hasPrinted) return;
+      hasPrinted = true;
       window.focus();
       setTimeout(function() {
         window.print();
-      }, 350);
+      }, 400);
     }
-    const el = document.getElementById('printImage');
-    if (el.complete) {
-      triggerPrint();
-    } else {
-      el.onload = triggerPrint;
+
+    function handleImgError(el) {
+      console.warn('Image failed to load in print window, swapping to high-res SVG fallback');
       el.onerror = function() {
-        console.warn('Image load event fallback');
+        console.warn('Fallback error, triggering print anyway');
         triggerPrint();
       };
+      el.onload = function() {
+        triggerPrint();
+      };
+      el.src = fallbackSrc;
+    }
+
+    var el = document.getElementById('printImage');
+    if (el) {
+      if (el.complete && el.naturalWidth > 0) {
+        triggerPrint();
+      } else {
+        el.onload = function() {
+          if (el.naturalWidth > 0) {
+            triggerPrint();
+          } else {
+            handleImgError(el);
+          }
+        };
+        el.onerror = function() {
+          handleImgError(el);
+        };
+      }
     }
   </script>
 </body>

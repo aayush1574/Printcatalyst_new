@@ -5,6 +5,7 @@ import {
   Sparkles, Layers, Move, ShieldCheck, CheckCircle2,
   ChevronLeft, ChevronRight, FileText, ZoomIn, ZoomOut, FileCheck
 } from 'lucide-react';
+import { API_BASE } from '../config';
 
 const ASPECT_RATIOS = [
   { id: 'free', label: 'Freeform', ratio: null },
@@ -141,10 +142,13 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
       return;
     }
 
+    const rawSrc = item.fileUrl || item.previewUrl || '';
+    const src = rawSrc.startsWith('http') || rawSrc.startsWith('data:') || rawSrc.startsWith('blob:')
+      ? rawSrc
+      : `${API_BASE}${rawSrc.startsWith('/') ? '' : '/'}${rawSrc}`;
+
     const img = new Image();
     img.crossOrigin = 'anonymous';
-    
-    const src = item.fileUrl || item.previewUrl || '';
     img.src = src;
 
     img.onload = () => {
@@ -158,9 +162,23 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
     };
 
     img.onerror = () => {
-      generatePdfPageImage(currentPage);
+      // Retry without anonymous crossOrigin if CORS blocks canvas
+      const imgNoCors = new Image();
+      imgNoCors.onload = () => {
+        setImgElement(imgNoCors);
+        const w = imgNoCors.naturalWidth || 800;
+        const h = imgNoCors.naturalHeight || 1000;
+        setNaturalSize({ width: w, height: h });
+        setTargetWidth(Math.round(w * scale));
+        setTargetHeight(Math.round(h * scale));
+        setImageLoaded(true);
+      };
+      imgNoCors.onerror = () => {
+        generatePdfPageImage(currentPage);
+      };
+      imgNoCors.src = src;
     };
-  }, [isOpen, item, isPdfDocument, currentPage, generatePdfPageImage]);
+  }, [isOpen, item, isPdfDocument, currentPage, generatePdfPageImage, scale]);
 
   // Handle scale change from slider or preset buttons
   const handleScaleChange = (newScale) => {

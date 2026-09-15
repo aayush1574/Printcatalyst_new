@@ -4,6 +4,7 @@ import {
   Printer, CheckCircle, Sparkles, ZoomIn, Settings2,
   LayoutTemplate, Grid, Maximize2
 } from 'lucide-react';
+import { isImageFile } from '../utils/downloadHelper';
 
 // Paper dimensions in mm (width × height, portrait)
 const PAPER_SIZES = {
@@ -320,7 +321,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
 
     const newFiles = Array.from(fileList).slice(0, remaining);
     const newPhotos = newFiles
-      .filter((f) => f.type.startsWith('image/'))
+      .filter((f) => isImageFile(f.name, f.type))
       .map((f) => {
         const objectUrl = URL.createObjectURL(f);
         const img = new Image();

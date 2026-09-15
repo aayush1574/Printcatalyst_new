@@ -470,7 +470,7 @@ export default function CustomerPortalPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 flex-wrap">
-                          {Boolean(item.fileType?.startsWith('image/') || /\.(png|jpg|jpeg|webp)$/i.test(item.fileName)) && (
+                          {isImageFile(item.fileName, item.fileType) && (
                             <button
                               type="button"
                               onClick={() => handleOpenCropModal(item)}

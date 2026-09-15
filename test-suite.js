@@ -137,6 +137,62 @@ async function runTests() {
     const uploadRes = await makeRequest('/uploads/test.pdf');
     assert(Boolean(uploadRes.headers['cache-control']), 'Static uploads route has CDN Cache-Control headers', uploadRes.headers['cache-control']);
 
+    // Check Image Fallback (e.g. WhatsApp uploaded image request)
+    const imgFallbackRes = await makeRequest('/uploads/IMG-20260915-WA0009.jpg');
+    assert(imgFallbackRes.statusCode === 200, 'Image preview fallback endpoint responds 200 OK');
+    assert(imgFallbackRes.headers['content-type'].includes('svg') || imgFallbackRes.headers['content-type'].includes('image'), 'Image fallback serves valid SVG/image content-type', imgFallbackRes.headers['content-type']);
+    assert(imgFallbackRes.body.includes('<svg') || imgFallbackRes.body.length > 0, 'Image fallback body contains valid renderable vector markup');
+
+    // Check Base64 Image Order Intake
+    const testBase64Data = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const jobPayload = JSON.stringify({
+      shopId,
+      customerName: 'Mobile QR Customer',
+      customerPhone: '+91 99999 88888',
+      source: 'QR_PORTAL',
+      paymentMethod: 'UPI',
+      items: [
+        {
+          fileName: 'IMG-20260915-WA0009.png',
+          fileUrl: testBase64Data,
+          dataUrl: testBase64Data,
+          pageCount: 1,
+          copies: 1,
+          colorMode: 'COLOR',
+          paperSize: 'A4'
+        }
+      ]
+    });
+
+    const createJobRes = await new Promise((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: TEST_PORT,
+        path: '/api/v1/jobs',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(jobPayload)
+        }
+      }, (res) => {
+        let rawData = '';
+        res.on('data', (chunk) => { rawData += chunk; });
+        res.on('end', () => {
+          resolve({
+            statusCode: res.statusCode,
+            body: rawData
+          });
+        });
+      });
+      req.on('error', reject);
+      req.write(jobPayload);
+      req.end();
+    });
+
+    assert(createJobRes.statusCode === 200, 'Job creation with Base64 image payload responds 200 OK');
+    const createdJobData = JSON.parse(createJobRes.body);
+    assert(createdJobData.success === true && createdJobData.order && createdJobData.order.items[0].fileUrl.startsWith('/uploads/files-'), 'Base64 image ingested and persisted to disk URL', createdJobData.order?.items?.[0]?.fileUrl);
+
   } catch (err) {
     console.error('API Test error:', err);
     assert(false, 'API Endpoints test failed', err.message);

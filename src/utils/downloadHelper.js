@@ -151,6 +151,19 @@ export function generateFallbackSvgDataUrl(fileName = 'Image Document', order = 
 }
 
 /**
+ * Convert a Blob into a Base64 Data URL
+ */
+export function blobToDataUrl(blob) {
+  return new Promise((resolve) => {
+    if (!blob) return resolve('');
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result || '');
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(blob);
+  });
+}
+
+/**
  * Convert any fileUrl (data URI, relative URL, or cross-origin HTTP URL) to a local Blob Object URL
  */
 export async function getBlobUrl(fileUrl, defaultMime = 'application/octet-stream', order = null) {
@@ -177,13 +190,14 @@ export async function getBlobUrl(fileUrl, defaultMime = 'application/octet-strea
     return {
       blobUrl: URL.createObjectURL(blob),
       blob,
-      mimeType
+      mimeType,
+      dataUrl: fileUrl
     };
   }
 
   // 2. Blob URL
   if (fileUrl.startsWith('blob:')) {
-    return { blobUrl: fileUrl, blob: null, mimeType: defaultMime };
+    return { blobUrl: fileUrl, blob: null, mimeType: defaultMime, dataUrl: fileUrl };
   }
 
   // 3. HTTP / Relative URL direct fetch
@@ -196,10 +210,12 @@ export async function getBlobUrl(fileUrl, defaultMime = 'application/octet-strea
     if (res.ok) {
       const blob = await res.blob();
       if (blob && blob.size > 0) {
+        const dataUrl = await blobToDataUrl(blob);
         return {
           blobUrl: URL.createObjectURL(blob),
           blob,
-          mimeType: blob.type || defaultMime
+          mimeType: blob.type || defaultMime,
+          dataUrl: dataUrl || fullUrl
         };
       }
     }
@@ -214,10 +230,12 @@ export async function getBlobUrl(fileUrl, defaultMime = 'application/octet-strea
     if (proxyRes.ok) {
       const blob = await proxyRes.blob();
       if (blob && blob.size > 0) {
+        const dataUrl = await blobToDataUrl(blob);
         return {
           blobUrl: URL.createObjectURL(blob),
           blob,
-          mimeType: blob.type || defaultMime
+          mimeType: blob.type || defaultMime,
+          dataUrl: dataUrl || fullUrl
         };
       }
     }
@@ -225,17 +243,18 @@ export async function getBlobUrl(fileUrl, defaultMime = 'application/octet-strea
     console.warn('Proxy fetch also failed:', pe?.message || pe);
   }
 
-  // 5. If image, generate fallback vector SVG so blobUrl is guaranteed valid
+  // 5. If image, generate fallback vector SVG so blobUrl and dataUrl are guaranteed valid
   if (isImageFile(fullUrl, defaultMime)) {
     const fallbackSvg = generateFallbackSvgDataUrl(fileUrl, order);
     return {
       blobUrl: fallbackSvg,
       blob: null,
-      mimeType: 'image/svg+xml'
+      mimeType: 'image/svg+xml',
+      dataUrl: fallbackSvg
     };
   }
 
-  return { blobUrl: fullUrl, blob: null, mimeType: defaultMime };
+  return { blobUrl: fullUrl, blob: null, mimeType: defaultMime, dataUrl: fullUrl };
 }
 
 /**
@@ -267,7 +286,7 @@ export async function downloadDocument(fileUrl, fileName = 'document') {
       setTimeout(() => {
         document.body.removeChild(a);
         if (fileUrl.startsWith('data:') || !fileUrl.startsWith('blob:')) {
-          URL.revokeObjectURL(blobData.blobUrl);
+          try { URL.revokeObjectURL(blobData.blobUrl); } catch (_) {}
         }
       }, 2000);
       return true;
@@ -290,6 +309,68 @@ export async function downloadDocument(fileUrl, fileName = 'document') {
 }
 
 /**
+ * Preload and convert an image file to a verified Base64 Data URL
+ * Ensures zero network latency and 100% reliable rendering in native print dialogs.
+ */
+export async function resolveImageToDataUrl(fileUrl, fileName = 'image.jpg', order = null) {
+  if (!fileUrl) {
+    return generateFallbackSvgDataUrl(fileName, order);
+  }
+
+  // Already a Data URL
+  if (fileUrl.startsWith('data:image/')) {
+    return fileUrl;
+  }
+
+  // Fetch as Blob and convert to Base64
+  try {
+    const blobData = await getBlobUrl(fileUrl, 'image/jpeg', order);
+    if (blobData?.dataUrl && blobData.dataUrl.startsWith('data:image/')) {
+      return blobData.dataUrl;
+    }
+  } catch (e) {
+    console.warn('Image blob conversion notice:', e);
+  }
+
+  // Attempt HTML5 Canvas Image Pre-rendering
+  return new Promise((resolve) => {
+    const fullUrl = fileUrl.startsWith('http://') || fileUrl.startsWith('https://')
+      ? fileUrl
+      : `${API_BASE}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
+
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    const fallbackTimeout = setTimeout(() => {
+      resolve(generateFallbackSvgDataUrl(fileName, order));
+    }, 2500);
+
+    img.onload = () => {
+      clearTimeout(fallbackTimeout);
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth || 800;
+        canvas.height = img.naturalHeight || 1100;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.95);
+        resolve(dataUrl);
+      } catch (err) {
+        // Tainted canvas fallback
+        resolve(fullUrl);
+      }
+    };
+
+    img.onerror = () => {
+      clearTimeout(fallbackTimeout);
+      resolve(generateFallbackSvgDataUrl(fileName, order));
+    };
+
+    img.src = fullUrl;
+  });
+}
+
+/**
  * Universal Native PC / Browser Print Engine
  * Handles all images, PDFs, office documents, and text files flawlessly with native OS print dialog
  */
@@ -301,35 +382,50 @@ export async function executePrintWithPC(order) {
 
   const items = order.items && order.items.length > 0 ? order.items : [{ fileUrl: '', fileName: 'document' }];
   const item = items[0] || {};
-  const fileUrl = item.fileUrl;
+  const fileUrl = item.dataUrl || item.previewUrl || item.fileUrl || '';
   const fileName = item.fileName || 'document';
 
-  if (!fileUrl) {
-    window.print();
-    return;
-  }
-
   try {
-    const isImage = isImageFile(fileName) || items.some(it => isImageFile(it.fileName));
-    const isPdf = isPdfFile(fileName);
-    const isText = isTextFile(fileName);
+    const isImage = isImageFile(fileName) || items.some(it => isImageFile(it.fileName) || (it.fileType && it.fileType.startsWith('image/')));
+    const isPdf = isPdfFile(fileName) || (item.fileType && item.fileType.includes('pdf'));
+    const isText = isTextFile(fileName) || (item.fileType && item.fileType.startsWith('text/'));
 
-    const blobData = await getBlobUrl(fileUrl, isImage ? 'image/jpeg' : isPdf ? 'application/pdf' : 'application/octet-stream', order);
-    const targetUrl = blobData?.blobUrl || (fileUrl.startsWith('http') ? fileUrl : `${API_BASE}${fileUrl}`);
-    const fallbackSvgUrl = generateFallbackSvgDataUrl(fileName, order);
-
-    // ─── 1. IMAGE PRINTING (ALL IMAGE FORMATS) ───
+    // ─── 1. IMAGE PRINTING (ALL IMAGE FORMATS: JPG, PNG, WEBP, BMP, SVG, HEIC) ───
     if (isImage) {
+      // Pre-resolve all order item images in parallel into verified Data URLs
+      const resolvedImages = await Promise.all(
+        items.map(async (it) => {
+          const u = it.dataUrl || it.previewUrl || it.fileUrl;
+          const name = it.fileName || fileName;
+          const dataUrl = await resolveImageToDataUrl(u, name, order);
+          return {
+            name,
+            dataUrl,
+            colorMode: it.colorMode || 'BLACK_AND_WHITE',
+            paperSize: it.paperSize || 'A4',
+            copies: it.copies || 1
+          };
+        })
+      );
+
       const printWindow = window.open('', '_blank', 'width=950,height=1050');
       if (printWindow) {
+        const pagesHtml = resolvedImages.map((imgItem, idx) => `
+          <div class="print-page">
+            <img class="doc-img" src="${imgItem.dataUrl}" alt="${imgItem.name}" />
+          </div>
+        `).join('');
+
         const html = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>Print - ${fileName}</title>
-  <base href="${window.location.origin}/">
   <style>
-    @page { size: auto; margin: 4mm; }
+    @page {
+      size: auto;
+      margin: 0;
+    }
     * { box-sizing: border-box; }
     body {
       margin: 0;
@@ -339,40 +435,57 @@ export async function executePrintWithPC(order) {
       align-items: center;
       justify-content: flex-start;
       min-height: 100vh;
-      background: #0f172a;
+      background: #0b0f19;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      color: #f8fafc;
     }
     .no-print {
       width: 100%;
-      max-width: 850px;
-      margin-bottom: 14px;
+      max-width: 900px;
+      margin-bottom: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 12px 20px;
+      padding: 14px 22px;
       background: #1e293b;
-      color: #f8fafc;
-      border-radius: 12px;
+      border-radius: 14px;
       border: 1px solid #334155;
       font-size: 13px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
     }
-    .actions { display: flex; gap: 8px; align-items: center; }
-    .print-btn {
+    .badge {
       background: #4f46e5;
+      color: #ffffff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 800;
+      font-size: 11px;
+      margin-left: 8px;
+    }
+    .actions { display: flex; gap: 10px; align-items: center; }
+    .print-btn {
+      background: linear-gradient(135deg, #4f46e5, #6366f1);
       color: white;
       border: none;
-      padding: 8px 18px;
+      padding: 9px 20px;
       border-radius: 8px;
       font-weight: 700;
       cursor: pointer;
       font-size: 13px;
-      transition: background 0.2s;
+      box-shadow: 0 4px 12px rgba(79,70,229,0.4);
+      transition: all 0.2s;
     }
-    .print-btn:hover { background: #4338ca; }
-    .img-wrapper {
+    .print-btn:hover { background: #4338ca; transform: translateY(-1px); }
+    .print-container {
       width: 100%;
-      max-width: 850px;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      align-items: center;
+    }
+    .print-page {
+      width: 100%;
       background: white;
       padding: 12px;
       border-radius: 12px;
@@ -380,9 +493,8 @@ export async function executePrintWithPC(order) {
       justify-content: center;
       align-items: center;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-      min-height: 400px;
     }
-    img {
+    .doc-img {
       max-width: 100%;
       height: auto;
       max-height: 85vh;
@@ -392,64 +504,108 @@ export async function executePrintWithPC(order) {
       border-radius: 4px;
     }
     @media print {
-      body { margin: 0; padding: 0; background: white; min-height: unset; display: block; }
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent !important;
+        min-height: unset;
+        display: block;
+      }
       .no-print { display: none !important; }
-      .img-wrapper { padding: 0; box-shadow: none; border-radius: 0; max-width: 100%; width: 100%; min-height: unset; }
-      img { width: 100%; max-height: 100%; object-fit: contain; page-break-inside: avoid; border-radius: 0; }
+      .print-container {
+        width: 100%;
+        max-width: 100%;
+        gap: 0;
+        display: block;
+      }
+      .print-page {
+        width: 100vw;
+        height: 100vh;
+        max-width: 100vw;
+        max-height: 100vh;
+        padding: 0;
+        margin: 0;
+        background: transparent !important;
+        box-shadow: none;
+        border-radius: 0;
+        page-break-after: always;
+        page-break-inside: avoid;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .doc-img {
+        max-width: 100vw;
+        max-height: 100vh;
+        width: auto;
+        height: auto;
+        object-fit: contain;
+        border-radius: 0;
+        image-rendering: -webkit-optimize-contrast;
+      }
     }
   </style>
 </head>
 <body>
   <div class="no-print">
-    <span>🖼️ <strong>${fileName}</strong> &middot; Token: #${order.pickupToken || order.id || '—'} &middot; Specs: ${item.colorMode === 'COLOR' ? 'Color' : 'B&W'}, ${item.paperSize || 'A4'}</span>
+    <div>
+      <span>🖼️ <strong>${fileName}</strong></span>
+      <span class="badge">Token #${order.pickupToken || order.id || '—'}</span>
+      <span style="color:#94a3b8; margin-left:8px; font-size:12px;">Specs: ${item.colorMode === 'COLOR' ? 'Color' : 'B&W'}, ${item.paperSize || 'A4'} (${items.length} ${items.length > 1 ? 'pages' : 'page'})</span>
+    </div>
     <div class="actions">
-      <button class="print-btn" onclick="triggerPrint()">🖨️ Print Document</button>
+      <button class="print-btn" onclick="startPrint()">🖨️ Print Now</button>
     </div>
   </div>
-  <div class="img-wrapper">
-    <img id="printImage" src="${targetUrl}" alt="${fileName}" />
+  <div class="print-container">
+    ${pagesHtml}
   </div>
   <script>
-    var hasPrinted = false;
-    var fallbackSrc = "${fallbackSvgUrl}";
-
-    function triggerPrint() {
-      if (hasPrinted) return;
-      hasPrinted = true;
+    var hasTriggered = false;
+    function startPrint() {
+      if (hasTriggered) return;
+      hasTriggered = true;
       window.focus();
       setTimeout(function() {
         window.print();
-      }, 400);
+      }, 300);
     }
 
-    function handleImgError(el) {
-      console.warn('Image failed to load in print window, swapping to high-res SVG fallback');
-      el.onerror = function() {
-        console.warn('Fallback error, triggering print anyway');
-        triggerPrint();
-      };
-      el.onload = function() {
-        triggerPrint();
-      };
-      el.src = fallbackSrc;
-    }
-
-    var el = document.getElementById('printImage');
-    if (el) {
-      if (el.complete && el.naturalWidth > 0) {
-        triggerPrint();
-      } else {
-        el.onload = function() {
-          if (el.naturalWidth > 0) {
-            triggerPrint();
-          } else {
-            handleImgError(el);
-          }
-        };
-        el.onerror = function() {
-          handleImgError(el);
-        };
+    function checkImagesLoaded() {
+      var imgs = Array.from(document.querySelectorAll('.doc-img'));
+      if (!imgs.length) {
+        startPrint();
+        return;
       }
+      var allReady = imgs.every(function(img) {
+        return img.complete && img.naturalWidth > 0;
+      });
+      if (allReady) {
+        startPrint();
+      } else {
+        var loadedCount = 0;
+        imgs.forEach(function(img) {
+          if (img.complete && img.naturalWidth > 0) {
+            loadedCount++;
+            if (loadedCount === imgs.length) startPrint();
+          } else {
+            img.onload = function() {
+              loadedCount++;
+              if (loadedCount === imgs.length) startPrint();
+            };
+            img.onerror = function() {
+              loadedCount++;
+              if (loadedCount === imgs.length) startPrint();
+            };
+          }
+        });
+      }
+    }
+
+    if (document.readyState === 'complete') {
+      checkImagesLoaded();
+    } else {
+      window.addEventListener('load', checkImagesLoaded);
     }
   </script>
 </body>
@@ -462,6 +618,9 @@ export async function executePrintWithPC(order) {
     }
 
     // ─── 2. PLAIN TEXT / CSV / RTF PRINTING ───
+    const blobData = await getBlobUrl(fileUrl, isPdf ? 'application/pdf' : 'application/octet-stream', order);
+    const targetUrl = blobData?.blobUrl || (fileUrl.startsWith('http') ? fileUrl : `${API_BASE}${fileUrl}`);
+
     if (isText && blobData?.blob) {
       const textContent = await blobData.blob.text();
       const printWindow = window.open('', '_blank', 'width=900,height=1000');
@@ -557,3 +716,4 @@ export async function executePrintWithPC(order) {
     window.open(fileUrl.startsWith('http') ? fileUrl : `${API_BASE}${fileUrl}`, '_blank');
   }
 }
+

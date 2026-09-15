@@ -63,12 +63,22 @@ export default function CustomerPortalPage() {
     fetchShopInfo();
   }, [shopId]);
 
-  // Handle file drop / upload with auto-compression
+  // Helper to convert any File/Blob to Base64 Data URL
+  const fileToDataUrl = (file) => new Promise((resolve) => {
+    if (!file) return resolve('');
+    const reader = new FileReader();
+    reader.onload = (e) => resolve(e.target.result || '');
+    reader.onerror = () => resolve('');
+    reader.readAsDataURL(file);
+  });
+
+  // Handle file drop / upload with auto-compression & Base64 Data URL preservation
   const handleFileUpload = async (rawUploadedFiles) => {
     if (!rawUploadedFiles || rawUploadedFiles.length === 0) return;
 
     // Fast client-side image compression
     const uploadedFiles = await compressFiles(rawUploadedFiles);
+    const dataUrls = await Promise.all(Array.from(uploadedFiles).map(fileToDataUrl));
 
     // Try backend upload
     try {
@@ -89,6 +99,8 @@ export default function CustomerPortalPage() {
             fileName: f.fileName,
             fileSize: f.fileSize,
             fileUrl: f.fileUrl.startsWith('http') ? f.fileUrl : `${API_BASE}${f.fileUrl}`,
+            previewUrl: dataUrls[i] || '',
+            dataUrl: dataUrls[i] || '',
             fileType: f.fileType,
             pageCount: f.pageCount || 1,
             copies: 1,
@@ -105,10 +117,10 @@ export default function CustomerPortalPage() {
         }
       }
     } catch (e) {
-      console.warn('Backend upload skipped, processing locally for client view:', e);
+      console.warn('Backend upload skipped, processing locally with full Data URL:', e);
     }
 
-    // Client-side local intake
+    // Client-side local intake with full Base64 Data URL (never ephemeral blob URLs)
     const localItems = Array.from(uploadedFiles).map((f, i) => {
       let estimatedPages = 1;
       const lower = f.name.toLowerCase();
@@ -123,11 +135,14 @@ export default function CustomerPortalPage() {
       } else if (isImageFile(f.name, f.type)) {
         estimatedPages = 1;
       }
+      const itemDataUrl = dataUrls[i] || '';
       return {
         id: 'item_' + Date.now() + '_' + i,
         fileName: f.name,
         fileSize: (f.size / (1024 * 1024)).toFixed(2) + ' MB',
-        fileUrl: URL.createObjectURL(f),
+        fileUrl: itemDataUrl,
+        previewUrl: itemDataUrl,
+        dataUrl: itemDataUrl,
         fileType: f.type,
         pageCount: estimatedPages,
         copies: 1,

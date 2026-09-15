@@ -196,19 +196,8 @@ app.get('/uploads/:filename', async (req, res, next) => {
       return res.sendFile(diskPath);
     }
 
-    // 3. Fallback for image requests: return sample image or clean vector SVG
+    // 3. Fallback for image requests: return clean high-fidelity vector SVG
     if (isImage) {
-      const samplePng = path.join(UPLOADS_DIR, 'sample_image.png');
-      const sampleJpg = path.join(UPLOADS_DIR, 'sample_image.jpg');
-      if (ext === '.png' && fs.existsSync(samplePng)) {
-        res.setHeader('Content-Type', 'image/png');
-        return res.sendFile(samplePng);
-      }
-      if ((ext === '.jpg' || ext === '.jpeg') && fs.existsSync(sampleJpg)) {
-        res.setHeader('Content-Type', 'image/jpeg');
-        return res.sendFile(sampleJpg);
-      }
-      // Return high-quality SVG stream
       res.setHeader('Content-Type', 'image/svg+xml; charset=utf-8');
       res.setHeader('Cache-Control', 'public, max-age=86400');
       return res.send(generateFallbackSvg(filename));
@@ -862,6 +851,37 @@ app.post('/api/v1/jobs', async (req, res) => {
       const paperType = item.paperType || 'standard_75gsm';
       const finishing = item.finishing || 'none';
 
+      let fileUrl = item.fileUrl || '';
+      let dataUrl = item.dataUrl || item.previewUrl || '';
+
+      // If dataUrl or fileUrl is a Base64 Data URI, decode and persist to disk & MongoDB Atlas
+      if (fileUrl.startsWith('data:') || dataUrl.startsWith('data:')) {
+        const rawData = fileUrl.startsWith('data:') ? fileUrl : dataUrl;
+        const matches = rawData.match(/^data:([A-Za-z0-9-+.\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const mime = matches[1];
+          const b64Data = matches[2];
+          const ext = ALL_MIME_TYPES ? (Object.keys(ALL_MIME_TYPES).find(k => ALL_MIME_TYPES[k] === mime) || '.jpg') : '.jpg';
+          const genFilename = `files-${Date.now()}-${Math.round(Math.random() * 1E9)}${ext}`;
+          const diskPath = path.join(UPLOADS_DIR, genFilename);
+          try {
+            const buffer = Buffer.from(b64Data, 'base64');
+            fs.writeFileSync(diskPath, buffer);
+            fileUrl = `/uploads/${genFilename}`;
+            const mongoDb = db.getMongoDb ? db.getMongoDb() : null;
+            if (mongoDb) {
+              mongoDb.collection('uploaded_files').updateOne(
+                { filename: genFilename },
+                { $set: { filename: genFilename, originalname: item.fileName || genFilename, mimetype: mime, size: buffer.length, data: b64Data, updatedAt: new Date() } },
+                { upsert: true }
+              ).catch(() => {});
+            }
+          } catch (e) {
+            console.warn('Could not persist dataUrl to disk/atlas:', e.message);
+          }
+        }
+      }
+
       // Parse page range
       let activePages = pageCount;
       if (item.pageRange && item.pageRange !== 'ALL') {
@@ -898,6 +918,9 @@ app.post('/api/v1/jobs', async (req, res) => {
       return {
         ...item,
         id: `item_${idx + 1}`,
+        fileUrl,
+        previewUrl: dataUrl || item.previewUrl || fileUrl,
+        dataUrl: dataUrl || item.dataUrl || '',
         computedPages,
         subtotal: parseFloat(itemSubtotal.toFixed(2))
       };

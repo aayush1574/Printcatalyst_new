@@ -5,8 +5,8 @@
  */
 
 export async function compressImage(file, { maxWidth = 2400, maxHeight = 3200, quality = 0.85, mimeType = 'image/jpeg' } = {}) {
-  // If it's a PDF or non-image file, return as is
-  if (!file.type || !file.type.startsWith('image/')) {
+  // If it's a PDF, SVG, GIF or non-image file, return as is
+  if (!file.type || !file.type.startsWith('image/') || file.type.includes('svg') || file.type.includes('gif')) {
     return file;
   }
 

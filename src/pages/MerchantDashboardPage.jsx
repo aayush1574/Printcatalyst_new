@@ -10,7 +10,7 @@ import QRCodeLib from 'qrcode';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { API_BASE } from '../config';
-import { downloadDocument } from '../utils/downloadHelper';
+import { downloadDocument, executePrintWithPC } from '../utils/downloadHelper';
 import DocumentStudioModal from '../components/DocumentStudioModal';
 import StandeeGeneratorModal from '../components/StandeeGeneratorModal';
 import PrinterSettingsModal from '../components/PrinterSettingsModal';
@@ -222,125 +222,13 @@ export default function MerchantDashboardPage() {
 
   // Direct Browser / PC Print (Opens classic native OS / browser printer selection dialog)
   const executeBrowserPrint = (order) => {
-    if (!order) return;
-    const item = order.items?.[0] || {};
-    const fileUrl = item.fileUrl;
-
-    if (!fileUrl) {
-      window.print();
-      return;
-    }
-
-    // Case 1: Data URLs
-    if (fileUrl.startsWith('data:')) {
-      try {
-        const parts = fileUrl.split(',');
-        const mimeMatch = parts[0].match(/:(.*?);/);
-        const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf';
-        const isImage = mimeType.startsWith('image/');
-        const isBase64 = parts[0].includes('base64');
-        
-        let u8arr;
-        if (isBase64) {
-          const bstr = atob(parts[1]);
-          let n = bstr.length;
-          u8arr = new Uint8Array(n);
-          while (n--) {
-            u8arr[n] = bstr.charCodeAt(n);
-          }
-        } else {
-          u8arr = new TextEncoder().encode(decodeURIComponent(parts[1]));
-        }
-
-        const blob = new Blob([u8arr], { type: mimeType });
-        const blobUrl = URL.createObjectURL(blob);
-
-        if (isImage) {
-          const printWindow = window.open('', '_blank', 'width=800,height=900');
-          if (printWindow) {
-            printWindow.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <title>Print - ${item.fileName || 'Document'}</title>
-  <style>
-    @page { size: auto; margin: 6mm; }
-    body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #fff; }
-    img { max-width: 100%; max-height: 100vh; object-fit: contain; display: block; margin: auto; }
-    @media print {
-      body { margin: 0; padding: 0; min-height: unset; }
-      img { width: 100%; max-height: 100%; }
-    }
-  </style>
-</head>
-<body>
-  <img src="${blobUrl}" onload="window.focus(); setTimeout(function() { window.print(); }, 400);" />
-</body>
-</html>`);
-            printWindow.document.close();
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
-            return;
-          }
-        }
-
-        const printWindow = window.open(blobUrl, '_blank');
-        if (printWindow) {
-          printWindow.focus();
-          setTimeout(() => {
-            try { printWindow.print(); } catch (e) {}
-            setTimeout(() => URL.revokeObjectURL(blobUrl), 120000);
-          }, 1200);
-        }
-        return;
-      } catch (e) {
-        console.error('Error opening data URL print preview:', e);
-      }
-    }
-
-    // Case 2: Remote or Relative URL
-    const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${API_BASE}${fileUrl}`;
-    const ext = (item.fileName || fileUrl).toLowerCase();
-    const isImage = ext.endsWith('.jpg') || ext.endsWith('.jpeg') || ext.endsWith('.png') || ext.endsWith('.webp') || ext.endsWith('.bmp');
-
-    if (isImage) {
-      const printWindow = window.open('', '_blank', 'width=800,height=900');
-      if (printWindow) {
-        printWindow.document.write(`<!DOCTYPE html>
-<html>
-<head>
-  <title>Print - ${item.fileName || 'Document'}</title>
-  <style>
-    @page { size: auto; margin: 6mm; }
-    body { margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #fff; }
-    img { max-width: 100%; max-height: 100vh; object-fit: contain; display: block; margin: auto; }
-    @media print {
-      body { margin: 0; padding: 0; min-height: unset; }
-      img { width: 100%; max-height: 100%; }
-    }
-  </style>
-</head>
-<body>
-  <img src="${fullUrl}" onload="window.focus(); setTimeout(function() { window.print(); }, 400);" />
-</body>
-</html>`);
-        printWindow.document.close();
-        return;
-      }
-    }
-
-    // For PDFs and other files: open document window and trigger print dialog
-    const printWindow = window.open(fullUrl, '_blank');
-    if (printWindow) {
-      printWindow.focus();
-      setTimeout(() => {
-        try { printWindow.print(); } catch (e) {}
-      }, 1200);
-    }
+    executePrintWithPC(order);
   };
 
   // Legacy wrapper (for calls that still use handleBrowserPrint)
   const handleBrowserPrint = (order) => {
     if (!order) return;
-    executeBrowserPrint(order);
+    executePrintWithPC(order);
   };
 
   // Save Printer

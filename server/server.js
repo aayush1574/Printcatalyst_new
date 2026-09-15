@@ -545,11 +545,20 @@ app.post('/api/v1/upload', upload.array('files', 10), (req, res) => {
   }
 
   const uploadedFiles = req.files.map(f => {
-    // Generate an estimated page count based on file size or mock PDF calculation
+    // Generate an estimated page count based on file type & size
     let estimatedPages = 1;
-    if (f.mimetype === 'application/pdf') {
+    const lowerName = (f.originalname || '').toLowerCase();
+    const ext = path.extname(lowerName);
+
+    if (f.mimetype === 'application/pdf' || ext === '.pdf') {
       estimatedPages = Math.max(1, Math.min(200, Math.round(f.size / (100 * 1024))));
-    } else if (f.mimetype.includes('image')) {
+    } else if (f.mimetype.includes('word') || ext === '.doc' || ext === '.docx') {
+      estimatedPages = Math.max(1, Math.min(100, Math.round(f.size / (50 * 1024))));
+    } else if (f.mimetype.includes('presentation') || ext === '.ppt' || ext === '.pptx') {
+      estimatedPages = Math.max(1, Math.min(100, Math.round(f.size / (150 * 1024))));
+    } else if (f.mimetype.includes('text') || ext === '.txt' || ext === '.rtf') {
+      estimatedPages = Math.max(1, Math.min(50, Math.round(f.size / (3 * 1024))));
+    } else if (f.mimetype.includes('image') || ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.svg', '.gif', '.tiff', '.tif', '.heic', '.heif', '.avif'].includes(ext)) {
       estimatedPages = 1;
     }
 
@@ -622,9 +631,28 @@ app.get('/api/v1/download-file', async (req, res) => {
         '.png': 'image/png',
         '.jpg': 'image/jpeg',
         '.jpeg': 'image/jpeg',
-        '.txt': 'text/plain',
+        '.webp': 'image/webp',
+        '.bmp': 'image/bmp',
+        '.svg': 'image/svg+xml',
+        '.gif': 'image/gif',
+        '.tif': 'image/tiff',
+        '.tiff': 'image/tiff',
+        '.heic': 'image/heic',
+        '.heif': 'image/heif',
+        '.avif': 'image/avif',
+        '.ico': 'image/x-icon',
+        '.doc': 'application/msword',
         '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        '.doc': 'application/msword'
+        '.xls': 'application/vnd.ms-excel',
+        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.ppt': 'application/vnd.ms-powerpoint',
+        '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        '.txt': 'text/plain',
+        '.rtf': 'application/rtf',
+        '.csv': 'text/csv',
+        '.odt': 'application/vnd.oasis.opendocument.text',
+        '.ods': 'application/vnd.oasis.opendocument.spreadsheet',
+        '.odp': 'application/vnd.oasis.opendocument.presentation'
       };
       res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
       return res.sendFile(diskPath);
@@ -1346,7 +1374,7 @@ while ($true) {
                 }
 
                 # Method 2: Image fallback via mspaint /pt
-                if (-not $printedThisFile -and ($ext -in @('.jpg', '.jpeg', '.png', '.bmp', '.gif'))) {
+                if (-not $printedThisFile -and ($ext -in @('.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp', '.tiff', '.tif', '.ico', '.svg', '.heic', '.heif', '.avif'))) {
                   try {
                     for ($c = 1; $c -le $copies; $c++) {
                       Start-Process -FilePath "mspaint.exe" -ArgumentList @("/pt", $localPath, $pName) -Wait
@@ -1356,8 +1384,8 @@ while ($true) {
                   } catch {}
                 }
 
-                # Method 3: Plain text file fallback
-                if (-not $printedThisFile -and ($ext -eq '.txt')) {
+                # Method 3: Plain text / CSV file fallback
+                if (-not $printedThisFile -and ($ext -in @('.txt', '.csv', '.rtf', '.log'))) {
                   try {
                     for ($c = 1; $c -le $copies; $c++) {
                       Get-Content -LiteralPath $localPath | Out-Printer -Name $pName

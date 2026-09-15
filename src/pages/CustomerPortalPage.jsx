@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { API_BASE } from '../config';
+import { FILE_INPUT_ACCEPT_STR, isImageFile } from '../utils/downloadHelper';
 import MultiPhotoComposerModal from '../components/MultiPhotoComposerModal';
 import DocumentEditorModal from '../components/DocumentEditorModal';
 import ImageCropModal from '../components/ImageCropModal';
@@ -110,8 +111,17 @@ export default function CustomerPortalPage() {
     // Client-side local intake
     const localItems = Array.from(uploadedFiles).map((f, i) => {
       let estimatedPages = 1;
-      if (f.type === 'application/pdf') {
+      const lower = f.name.toLowerCase();
+      if (f.type === 'application/pdf' || lower.endsWith('.pdf')) {
         estimatedPages = Math.max(1, Math.min(200, Math.round(f.size / (100 * 1024))));
+      } else if (lower.endsWith('.doc') || lower.endsWith('.docx')) {
+        estimatedPages = Math.max(1, Math.min(100, Math.round(f.size / (50 * 1024))));
+      } else if (lower.endsWith('.ppt') || lower.endsWith('.pptx')) {
+        estimatedPages = Math.max(1, Math.min(100, Math.round(f.size / (150 * 1024))));
+      } else if (lower.endsWith('.txt') || lower.endsWith('.rtf')) {
+        estimatedPages = Math.max(1, Math.min(50, Math.round(f.size / (3 * 1024))));
+      } else if (isImageFile(f.name, f.type)) {
+        estimatedPages = 1;
       }
       return {
         id: 'item_' + Date.now() + '_' + i,
@@ -413,7 +423,7 @@ export default function CustomerPortalPage() {
                   ref={fileInputRef}
                   onChange={(e) => e.target.files && handleFileUpload(e.target.files)}
                   className="hidden"
-                  accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                  accept={FILE_INPUT_ACCEPT_STR}
                 />
                 <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-gradient-to-tr from-indigo-600/30 to-cyan-500/30 text-indigo-400 flex items-center justify-center mx-auto mb-2.5 sm:mb-3.5 group-hover:scale-110 group-hover:text-white transition-all shadow-lg shadow-indigo-600/20">
                   <FileUp className="w-6 h-6 sm:w-7 sm:h-7" />

@@ -530,7 +530,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
                     type="file"
                     ref={fileInputRef}
                     multiple
-                    accept="image/png,image/jpeg,image/jpg,image/webp"
+                    accept="image/*,.jpg,.jpeg,.png,.webp,.bmp,.svg,.gif,.avif,.tiff,.tif,.heic,.heif"
                     onChange={(e) => {
                       handleAddPhotos(e.target.files);
                       e.target.value = '';
@@ -541,7 +541,7 @@ export default function MultiPhotoComposerModal({ isOpen, onClose, onAddComposed
                   <p className="text-xs font-semibold text-slate-300">
                     {photos.length === 0 ? 'Select 1–6 photos' : `Add ${6 - photos.length} more`}
                   </p>
-                  <p className="text-[10px] text-slate-500 mt-0.5">PNG, JPG, WebP</p>
+                  <p className="text-[10px] text-slate-500 mt-0.5">JPG, PNG, WebP, BMP, SVG, TIFF, HEIC, GIF</p>
                 </div>
               )}
 

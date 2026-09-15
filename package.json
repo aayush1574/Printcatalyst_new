@@ -11,6 +11,7 @@
     "server": "node server/server.js",
     "client": "vite",
     "build": "vite build",
+    "test": "node test-suite.js",
     "start": "node server/server.js",
     "agent": "node server/agent-client/print-agent.js"
   },

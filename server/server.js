@@ -81,6 +81,8 @@ app.use('/uploads', (req, res, next) => {
     res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(dlName)}"`);
   }
   next();
+}, express.static(UPLOADS_DIR));
+
 const ALL_MIME_TYPES = {
   '.pdf': 'application/pdf',
   '.png': 'image/png',

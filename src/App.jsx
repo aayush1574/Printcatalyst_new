@@ -1,20 +1,21 @@
 import React, { Suspense, lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
-import ProductTourPage from './pages/ProductTourPage';
-import WhatsAppTourPage from './pages/WhatsAppTourPage';
-import QROrdersTourPage from './pages/QROrdersTourPage';
-import HowItWorksPage from './pages/HowItWorksPage';
-import FAQPage from './pages/FAQPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
-import { OrderManagementPage, PrinterRoutingPage } from './pages/FeaturePages';
 import { GuidePage, LegalPage, ContactPage } from './pages/GuidesAndLegalPages';
 import { useAuth } from './context/AuthContext';
 
-// Code-split heavy interactive dashboards
+// Code-split heavy interactive dashboards and secondary routes
 const MerchantDashboardPage = lazy(() => import('./pages/MerchantDashboardPage'));
 const CustomerPortalPage = lazy(() => import('./pages/CustomerPortalPage'));
 const SuperAdminPage = lazy(() => import('./pages/SuperAdminPage'));
+const ProductTourPage = lazy(() => import('./pages/ProductTourPage'));
+const WhatsAppTourPage = lazy(() => import('./pages/WhatsAppTourPage'));
+const QROrdersTourPage = lazy(() => import('./pages/QROrdersTourPage'));
+const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
+const FAQPage = lazy(() => import('./pages/FAQPage'));
+const OrderManagementPage = lazy(() => import('./pages/FeaturePages').then(m => ({ default: m.OrderManagementPage })));
+const PrinterRoutingPage = lazy(() => import('./pages/FeaturePages').then(m => ({ default: m.PrinterRoutingPage })));
 
 function PageLoader() {
   return (

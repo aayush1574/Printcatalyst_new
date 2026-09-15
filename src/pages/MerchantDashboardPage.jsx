@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Printer, LayoutDashboard, QrCode, Settings, Sliders,
   TrendingUp, Download, Plus, CheckCircle, Clock, AlertTriangle,
   Play, RefreshCw, Smartphone, Layers, Eye, FileText, Check, ShieldCheck, ChevronRight,
-  Wifi, WifiOff, Sparkles, User, HelpCircle, Volume2, LogOut, Lock, X, Menu, ChevronDown, Trash2
+  Wifi, WifiOff, Sparkles, User, HelpCircle, Volume2, LogOut, Lock, X, Menu, ChevronDown, Trash2, ChevronLeft
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -13,6 +13,7 @@ import DocumentStudioModal from '../components/DocumentStudioModal';
 import StandeeGeneratorModal from '../components/StandeeGeneratorModal';
 import PrinterSettingsModal from '../components/PrinterSettingsModal';
 import ManualOrderModal from '../components/ManualOrderModal';
+import { OrderCardSkeleton, MetricsSkeleton } from '../components/LoadingSkeleton';
 
 export default function MerchantDashboardPage() {
   const { merchant, setMerchant, token, logout } = useAuth();
@@ -372,18 +373,29 @@ export default function MerchantDashboardPage() {
     printWindow.document.close();
   };
 
-  // Filter orders
-  const filteredOrders = orders.filter((o) => {
-    if (statusFilter === 'ALL') return true;
-    if (statusFilter === 'READY') return o.status === 'READY_TO_PRINT' || o.status === 'PENDING_APPROVAL';
-    if (statusFilter === 'PRINTING') return o.status === 'PRINTING' || o.status === 'IN_SPOOL';
-    if (statusFilter === 'COMPLETED') return o.status === 'COMPLETED';
-    if (statusFilter === 'CANCELLED') return o.status === 'CANCELLED';
-    return true;
-  });
+  const [queuePage, setQueuePage] = useState(1);
+  const ordersPerPage = 15;
+
+  // Filter & paginate orders with useMemo to avoid unnecessary re-renders
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      if (statusFilter === 'ALL') return true;
+      if (statusFilter === 'READY') return o.status === 'READY_TO_PRINT' || o.status === 'PENDING_APPROVAL';
+      if (statusFilter === 'PRINTING') return o.status === 'PRINTING' || o.status === 'IN_SPOOL';
+      if (statusFilter === 'COMPLETED') return o.status === 'COMPLETED';
+      if (statusFilter === 'CANCELLED') return o.status === 'CANCELLED';
+      return true;
+    });
+  }, [orders, statusFilter]);
+
+  const totalQueuePages = Math.ceil(filteredOrders.length / ordersPerPage) || 1;
+  const paginatedOrders = useMemo(() => {
+    const start = (queuePage - 1) * ordersPerPage;
+    return filteredOrders.slice(start, start + ordersPerPage);
+  }, [filteredOrders, queuePage, ordersPerPage]);
 
   const isAgentOnline = merchant?.agentStatus === 'ONLINE';
-  const readyCount = orders.filter(o => o.status === 'READY_TO_PRINT').length;
+  const readyCount = useMemo(() => orders.filter(o => o.status === 'READY_TO_PRINT').length, [orders]);
 
   // Strict Authentication Guard
   if (!token || !merchant) {
@@ -575,7 +587,10 @@ export default function MerchantDashboardPage() {
                     ].map((f) => (
                       <button
                         key={f.id}
-                        onClick={() => setStatusFilter(f.id)}
+                        onClick={() => {
+                          setStatusFilter(f.id);
+                          setQueuePage(1);
+                        }}
                         className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors ${
                           statusFilter === f.id
                             ? 'bg-indigo-600 text-white shadow-sm'
@@ -598,7 +613,13 @@ export default function MerchantDashboardPage() {
 
                 {/* Orders Scrollable List */}
                 <div className="flex-1 overflow-y-auto p-2.5 sm:p-4 space-y-2.5 sm:space-y-3">
-                  {filteredOrders.length === 0 ? (
+                  {loading ? (
+                    <div className="space-y-3">
+                      <OrderCardSkeleton />
+                      <OrderCardSkeleton />
+                      <OrderCardSkeleton />
+                    </div>
+                  ) : filteredOrders.length === 0 ? (
                     <div className="text-center py-12 sm:py-16 text-slate-500 text-xs">
                       <Printer className="w-8 h-8 mx-auto mb-2 text-slate-600" />
                       <p>No orders in this category.</p>
@@ -610,100 +631,127 @@ export default function MerchantDashboardPage() {
                       </button>
                     </div>
                   ) : (
-                    filteredOrders.map((ord) => {
-                      const isSelected = selectedOrder?.id === ord.id;
-                      const item = ord.items?.[0] || {};
+                    <>
+                      {paginatedOrders.map((ord) => {
+                        const isSelected = selectedOrder?.id === ord.id;
+                        const item = ord.items?.[0] || {};
 
-                      return (
-                        <div
-                          key={ord.id}
-                          onClick={() => handleSelectOrder(ord)}
-                          className={`p-3 sm:p-4 rounded-xl border transition-all cursor-pointer ${
-                            isSelected
-                              ? 'bg-slate-900 border-indigo-500 shadow-lg ring-1 ring-indigo-500/50'
-                              : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
-                          }`}
-                        >
-                          {/* Order Header */}
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="flex items-center gap-2 min-w-0">
-                              <span className="font-mono font-black text-[10px] sm:text-xs bg-indigo-950 text-indigo-300 px-1.5 sm:px-2 py-0.5 rounded border border-indigo-800 flex-shrink-0">
-                                #{ord.pickupToken || ord.id?.replace('ORD-', '') || '?'}
+                        return (
+                          <div
+                            key={ord.id}
+                            onClick={() => handleSelectOrder(ord)}
+                            className={`p-3 sm:p-4 rounded-xl border transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-slate-900 border-indigo-500 shadow-lg ring-1 ring-indigo-500/50'
+                                : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
+                            }`}
+                          >
+                            {/* Order Header */}
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="font-mono font-black text-[10px] sm:text-xs bg-indigo-950 text-indigo-300 px-1.5 sm:px-2 py-0.5 rounded border border-indigo-800 flex-shrink-0">
+                                  #{ord.pickupToken || ord.id?.replace('ORD-', '') || '?'}
+                                </span>
+                                <div className="min-w-0">
+                                  <h4 className="text-xs sm:text-sm font-bold text-white truncate">
+                                    {ord.customerName}
+                                    <span className="text-[10px] text-slate-400 font-normal ml-1 hidden sm:inline">({ord.customerPhone})</span>
+                                  </h4>
+                                  <p className="text-[10px] sm:text-[11px] text-indigo-300 truncate">
+                                    {item.fileName} ({item.pageCount || '?'} pg × {item.copies || 1} cp)
+                                  </p>
+                                </div>
+                              </div>
+
+                              <span className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-semibold whitespace-nowrap flex-shrink-0 ${
+                                ord.status === 'READY_TO_PRINT' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                                ord.status === 'IN_SPOOL' || ord.status === 'PRINTING' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 animate-pulse' :
+                                ord.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
+                              }`}>
+                                {ord.status === 'IN_SPOOL' ? 'PRINTING' : ord.status?.replace(/_/g, ' ') || 'UNKNOWN'}
                               </span>
-                              <div className="min-w-0">
-                                <h4 className="text-xs sm:text-sm font-bold text-white truncate">
-                                  {ord.customerName}
-                                  <span className="text-[10px] text-slate-400 font-normal ml-1 hidden sm:inline">({ord.customerPhone})</span>
-                                </h4>
-                                <p className="text-[10px] sm:text-[11px] text-indigo-300 truncate">
-                                  {item.fileName} ({item.pageCount || '?'} pg × {item.copies || 1} cp)
-                                </p>
+                            </div>
+
+                            {/* Quick Specs & Print Button */}
+                            <div className="mt-2 pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-1.5 text-[9px] sm:text-[10px]">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span className={`px-1.5 py-0.5 rounded font-medium ${item.colorMode === 'COLOR' ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-800 text-slate-300'}`}>
+                                  {item.colorMode === 'COLOR' ? 'Color' : 'B&W'}
+                                </span>
+                                <span className="bg-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-medium">
+                                  {item.paperSize} · {item.duplex === 'DOUBLE_SIDED' ? 'Duplex' : 'Single'}
+                                </span>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                {/* Download Document Button */}
+                                {item.fileUrl && (
+                                  <a
+                                    href={item.fileUrl.startsWith('http') ? item.fileUrl : `${API_BASE}${item.fileUrl}`}
+                                    download={item.fileName || 'document'}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-cyan-200 font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all border border-slate-700 hover:border-cyan-500/40"
+                                    title="Download document"
+                                  >
+                                    <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                    <span className="hidden sm:inline">Download</span>
+                                  </a>
+                                )}
+
+                                {/* Print / Reprint Button */}
+                                {ord.status !== 'CANCELLED' && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (printers.length > 0) {
+                                        openPrinterSelect(ord.id, ord, 'spool');
+                                      } else {
+                                        handleReleaseOrder(ord.id);
+                                      }
+                                    }}
+                                    className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-white font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all ${
+                                      ord.status === 'PRINTING' || ord.status === 'IN_SPOOL'
+                                        ? 'bg-indigo-600 hover:bg-indigo-500'
+                                        : ord.status === 'COMPLETED'
+                                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                                        : 'bg-emerald-600 hover:bg-emerald-500 active:scale-95'
+                                    }`}
+                                  >
+                                    <Printer className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                    <span>{ord.status === 'PRINTING' || ord.status === 'IN_SPOOL' ? 'Printing...' : ord.status === 'COMPLETED' ? 'Reprint' : 'Print'}</span>
+                                  </button>
+                                )}
                               </div>
                             </div>
-
-                            <span className={`text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full font-semibold whitespace-nowrap flex-shrink-0 ${
-                              ord.status === 'READY_TO_PRINT' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
-                              ord.status === 'IN_SPOOL' || ord.status === 'PRINTING' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 animate-pulse' :
-                              ord.status === 'COMPLETED' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-800 text-slate-400'
-                            }`}>
-                              {ord.status === 'IN_SPOOL' ? 'PRINTING' : ord.status?.replace(/_/g, ' ') || 'UNKNOWN'}
-                            </span>
                           </div>
+                        );
+                      })}
 
-                          {/* Quick Specs & Print Button */}
-                          <div className="mt-2 pt-2 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-1.5 text-[9px] sm:text-[10px]">
-                            <div className="flex items-center gap-1 flex-wrap">
-                              <span className={`px-1.5 py-0.5 rounded font-medium ${item.colorMode === 'COLOR' ? 'bg-amber-500/20 text-amber-300' : 'bg-slate-800 text-slate-300'}`}>
-                                {item.colorMode === 'COLOR' ? 'Color' : 'B&W'}
-                              </span>
-                              <span className="bg-slate-800 px-1.5 py-0.5 rounded text-slate-300 font-medium">
-                                {item.paperSize} · {item.duplex === 'DOUBLE_SIDED' ? 'Duplex' : 'Single'}
-                              </span>
-                            </div>
-
-                            <div className="flex items-center gap-1.5">
-                              {/* Download Document Button */}
-                              {item.fileUrl && (
-                                <a
-                                  href={item.fileUrl.startsWith('http') ? item.fileUrl : `${API_BASE}${item.fileUrl}`}
-                                  download={item.fileName || 'document'}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-cyan-200 font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all border border-slate-700 hover:border-cyan-500/40"
-                                  title="Download document"
-                                >
-                                  <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                  <span className="hidden sm:inline">Download</span>
-                                </a>
-                              )}
-
-                              {/* Print / Reprint Button */}
-                              {ord.status !== 'CANCELLED' && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    if (printers.length > 0) {
-                                      openPrinterSelect(ord.id, ord, 'spool');
-                                    } else {
-                                      handleReleaseOrder(ord.id);
-                                    }
-                                  }}
-                                  className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-white font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all ${
-                                    ord.status === 'PRINTING' || ord.status === 'IN_SPOOL'
-                                      ? 'bg-indigo-600 hover:bg-indigo-500'
-                                      : ord.status === 'COMPLETED'
-                                      ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                                      : 'bg-emerald-600 hover:bg-emerald-500 active:scale-95'
-                                  }`}
-                                >
-                                  <Printer className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                  <span>{ord.status === 'PRINTING' || ord.status === 'IN_SPOOL' ? 'Printing...' : ord.status === 'COMPLETED' ? 'Reprint' : 'Print'}</span>
-                                </button>
-                              )}
-                            </div>
-                          </div>
+                      {/* Pagination Control Bar */}
+                      {totalQueuePages > 1 && (
+                        <div className="flex items-center justify-between p-3 border border-slate-800 text-xs text-slate-400 bg-slate-950/90 rounded-xl mt-3">
+                          <button
+                            onClick={() => setQueuePage(p => Math.max(1, p - 1))}
+                            disabled={queuePage <= 1}
+                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 font-semibold flex items-center gap-1 transition-colors"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                            <span>Previous</span>
+                          </button>
+                          <span className="font-mono text-slate-300 text-[11px]">
+                            Page <strong className="text-white">{queuePage}</strong> of {totalQueuePages} ({filteredOrders.length} orders)
+                          </span>
+                          <button
+                            onClick={() => setQueuePage(p => Math.min(totalQueuePages, p + 1))}
+                            disabled={queuePage >= totalQueuePages}
+                            className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 font-semibold flex items-center gap-1 transition-colors"
+                          >
+                            <span>Next</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
                         </div>
-                      );
-                    })
+                      )}
+                    </>
                   )}
                 </div>
               </div>

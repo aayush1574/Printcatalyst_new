@@ -203,17 +203,52 @@ let _mongoDb = null;
 let _mongoSyncTimer = null;
 let _pendingMongoData = null;
 
+async function ensureIndexes(database) {
+  if (!database) return;
+  try {
+    const shopsCol = database.collection('shops');
+    const ordersCol = database.collection('orders');
+    const printersCol = database.collection('printers');
+    const filesCol = database.collection('uploaded_files');
+
+    await Promise.allSettled([
+      shopsCol.createIndex({ id: 1 }, { unique: true, background: true }),
+      shopsCol.createIndex({ slug: 1 }, { background: true }),
+      shopsCol.createIndex({ email: 1 }, { background: true }),
+      ordersCol.createIndex({ id: 1 }, { unique: true, background: true }),
+      ordersCol.createIndex({ shopId: 1, createdAt: -1 }, { background: true }),
+      ordersCol.createIndex({ status: 1 }, { background: true }),
+      ordersCol.createIndex({ pickupToken: 1 }, { background: true }),
+      ordersCol.createIndex({ paymentStatus: 1 }, { background: true }),
+      printersCol.createIndex({ id: 1, shopId: 1 }, { background: true }),
+      filesCol.createIndex({ filename: 1 }, { unique: true, background: true })
+    ]);
+    console.log('⚡ [DB] MongoDB Database indexes verified & optimized');
+  } catch (err) {
+    console.warn('⚠️ [DB] Index creation notice:', err.message);
+  }
+}
+
 async function connectMongoDB() {
   if (!MONGODB_URI) return null;
   try {
     _mongoClient = new MongoClient(MONGODB_URI, {
-      serverSelectionTimeoutMS: 8000,
-      connectTimeoutMS: 12000,
+      maxPoolSize: 50,       // Connection pooling: up to 50 concurrent sockets
+      minPoolSize: 10,       // Keep 10 idle connections ready
+      maxIdleTimeMS: 30000,  // Close idle sockets after 30s
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
+      waitQueueTimeoutMS: 5000,
+      retryWrites: true,
+      w: 'majority',
       family: 4,
     });
     await _mongoClient.connect();
     _mongoDb = _mongoClient.db(MONGODB_DB_NAME);
-    console.log(`🍃 [DB] Connected to MongoDB Atlas successfully (Database: ${MONGODB_DB_NAME})`);
+    console.log(`🍃 [DB] Connected to MongoDB Atlas successfully with Connection Pool (Database: ${MONGODB_DB_NAME})`);
+    
+    // Asynchronously ensure optimized indexes
+    ensureIndexes(_mongoDb).catch(() => {});
     return _mongoDb;
   } catch (err) {
     console.warn('⚠️ [DB] MongoDB Atlas connection error:', err.message);
@@ -261,8 +296,69 @@ function mongoSyncDebounced(data) {
 
 class Database {
   constructor() {
-    this.data = null;
+    this._shopIdMap = new Map();
+    this._shopSlugMap = new Map();
+    this._orderIdMap = new Map();
+    this._printerIdMap = new Map();
+    this._queryCache = new Map(); // key -> { val, expiresAt }
+    this.data = this._loadLocal();
+    this._rebuildIndexes();
     this._ready = this._init();
+  }
+
+  _rebuildIndexes() {
+    this._shopIdMap.clear();
+    this._shopSlugMap.clear();
+    this._orderIdMap.clear();
+    this._printerIdMap.clear();
+
+    if (this.data) {
+      if (Array.isArray(this.data.shops)) {
+        for (const s of this.data.shops) {
+          if (s.id) this._shopIdMap.set(s.id, s);
+          if (s.slug) this._shopSlugMap.set(s.slug, s);
+        }
+      }
+      if (Array.isArray(this.data.orders)) {
+        for (const o of this.data.orders) {
+          if (o.id) this._orderIdMap.set(o.id, o);
+        }
+      }
+      if (Array.isArray(this.data.printers)) {
+        for (const p of this.data.printers) {
+          if (p.id) this._printerIdMap.set(p.id, p);
+        }
+      }
+    }
+  }
+
+  _getCached(key) {
+    const cached = this._queryCache.get(key);
+    if (!cached) return null;
+    if (Date.now() > cached.expiresAt) {
+      this._queryCache.delete(key);
+      return null;
+    }
+    return cached.val;
+  }
+
+  _setCached(key, val, ttlSeconds = 15) {
+    this._queryCache.set(key, {
+      val,
+      expiresAt: Date.now() + (ttlSeconds * 1000)
+    });
+  }
+
+  _invalidateCache(shopId = null) {
+    if (!shopId) {
+      this._queryCache.clear();
+      return;
+    }
+    for (const key of this._queryCache.keys()) {
+      if (key.includes(shopId) || key.startsWith('global_')) {
+        this._queryCache.delete(key);
+      }
+    }
   }
 
   async _init() {
@@ -280,11 +376,13 @@ class Database {
               ...doc,
               counters: doc.counters || { global: 0 }
             };
+            this._rebuildIndexes();
             this._saveLocal(this.data);
             return;
           } else {
             console.log('🍃 [DB] MongoDB Atlas connected. Seeding initial data from local store...');
             this.data = this._loadLocal();
+            this._rebuildIndexes();
             mongoSyncDebounced(this.data);
             return;
           }
@@ -296,6 +394,7 @@ class Database {
 
     // 2. Fall back to local file
     this.data = this._loadLocal();
+    this._rebuildIndexes();
   }
 
   // Wait for async initialization to complete
@@ -360,9 +459,8 @@ class Database {
   }
 
   save(data = this.data) {
-    // Save locally (fast)
+    this._rebuildIndexes();
     this._saveLocal(data);
-    // Save to MongoDB Atlas if connected
     if (_mongoDb) {
       mongoSyncDebounced(data);
     }
@@ -378,14 +476,15 @@ class Database {
 
   getShops() { return this.data.shops || []; }
   
+  // O(1) indexed lookups
   getShopById(id) { 
     if (!id) return (this.data.shops && this.data.shops[0]) || null;
-    return this.data.shops.find(s => s.id === id || s.slug === id) || null; 
+    return this._shopIdMap.get(id) || this._shopSlugMap.get(id) || this.data.shops.find(s => s.id === id || s.slug === id) || null; 
   }
   
   getShopBySlug(slug) { 
     if (!slug) return (this.data.shops && this.data.shops[0]) || null;
-    return this.data.shops.find(s => s.slug === slug || s.id === slug) || null; 
+    return this._shopSlugMap.get(slug) || this._shopIdMap.get(slug) || this.data.shops.find(s => s.slug === slug || s.id === slug) || null; 
   }
 
   getNextOrderNumber(shopId) {
@@ -430,6 +529,7 @@ class Database {
         ipAddress: '127.0.0.1'
       });
     }
+    this._invalidateCache(shop.id);
     this.save();
     return shop;
   }
@@ -440,6 +540,7 @@ class Database {
     delete this.data.whatsappBot[id];
     this.data.printers = this.data.printers.filter(p => p.shopId !== id);
     this.data.orders = this.data.orders.filter(o => o.shopId !== id);
+    this._invalidateCache(id);
     this.save();
     return true;
   }
@@ -448,6 +549,7 @@ class Database {
     const idx = this.data.shops.findIndex(s => s.id === id);
     if (idx !== -1) {
       this.data.shops[idx] = { ...this.data.shops[idx], ...updates };
+      this._invalidateCache(id);
       this.save();
       return this.data.shops[idx];
     }
@@ -460,6 +562,7 @@ class Database {
 
   updatePricing(shopId, pricingData) {
     this.data.pricing[shopId] = { ...this.getPricing(shopId), ...pricingData };
+    this._invalidateCache(shopId);
     this.save();
     return this.data.pricing[shopId];
   }
@@ -469,7 +572,7 @@ class Database {
   }
 
   getPrinterById(id) {
-    return this.data.printers.find(p => p.id === id);
+    return this._printerIdMap.get(id) || this.data.printers.find(p => p.id === id);
   }
 
   addPrinter(printer) {
@@ -498,12 +601,113 @@ class Database {
     return this.data.orders.filter(o => !shopId || o.shopId === shopId);
   }
 
+  // O(1) indexed order lookup
   getOrderById(id) {
-    return this.data.orders.find(o => o.id === id);
+    return this._orderIdMap.get(id) || this.data.orders.find(o => o.id === id);
+  }
+
+  // Batch query to eliminate N+1 database queries
+  getOrdersBatch(orderIds = []) {
+    if (!Array.isArray(orderIds) || orderIds.length === 0) return [];
+    const results = [];
+    for (const id of orderIds) {
+      const order = this._orderIdMap.get(id);
+      if (order) results.push(order);
+    }
+    return results;
+  }
+
+  // Paginated and filtered order query for large queues
+  getOrdersPaginated(shopId, { page = 1, limit = 25, status = 'ALL', search = '' } = {}) {
+    const cacheKey = `orders_page_${shopId}_${page}_${limit}_${status}_${search}`;
+    const cached = this._getCached(cacheKey);
+    if (cached) return cached;
+
+    let filtered = this.getOrders(shopId);
+
+    if (status && status !== 'ALL') {
+      filtered = filtered.filter(o => o.status === status);
+    }
+
+    if (search && search.trim()) {
+      const q = search.trim().toLowerCase();
+      filtered = filtered.filter(o =>
+        (o.id && o.id.toLowerCase().includes(q)) ||
+        (o.customerName && o.customerName.toLowerCase().includes(q)) ||
+        (o.customerPhone && o.customerPhone.includes(q)) ||
+        (o.pickupToken && String(o.pickupToken).includes(q))
+      );
+    }
+
+    const total = filtered.length;
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const limitNum = Math.max(1, Math.min(100, parseInt(limit, 10) || 25));
+    const totalPages = Math.ceil(total / limitNum) || 1;
+    const offset = (pageNum - 1) * limitNum;
+    const paginatedOrders = filtered.slice(offset, offset + limitNum);
+
+    const result = {
+      orders: paginatedOrders,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages,
+      hasMore: pageNum < totalPages
+    };
+
+    this._setCached(cacheKey, result, 10);
+    return result;
+  }
+
+  // Cached expensive analytics queries
+  getShopStats(shopId) {
+    const cacheKey = `stats_${shopId}`;
+    const cached = this._getCached(cacheKey);
+    if (cached) return cached;
+
+    const orders = this.getOrders(shopId);
+    let totalRevenue = 0;
+    let pendingCount = 0;
+    let printingCount = 0;
+    let completedCount = 0;
+    let totalPagesPrinted = 0;
+
+    for (const o of orders) {
+      if (o.status === 'COMPLETED' || o.paymentStatus === 'PAID') {
+        totalRevenue += (o.finalAmount || o.totalAmount || 0);
+      }
+      if (o.status === 'READY_TO_PRINT' || o.status === 'SUBMITTED') {
+        pendingCount++;
+      } else if (o.status === 'PRINTING') {
+        printingCount++;
+      } else if (o.status === 'COMPLETED') {
+        completedCount++;
+      }
+
+      if (Array.isArray(o.items)) {
+        for (const item of o.items) {
+          totalPagesPrinted += (item.pageCount || 1) * (item.copies || 1);
+        }
+      }
+    }
+
+    const stats = {
+      totalOrders: orders.length,
+      totalRevenue: Math.round(totalRevenue),
+      pendingCount,
+      printingCount,
+      completedCount,
+      totalPagesPrinted
+    };
+
+    this._setCached(cacheKey, stats, 15);
+    return stats;
   }
 
   addOrder(order) {
     this.data.orders.unshift(order);
+    this._orderIdMap.set(order.id, order);
+    this._invalidateCache(order.shopId);
     this.save();
     return order;
   }
@@ -517,6 +721,8 @@ class Database {
         ...updates,
         updatedAt: new Date().toISOString()
       };
+      this._orderIdMap.set(id, this.data.orders[idx]);
+      this._invalidateCache(order.shopId);
       this.save();
       return this.data.orders[idx];
     }
@@ -532,6 +738,7 @@ class Database {
       ...this.getWhatsAppBot(shopId),
       ...updates
     };
+    this._invalidateCache(shopId);
     this.save();
     return this.data.whatsappBot[shopId];
   }

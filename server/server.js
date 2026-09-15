@@ -34,9 +34,47 @@ const upload = multer({
   limits: { fileSize: 100 * 1024 * 1024 } // 100MB limit
 });
 
+const zlib = require('zlib');
+
 app.use(cors());
-app.use(express.json());
-app.use('/uploads', express.static(UPLOADS_DIR));
+
+// High-performance response compression middleware (>1KB gzip/deflate)
+app.use((req, res, next) => {
+  const acceptEncoding = req.headers['accept-encoding'] || '';
+  if (!acceptEncoding.includes('gzip') && !acceptEncoding.includes('deflate')) {
+    return next();
+  }
+
+  const originalSend = res.send;
+  res.send = function (body) {
+    if (res.headersSent) return originalSend.call(this, body);
+
+    if (typeof body === 'string' && body.length > 1024) {
+      if (acceptEncoding.includes('gzip')) {
+        res.setHeader('Content-Encoding', 'gzip');
+        res.removeHeader('Content-Length');
+        const compressed = zlib.gzipSync(Buffer.from(body));
+        return originalSend.call(this, compressed);
+      } else if (acceptEncoding.includes('deflate')) {
+        res.setHeader('Content-Encoding', 'deflate');
+        res.removeHeader('Content-Length');
+        const compressed = zlib.deflateSync(Buffer.from(body));
+        return originalSend.call(this, compressed);
+      }
+    }
+    return originalSend.call(this, body);
+  };
+  next();
+});
+
+app.use(express.json({ limit: '50mb' }));
+
+// Static file caching with CDN Cache-Control
+app.use('/uploads', (req, res, next) => {
+  res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+  next();
+}, express.static(UPLOADS_DIR));
+
 app.get('/uploads/:filename', async (req, res, next) => {
   try {
     const mongoDb = db.getMongoDb ? db.getMongoDb() : null;
@@ -47,6 +85,7 @@ app.get('/uploads/:filename', async (req, res, next) => {
         const diskPath = path.join(UPLOADS_DIR, req.params.filename);
         try { fs.writeFileSync(diskPath, buffer); } catch (_) {}
         res.setHeader('Content-Type', doc.mimetype || 'application/pdf');
+        res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
         return res.send(buffer);
       }
     }
@@ -55,7 +94,10 @@ app.get('/uploads/:filename', async (req, res, next) => {
   }
   next();
 });
-app.use('/bin', express.static(path.join(__dirname, 'bin')));
+app.use('/bin', (req, res, next) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  next();
+}, express.static(path.join(__dirname, 'bin')));
 
 // Global Process Exception Protection (prevents Render crash on unexpected async errors)
 process.on('uncaughtException', (err) => {
@@ -512,11 +554,33 @@ app.post('/api/v1/upload', upload.array('files', 10), (req, res) => {
   });
 });
 
-// 5. Orders API
+// 5. Orders API with Pagination & Caching
 app.get('/api/v1/jobs', (req, res) => {
   const shopId = req.query.shopId || 'shop_demo';
+  const { page, limit, status, search } = req.query;
+
+  if (page || limit || search || (status && status !== 'ALL')) {
+    const paginated = db.getOrdersPaginated(shopId, { page, limit, status, search });
+    return res.json({ success: true, ...paginated });
+  }
+
   const orders = db.getOrders(shopId);
-  res.json({ orders });
+  res.json({ success: true, orders, total: orders.length });
+});
+
+// Batch Order Retrieval (Eliminates N+1 queries)
+app.post('/api/v1/jobs/batch', (req, res) => {
+  const { orderIds = [] } = req.body;
+  const orders = db.getOrdersBatch(orderIds);
+  res.json({ success: true, orders, count: orders.length });
+});
+
+// Cached Shop Analytics & Metrics
+app.get('/api/v1/jobs/stats/:shopId', (req, res) => {
+  const shopId = req.params.shopId || 'shop_demo';
+  const stats = db.getShopStats(shopId);
+  res.setHeader('Cache-Control', 'public, max-age=15, stale-while-revalidate=60');
+  res.json({ success: true, stats });
 });
 
 app.post('/api/v1/jobs', async (req, res) => {

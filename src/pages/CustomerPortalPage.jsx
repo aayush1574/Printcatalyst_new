@@ -9,6 +9,7 @@ import { API_BASE } from '../config';
 import MultiPhotoComposerModal from '../components/MultiPhotoComposerModal';
 import DocumentEditorModal from '../components/DocumentEditorModal';
 import ImageCropModal from '../components/ImageCropModal';
+import { compressFiles } from '../utils/imageCompressor';
 
 export default function CustomerPortalPage() {
   const { shopId = 'printsupport-hub' } = useParams();
@@ -61,9 +62,12 @@ export default function CustomerPortalPage() {
     fetchShopInfo();
   }, [shopId]);
 
-  // Handle file drop / upload
-  const handleFileUpload = async (uploadedFiles) => {
-    if (!uploadedFiles || uploadedFiles.length === 0) return;
+  // Handle file drop / upload with auto-compression
+  const handleFileUpload = async (rawUploadedFiles) => {
+    if (!rawUploadedFiles || rawUploadedFiles.length === 0) return;
+
+    // Fast client-side image compression
+    const uploadedFiles = await compressFiles(rawUploadedFiles);
 
     // Try backend upload
     try {

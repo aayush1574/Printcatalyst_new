@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Printer, Download, QrCode, Sparkles, Check, Copy } from 'lucide-react';
+import QRCodeLib from 'qrcode';
 
 export default function StandeeGeneratorModal({ shop, isOpen, onClose }) {
   const [standeeHeadline, setStandeeHeadline] = useState('Skip The Line & Print Direct');
@@ -8,12 +9,41 @@ export default function StandeeGeneratorModal({ shop, isOpen, onClose }) {
   const [copied, setCopied] = useState(false);
   const standeeRef = useRef(null);
 
-  if (!isOpen || !shop) return null;
+  // Permanent QR code data URLs (generated locally, never changes for same shop)
+  const [qrDataUrl, setQrDataUrl] = useState('');
+  const [upiQrDataUrl, setUpiQrDataUrl] = useState('');
 
-  const portalUrl = `${window.location.origin}/portal/${shop.slug}`;
-  // High-res QR code URL
-  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=450x450&data=${encodeURIComponent(portalUrl)}&margin=1`;
-  const upiQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=450x450&data=${encodeURIComponent(`upi://pay?pa=${shop.upiId}&pn=${encodeURIComponent(shop.name)}`)}&margin=1`;
+  const portalUrl = isOpen && shop ? `${window.location.origin}/portal/${shop.slug}` : '';
+  const upiString = isOpen && shop ? `upi://pay?pa=${shop.upiId}&pn=${encodeURIComponent(shop.name)}` : '';
+
+  // Generate permanent QR codes locally using the qrcode package
+  useEffect(() => {
+    if (!isOpen || !shop) return;
+
+    // Generate portal QR
+    if (portalUrl) {
+      QRCodeLib.toDataURL(portalUrl, {
+        width: 450,
+        margin: 1,
+        color: { dark: '#000000', light: '#ffffff' },
+        errorCorrectionLevel: 'M'
+      }).then((url) => setQrDataUrl(url))
+        .catch((err) => console.error('QR generation error:', err));
+    }
+
+    // Generate UPI QR
+    if (upiString && shop.upiId) {
+      QRCodeLib.toDataURL(upiString, {
+        width: 450,
+        margin: 1,
+        color: { dark: '#000000', light: '#ffffff' },
+        errorCorrectionLevel: 'M'
+      }).then((url) => setUpiQrDataUrl(url))
+        .catch((err) => console.error('UPI QR generation error:', err));
+    }
+  }, [isOpen, shop?.slug, shop?.upiId]);
+
+  if (!isOpen || !shop) return null;
 
   const handlePrint = () => {
     window.print();
@@ -104,6 +134,10 @@ export default function StandeeGeneratorModal({ shop, isOpen, onClose }) {
                   {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                 </button>
               </div>
+              <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-medium">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0"></span>
+                <span>QR code is permanently generated — same QR every time</span>
+              </div>
             </div>
 
             {/* Print & Download Buttons */}
@@ -147,13 +181,19 @@ export default function StandeeGeneratorModal({ shop, isOpen, onClose }) {
                 <p className="text-[10px] text-slate-600 mt-0.5">{standeeSub}</p>
               </div>
 
-              {/* High-res QR Code Box */}
+              {/* High-res QR Code Box — Permanent, locally generated */}
               <div className="p-3 bg-white rounded-xl shadow-inner border-2 border-slate-200 my-2 relative">
-                <img
-                  src={qrUrl}
-                  alt="Shop Order QR"
-                  className="w-48 h-48 rounded-lg object-contain"
-                />
+                {qrDataUrl ? (
+                  <img
+                    src={qrDataUrl}
+                    alt="Shop Order QR"
+                    className="w-48 h-48 rounded-lg object-contain"
+                  />
+                ) : (
+                  <div className="w-48 h-48 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 text-xs">
+                    Generating QR...
+                  </div>
+                )}
                 <div
                   className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full text-[9px] font-black text-white uppercase tracking-wider shadow"
                   style={{ backgroundColor: accentColor }}

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { X, Printer, RotateCw, Eye, CheckCircle, FileText, Settings, Sliders, AlertTriangle, Crop } from 'lucide-react';
+import { X, Printer, RotateCw, Eye, CheckCircle, FileText, Settings, Sliders, AlertTriangle, Crop, Monitor } from 'lucide-react';
 import DocumentEditorModal from './DocumentEditorModal';
 
-export default function DocumentStudioModal({ order, printers, isOpen, onClose, onRelease }) {
+export default function DocumentStudioModal({ order, printers, isOpen, onClose, onRelease, onBrowserPrint }) {
   const [selectedPrinterId, setSelectedPrinterId] = useState(order?.assignedPrinterId || (printers[0]?.id || ''));
   const [rotation, setRotation] = useState(0);
   const [previewMono, setPreviewMono] = useState(order?.items[0]?.colorMode === 'BLACK_AND_WHITE');
@@ -214,15 +214,31 @@ export default function DocumentStudioModal({ order, printers, isOpen, onClose, 
               </div>
             </div>
 
-            {/* Direct Print Action CTA */}
+            {/* Direct Print Action CTA (Hardware Spooler) */}
             <button
               onClick={handleRelease}
               disabled={releasing}
               className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-95 disabled:opacity-50"
             >
               <Printer className="w-5 h-5" />
-              <span>{releasing ? 'Sending to Printer...' : 'Print Document Now'}</span>
+              <span>{releasing ? 'Sending to Printer...' : 'Print Document Now (Spooler)'}</span>
             </button>
+
+            {/* Print with PC Button (Direct Native Browser / System Dialog) */}
+            {onBrowserPrint && (
+              <button
+                type="button"
+                onClick={() => {
+                  onBrowserPrint(order);
+                  onClose();
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-indigo-950/90 hover:bg-indigo-900 text-indigo-300 hover:text-white font-bold text-xs border border-indigo-700/60 hover:border-indigo-500 flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
+                title="Opens classic browser print dialog to easily select any local printer"
+              >
+                <Monitor className="w-4 h-4 text-indigo-400" />
+                <span>Print with PC (Select Printer Dialog)</span>
+              </button>
+            )}
 
           </div>
 

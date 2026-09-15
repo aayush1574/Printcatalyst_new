@@ -35,6 +35,12 @@ export default function MerchantDashboardPage() {
   const [selectedEditPrinter, setSelectedEditPrinter] = useState(null);
   const [isManualOrderOpen, setIsManualOrderOpen] = useState(false);
 
+  // Printer Select Modal State (shown before printing)
+  const [printerSelectOpen, setPrinterSelectOpen] = useState(false);
+  const [printerSelectOrderId, setPrinterSelectOrderId] = useState(null);
+  const [printerSelectOrder, setPrinterSelectOrder] = useState(null);
+  const [printerSelectMode, setPrinterSelectMode] = useState('spool'); // 'spool' | 'browser'
+
   // Printer Management State
   const [refreshingPrinters, setRefreshingPrinters] = useState(false);
   const [refreshNotice, setRefreshNotice] = useState('');
@@ -162,8 +168,26 @@ export default function MerchantDashboardPage() {
     });
   };
 
+  // Open printer selection modal before printing (intercepts all print actions)
+  const openPrinterSelect = (orderId, order, mode = 'spool') => {
+    setPrinterSelectOrderId(orderId);
+    setPrinterSelectOrder(order || null);
+    setPrinterSelectMode(mode);
+    setPrinterSelectOpen(true);
+  };
+
+  // After user selects printer from the modal
+  const handlePrinterSelectConfirm = (selectedPrinterId) => {
+    setPrinterSelectOpen(false);
+    if (printerSelectMode === 'browser') {
+      executeBrowserPrint(printerSelectOrder);
+    } else {
+      handleReleaseOrder(printerSelectOrderId, selectedPrinterId);
+    }
+  };
+
   // Direct Browser Print (Zero setup / no install required)
-  const handleBrowserPrint = (order) => {
+  const executeBrowserPrint = (order) => {
     if (!order) return;
     const fileUrl = order.items?.[0]?.fileUrl;
     if (fileUrl) {
@@ -177,6 +201,16 @@ export default function MerchantDashboardPage() {
       }
     } else {
       window.print();
+    }
+  };
+
+  // Legacy wrapper (for calls that still use handleBrowserPrint)
+  const handleBrowserPrint = (order) => {
+    if (!order) return;
+    if (printers.length > 0) {
+      openPrinterSelect(order.id, order, 'browser');
+    } else {
+      executeBrowserPrint(order);
     }
   };
 
@@ -647,7 +681,11 @@ export default function MerchantDashboardPage() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleReleaseOrder(ord.id);
+                                    if (printers.length > 0) {
+                                      openPrinterSelect(ord.id, ord, 'spool');
+                                    } else {
+                                      handleReleaseOrder(ord.id);
+                                    }
                                   }}
                                   className={`px-2.5 sm:px-3 py-1.5 rounded-lg text-white font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all ${
                                     ord.status === 'PRINTING' || ord.status === 'IN_SPOOL'
@@ -674,8 +712,15 @@ export default function MerchantDashboardPage() {
               <div className="hidden lg:flex w-96 bg-slate-950 p-5 overflow-y-auto flex-col space-y-5 flex-shrink-0 border-l border-slate-800/80">
                 <OrderDetailPanel
                   selectedOrder={selectedOrder}
-                  onOpenStudio={() => setIsStudioOpen(true)}
-                  onRelease={handleReleaseOrder}
+                  printers={printers}
+                  onOpenStudio={() => { setMobileDetailOpen(false); setIsStudioOpen(true); }}
+                  onRelease={(orderId) => {
+                    if (printers.length > 0) {
+                      openPrinterSelect(orderId, selectedOrder, 'spool');
+                    } else {
+                      handleReleaseOrder(orderId);
+                    }
+                  }}
                   onReject={handleRejectOrder}
                   onBrowserPrint={handleBrowserPrint}
                 />
@@ -1177,8 +1222,15 @@ export default function MerchantDashboardPage() {
             <div className="flex-1 overflow-y-auto p-4">
               <OrderDetailPanel
                 selectedOrder={selectedOrder}
+                printers={printers}
                 onOpenStudio={() => { setMobileDetailOpen(false); setIsStudioOpen(true); }}
-                onRelease={handleReleaseOrder}
+                onRelease={(orderId) => {
+                  if (printers.length > 0) {
+                    openPrinterSelect(orderId, selectedOrder, 'spool');
+                  } else {
+                    handleReleaseOrder(orderId);
+                  }
+                }}
                 onReject={handleRejectOrder}
                 onBrowserPrint={handleBrowserPrint}
               />
@@ -1233,6 +1285,16 @@ export default function MerchantDashboardPage() {
         }}
       />
 
+      {/* Printer Select Modal */}
+      {printerSelectOpen && (
+        <PrinterSelectModal
+          printers={printers}
+          mode={printerSelectMode}
+          onConfirm={handlePrinterSelectConfirm}
+          onCancel={() => setPrinterSelectOpen(false)}
+        />
+      )}
+
       {/* Inline animation style */}
       <style>{`
         @keyframes slide-in-right {
@@ -1249,8 +1311,101 @@ export default function MerchantDashboardPage() {
 }
 
 
+/* ─── Printer Select Modal (shown before every print action) ─── */
+function PrinterSelectModal({ printers, mode, onConfirm, onCancel }) {
+  const [selectedId, setSelectedId] = useState(printers[0]?.id || '');
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <Printer className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white">
+                {mode === 'browser' ? 'Select Printer — Browser Print' : 'Select Printer — Print Job'}
+              </h3>
+              <p className="text-[11px] text-slate-400">Choose a printer before sending the job</p>
+            </div>
+          </div>
+          <button
+            onClick={onCancel}
+            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="p-5 space-y-4">
+          <div>
+            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-2">Available Printers</label>
+            <select
+              value={selectedId}
+              onChange={(e) => setSelectedId(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+            >
+              {printers.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} ({p.supportsColor ? 'Color' : 'Mono'} · {p.status || 'Ready'})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Selected printer details */}
+          {selectedId && (() => {
+            const p = printers.find((pr) => pr.id === selectedId);
+            if (!p) return null;
+            return (
+              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-[11px]">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Connection:</span>
+                  <span className="text-white font-medium">{p.connection || 'USB/LAN'}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Color:</span>
+                  <span className={p.supportsColor ? 'text-amber-400 font-bold' : 'text-slate-300'}>
+                    {p.supportsColor ? 'Color + B&W' : 'Mono Only'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Duplex:</span>
+                  <span className="text-white font-medium">{p.supportsDuplex ? 'Auto Duplex' : 'Single Side'}</span>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3 pt-2">
+            <button
+              onClick={onCancel}
+              className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => onConfirm(selectedId)}
+              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              <span>{mode === 'browser' ? 'Print in Browser' : 'Send to Printer'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 /* ─── Order Detail Panel (reusable between desktop sidebar and mobile slide-over) ─── */
-function OrderDetailPanel({ selectedOrder, onOpenStudio, onRelease, onReject, onBrowserPrint }) {
+function OrderDetailPanel({ selectedOrder, printers, onOpenStudio, onRelease, onReject, onBrowserPrint }) {
   if (!selectedOrder) {
     return (
       <div className="text-center py-16 text-slate-500 text-xs">

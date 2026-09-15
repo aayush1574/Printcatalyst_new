@@ -1,53 +1,1617 @@
 {
   "shops": [
     {
-      "id": "shop_main",
-      "slug": "printsupport-hub",
-      "name": "Print Support Main Hub",
-      "ownerName": "Aayush Purohit",
-      "email": "shop@printsupport.in",
+      "id": "shop_1788846558838",
+      "slug": "m",
+      "name": "Mahakal Stationary",
+      "ownerName": "Anil",
+      "email": "",
       "phone": "7225083904",
-      "password": "password123",
-      "address": "Vidisha, Madhya Pradesh (MP)",
-      "upiId": "printsupport@upi",
+      "password": "secret123",
+      "address": "",
+      "upiId": "merchant@upi",
       "autoPrintEnabled": true,
       "instantReleaseOnPayment": true,
       "whatsappAutomationEnabled": true,
       "whatsappPhoneNumber": "7225083904",
       "whatsappSessionStatus": "CONNECTED",
-      "agentToken": "agt_tok_main_hub_01",
+      "agentToken": "agt_tok_0v3psjnulw2",
       "agentStatus": "ONLINE",
-      "plan": "ENTERPRISE",
-      "planExpiresAt": "2099-12-31T23:59:59.000Z",
-      "printCredits": 999999,
-      "createdAt": "2026-09-06T18:00:00.000Z"
+      "plan": "SCALE",
+      "planExpiresAt": "2027-09-08T05:49:18.839Z",
+      "printCredits": 10000,
+      "createdAt": "2026-09-08T05:49:18.839Z",
+      "agentLastHeartbeat": "2026-09-10T08:58:58.763Z"
     }
   ],
-  "pricing": {},
+  "pricing": {
+    "shop_1788846558838": {
+      "currency": "INR",
+      "currencySymbol": "₹",
+      "minOrderAmount": 5,
+      "paperSizes": {
+        "A4": {
+          "name": "A4",
+          "active": true,
+          "baseMultiplier": 1
+        },
+        "A3": {
+          "name": "A3",
+          "active": true,
+          "baseMultiplier": 2
+        },
+        "Legal": {
+          "name": "Legal",
+          "active": true,
+          "baseMultiplier": 1.25
+        },
+        "Letter": {
+          "name": "Letter",
+          "active": true,
+          "baseMultiplier": 1
+        },
+        "Photo_4x6": {
+          "name": "Photo (4x6\")",
+          "active": true,
+          "baseMultiplier": 2.5
+        }
+      },
+      "rates": {
+        "A4": {
+          "monoSingle": 2,
+          "monoDuplex": 1.5,
+          "colorSingle": 8,
+          "colorDuplex": 7
+        },
+        "A3": {
+          "monoSingle": 5,
+          "monoDuplex": 4,
+          "colorSingle": 18,
+          "colorDuplex": 15
+        },
+        "Legal": {
+          "monoSingle": 3,
+          "monoDuplex": 2.5,
+          "colorSingle": 10,
+          "colorDuplex": 9
+        },
+        "Photo_4x6": {
+          "colorSingle": 15
+        }
+      },
+      "paperTypes": {
+        "standard_75gsm": {
+          "name": "Standard (75 GSM)",
+          "extraPerPage": 0,
+          "default": true
+        },
+        "bond_85gsm": {
+          "name": "Executive Bond (85 GSM)",
+          "extraPerPage": 1
+        },
+        "glossy_180gsm": {
+          "name": "Glossy / Photo (180 GSM)",
+          "extraPerPage": 8
+        },
+        "cardstock_250gsm": {
+          "name": "Heavy Cardstock (250 GSM)",
+          "extraPerPage": 12
+        }
+      },
+      "finishing": {
+        "none": {
+          "name": "No Finishing",
+          "price": 0
+        },
+        "stapling": {
+          "name": "Corner Staple",
+          "price": 2
+        },
+        "spiral_binding": {
+          "name": "Spiral Binding",
+          "price": 30
+        },
+        "hard_binding": {
+          "name": "Hard Bound Project Binding",
+          "price": 150
+        },
+        "lamination_a4": {
+          "name": "A4 Thermal Lamination",
+          "price": 25
+        },
+        "lamination_a3": {
+          "name": "A3 Thermal Lamination",
+          "price": 50
+        }
+      },
+      "urgentRushFee": 15,
+      "volumeDiscounts": [
+        {
+          "minPages": 25,
+          "maxPages": 50,
+          "discountPercent": 10
+        },
+        {
+          "minPages": 51,
+          "maxPages": 100,
+          "discountPercent": 15
+        },
+        {
+          "minPages": 101,
+          "maxPages": 9999,
+          "discountPercent": 25
+        }
+      ]
+    }
+  },
   "printers": [
     {
-      "id": "prn_main_01",
-      "shopId": "shop_main",
-      "name": "Counter Master (B&W / Color)",
-      "model": "LaserJet Pro M428dw",
-      "connectionType": "USB_DIRECT",
-      "status": "ONLINE",
-      "isDefaultMono": true,
-      "supportsColor": true,
+      "id": "prn_1788846637464",
+      "shopId": "shop_demo",
+      "name": "New Canon/HP Spooler",
+      "type": "MONO_LASER",
+      "connection": "LOCAL_USB",
+      "status": "IDLE",
+      "isDefaultMono": false,
+      "isDefaultColor": false,
+      "supportsColor": false,
+      "supportsDuplex": true,
       "supportedSizes": [
-        "A4",
-        "Legal",
-        "Letter",
-        "A3"
+        "A4"
       ],
-      "autoCut": true,
-      "ipAddress": "127.0.0.1"
+      "supportedMedia": [
+        "standard_75gsm"
+      ],
+      "trayCount": 1,
+      "paperLevel": "100%",
+      "tonerBlack": "100%",
+      "totalJobsPrinted": 0
+    },
+    {
+      "id": "prn_1788852018199_w3do",
+      "shopId": "shop_1788846558838",
+      "name": "Hewlett-Packard HP LaserJet M1005",
+      "type": "MONO_LASER",
+      "connection": "LOCAL_USB",
+      "status": "READY",
+      "isDefaultMono": true,
+      "isDefaultColor": false,
+      "supportsColor": false,
+      "supportsDuplex": true,
+      "autoDetected": true,
+      "lastSeen": "2026-09-10T08:54:27.361Z"
+    },
+    {
+      "id": "prn_1788852090199_8aa5",
+      "shopId": "shop_1788846558838",
+      "name": "OneNote (Desktop)",
+      "type": "MONO_LASER",
+      "connection": "LOCAL_USB",
+      "status": "READY",
+      "isDefaultMono": false,
+      "isDefaultColor": false,
+      "supportsColor": false,
+      "supportsDuplex": true,
+      "autoDetected": true,
+      "lastSeen": "2026-09-10T08:54:27.362Z"
+    },
+    {
+      "id": "prn_1788852090199_6j7e",
+      "shopId": "shop_1788846558838",
+      "name": "Microsoft Print to PDF",
+      "type": "MONO_LASER",
+      "connection": "LOCAL_USB",
+      "status": "READY",
+      "isDefaultMono": false,
+      "isDefaultColor": false,
+      "supportsColor": false,
+      "supportsDuplex": true,
+      "autoDetected": true,
+      "lastSeen": "2026-09-10T08:54:27.364Z"
     }
   ],
-  "orders": [],
+  "orders": [
+    {
+      "id": "ORD-24",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-459600291",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-15T08:06:40.291Z",
+      "updatedAt": "2026-09-15T08:06:59.890Z",
+      "pickupToken": "24",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "IMG-20260914-WA0013.jpg",
+          "fileSize": "0.19 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789459597678-712403640.jpg",
+          "fileType": "image/jpeg",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-15T08:06:40.291Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-15T08:06:40.291Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-15T08:06:56.389Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-15T08:06:59.890Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-23",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-459472714",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-15T08:04:32.714Z",
+      "updatedAt": "2026-09-15T08:05:46.969Z",
+      "pickupToken": "23",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "IMG-20260914-WA0025.jpg",
+          "fileSize": "0.08 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789459469716-424955471.jpg",
+          "fileType": "image/jpeg",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-15T08:04:32.714Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-15T08:04:32.714Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-15T08:05:43.469Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-15T08:05:46.969Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-22",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-307379093",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-13T13:49:39.093Z",
+      "updatedAt": "2026-09-15T05:54:09.785Z",
+      "pickupToken": "22",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "IMG-20260913-WA0005.jpg",
+          "fileSize": "0.34 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789307357810-392424761.jpg",
+          "fileType": "image/jpeg",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-13T13:49:39.093Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-13T13:49:39.093Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-15T05:54:06.280Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-15T05:54:09.785Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-21",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "READY_TO_PRINT",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-306858663",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-13T13:40:58.663Z",
+      "updatedAt": "2026-09-13T13:40:58.663Z",
+      "pickupToken": "21",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "IMG-20260913-WA0005.jpg",
+          "fileSize": "0.34 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789306794659-503197549.jpg",
+          "fileType": "image/jpeg",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-13T13:40:58.663Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-13T13:40:58.663Z",
+          "text": "UPI Payment of ₹5 verified"
+        }
+      ]
+    },
+    {
+      "id": "ORD-20",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-030694840",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:58:14.840Z",
+      "updatedAt": "2026-09-10T08:58:22.125Z",
+      "pickupToken": "20",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "AayushPAN.pdf",
+          "fileSize": "0.12 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789030691076-262992238.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:58:14.840Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:58:14.840Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:58:18.624Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:58:22.125Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-19",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-030641457",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:57:21.457Z",
+      "updatedAt": "2026-09-10T08:57:28.129Z",
+      "pickupToken": "19",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "Aryan_Kaushik_Backend_Resume (76).pdf",
+          "fileSize": "0.05 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789030639453-386498611.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:57:21.457Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:57:21.457Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:57:24.628Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:57:28.129Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-18",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-030590827",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:56:30.827Z",
+      "updatedAt": "2026-09-10T08:56:38.410Z",
+      "pickupToken": "18",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "AayushPAN.pdf",
+          "fileSize": "0.12 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789030586943-961929703.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:56:30.827Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:56:30.827Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:56:34.909Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:56:38.410Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-17",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-029417510",
+      "totalAmount": 4,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:36:57.510Z",
+      "updatedAt": "2026-09-10T08:54:42.011Z",
+      "pickupToken": "17",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "Aayush_Purohit_Resume.pdf",
+          "fileSize": "0.18 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789029414164-93373015.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 2,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 2,
+          "subtotal": 4
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:36:57.510Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:36:57.510Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:37:00.784Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:37:04.285Z",
+          "text": "Document printed successfully"
+        },
+        {
+          "timestamp": "2026-09-10T08:37:20.965Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:37:24.467Z",
+          "text": "Document printed successfully"
+        },
+        {
+          "timestamp": "2026-09-10T08:40:02.979Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:40:06.481Z",
+          "text": "Document printed successfully"
+        },
+        {
+          "timestamp": "2026-09-10T08:46:42.056Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:46:45.557Z",
+          "text": "Document printed successfully"
+        },
+        {
+          "timestamp": "2026-09-10T08:47:46.269Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:47:49.770Z",
+          "text": "Document printed successfully"
+        },
+        {
+          "timestamp": "2026-09-10T08:48:32.005Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:48:35.506Z",
+          "text": "Document printed successfully"
+        },
+        {
+          "timestamp": "2026-09-10T08:54:38.510Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:54:42.011Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-16",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-029238722",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:33:58.722Z",
+      "updatedAt": "2026-09-10T08:34:11.183Z",
+      "pickupToken": "16",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "Aryan_Kaushik_Backend_Resume (76).pdf",
+          "fileSize": "0.05 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789029236257-110318004.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:33:58.722Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:33:58.722Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:34:07.683Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:34:11.183Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-15",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-029119072",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:31:59.072Z",
+      "updatedAt": "2026-09-10T08:32:05.650Z",
+      "pickupToken": "15",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "AayushPassport.pdf",
+          "fileSize": "0.06 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789029116084-560013652.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:31:59.072Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:31:59.072Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:32:02.148Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:32:05.650Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-14",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-028617391",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:23:37.391Z",
+      "updatedAt": "2026-09-10T08:28:27.917Z",
+      "pickupToken": "14",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "AayushPurohit'Resume.pdf",
+          "fileSize": "0.06 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789028615294-266308580.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:23:37.391Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:23:37.391Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:23:41.084Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:23:44.586Z",
+          "text": "Document printed successfully"
+        },
+        {
+          "timestamp": "2026-09-10T08:28:24.416Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:28:27.917Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-13",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-028311605",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:18:31.605Z",
+      "updatedAt": "2026-09-10T08:18:40.656Z",
+      "pickupToken": "13",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "AayushPurohit'Resume.pdf",
+          "fileSize": "0.06 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789028308705-329599449.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:18:31.605Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:18:31.605Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:18:37.155Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:18:40.656Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-12",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-028262794",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:17:42.794Z",
+      "updatedAt": "2026-09-10T08:17:57.417Z",
+      "pickupToken": "12",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "AayushPurohit'Resume.pdf",
+          "fileSize": "0.06 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789028259252-402722687.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:17:42.794Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:17:42.794Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:17:53.916Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:17:57.417Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-11",
+      "shopId": "shop_1788846558838",
+      "customerName": "Aayush Live Test",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-028180301",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:16:20.301Z",
+      "updatedAt": "2026-09-10T08:16:24.124Z",
+      "pickupToken": "11",
+      "items": [
+        {
+          "fileName": "AayushPurohit_Resume.pdf",
+          "fileUrl": "/uploads/files-1789028179791-277070050.pdf",
+          "fileSize": "0.06 MB",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "id": "item_1",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:16:20.301Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:16:20.301Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:16:20.622Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:16:24.124Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-10",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-027325211",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T08:02:05.211Z",
+      "updatedAt": "2026-09-10T08:15:50.548Z",
+      "pickupToken": "10",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "AayushPurohit'Resume.pdf",
+          "fileSize": "0.06 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789027320470-926754915.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T08:02:05.211Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T08:02:05.211Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T08:02:12.724Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:02:16.225Z",
+          "text": "Document printed successfully"
+        },
+        {
+          "timestamp": "2026-09-10T08:15:47.048Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T08:15:50.548Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-9",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-026731493",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T07:52:11.493Z",
+      "updatedAt": "2026-09-10T07:52:17.749Z",
+      "pickupToken": "9",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "AayushPurohit'Resume.pdf",
+          "fileSize": "0.06 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789026729153-419733330.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T07:52:11.493Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T07:52:11.493Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T07:52:14.248Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T07:52:17.748Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-8",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-026670675",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T07:51:10.675Z",
+      "updatedAt": "2026-09-10T07:51:18.891Z",
+      "pickupToken": "8",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "AayushPurohit'Resume.pdf",
+          "fileSize": "0.06 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789026665733-634091666.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T07:51:10.675Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T07:51:10.675Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T07:51:15.391Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T07:51:18.891Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-7",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-026524333",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T07:48:44.333Z",
+      "updatedAt": "2026-09-10T07:48:52.827Z",
+      "pickupToken": "7",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "Aryan_Kaushik_Backend_Resume (76).pdf",
+          "fileSize": "0.05 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789026520774-900085675.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_1788852018199_w3do",
+      "assignedPrinterName": "Hewlett-Packard HP LaserJet M1005",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T07:48:44.333Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T07:48:44.333Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T07:48:49.327Z",
+          "text": "Print command sent to: Hewlett-Packard HP LaserJet M1005"
+        },
+        {
+          "timestamp": "2026-09-10T07:48:52.827Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-6",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-025342952",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T07:29:02.952Z",
+      "updatedAt": "2026-09-10T07:29:13.001Z",
+      "pickupToken": "6",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "Aryan_Kaushik_Backend_Resume (76).pdf",
+          "fileSize": "0.05 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789025339718-694001660.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_shop_1788846558838_1",
+      "assignedPrinterName": "Main Counter Printer",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T07:29:02.952Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T07:29:02.952Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T07:29:09.501Z",
+          "text": "Print command sent to: Main Counter Printer"
+        },
+        {
+          "timestamp": "2026-09-10T07:29:13.001Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-5",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-025249525",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T07:27:29.525Z",
+      "updatedAt": "2026-09-10T07:27:41.245Z",
+      "pickupToken": "5",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "banner,jaguarfinance.png",
+          "fileSize": "1.15 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789025243435-294541559.png",
+          "fileType": "image/png",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_shop_1788846558838_1",
+      "assignedPrinterName": "Main Counter Printer",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T07:27:29.525Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T07:27:29.525Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T07:27:37.745Z",
+          "text": "Print command sent to: Main Counter Printer"
+        },
+        {
+          "timestamp": "2026-09-10T07:27:41.245Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-4",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "COMPLETED",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-025165142",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T07:26:05.142Z",
+      "updatedAt": "2026-09-10T07:26:16.912Z",
+      "pickupToken": "4",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "Screenshot_2026-09-09-19-34-09-37_40deb401b9ffe8e1df2f1cc5ba480b12.jpg",
+          "fileSize": "0.37 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789025162062-771258523.jpg",
+          "fileType": "image/jpeg",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_shop_1788846558838_1",
+      "assignedPrinterName": "Main Counter Printer",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T07:26:05.142Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T07:26:05.142Z",
+          "text": "UPI Payment of ₹5 verified"
+        },
+        {
+          "timestamp": "2026-09-10T07:26:13.410Z",
+          "text": "Print command sent to: Main Counter Printer"
+        },
+        {
+          "timestamp": "2026-09-10T07:26:16.912Z",
+          "text": "Document printed successfully"
+        }
+      ]
+    },
+    {
+      "id": "ORD-3",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "READY_TO_PRINT",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-022244924",
+      "totalAmount": 2,
+      "discountApplied": 0,
+      "finalAmount": 5,
+      "createdAt": "2026-09-10T06:37:24.924Z",
+      "updatedAt": "2026-09-10T06:37:24.924Z",
+      "pickupToken": "3",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "_.__ Rajiv Gandhi Proudyogiki Vishwavidyalaya, Bhopal __._ (1).pdf",
+          "fileSize": "0.13 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1789022236950-251823615.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 1,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 1,
+          "subtotal": 2
+        }
+      ],
+      "assignedPrinterId": "prn_shop_1788846558838_1",
+      "assignedPrinterName": "Main Counter Printer",
+      "logs": [
+        {
+          "timestamp": "2026-09-10T06:37:24.924Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-10T06:37:24.924Z",
+          "text": "UPI Payment of ₹5 verified"
+        }
+      ]
+    },
+    {
+      "id": "ORD-2",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "READY_TO_PRINT",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-944689296",
+      "totalAmount": 10,
+      "discountApplied": 0,
+      "finalAmount": 10,
+      "createdAt": "2026-09-09T09:04:49.296Z",
+      "updatedAt": "2026-09-09T09:04:49.296Z",
+      "pickupToken": "2",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "krishna khare practical.pdf",
+          "fileSize": "0.47 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1788944684526-66373258.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 5,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 5,
+          "subtotal": 10
+        }
+      ],
+      "assignedPrinterId": "prn_shop_1788846558838_1",
+      "assignedPrinterName": "Main Counter Printer",
+      "logs": [
+        {
+          "timestamp": "2026-09-09T09:04:49.296Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-09T09:04:49.296Z",
+          "text": "UPI Payment of ₹10 verified"
+        }
+      ]
+    },
+    {
+      "id": "ORD-1",
+      "shopId": "shop_1788846558838",
+      "customerName": "Self-Service Customer",
+      "customerPhone": "+91 99999 99999",
+      "source": "QR_PORTAL",
+      "status": "READY_TO_PRINT",
+      "paymentStatus": "PAID",
+      "paymentMethod": "UPI",
+      "upiRef": "UPI-944613483",
+      "totalAmount": 12,
+      "discountApplied": 0,
+      "finalAmount": 12,
+      "createdAt": "2026-09-09T09:03:33.483Z",
+      "updatedAt": "2026-09-09T09:03:33.483Z",
+      "pickupToken": "1",
+      "items": [
+        {
+          "id": "item_1",
+          "fileName": "krishnakharepractical7.pdf",
+          "fileSize": "0.57 MB",
+          "fileUrl": "https://printcatalyst-new.onrender.com/uploads/files-1788944598757-232402230.pdf",
+          "fileType": "application/pdf",
+          "pageCount": 6,
+          "copies": 1,
+          "colorMode": "BLACK_AND_WHITE",
+          "duplex": "SINGLE_SIDED",
+          "paperSize": "A4",
+          "paperType": "standard_75gsm",
+          "pageRange": "ALL",
+          "orientation": "PORTRAIT",
+          "finishing": "none",
+          "computedPages": 6,
+          "subtotal": 12
+        }
+      ],
+      "assignedPrinterId": "prn_shop_1788846558838_1",
+      "assignedPrinterName": "Main Counter Printer",
+      "logs": [
+        {
+          "timestamp": "2026-09-09T09:03:33.483Z",
+          "text": "Order created via QR_PORTAL"
+        },
+        {
+          "timestamp": "2026-09-09T09:03:33.483Z",
+          "text": "UPI Payment of ₹12 verified"
+        }
+      ]
+    }
+  ],
   "counters": {
     "shop_main": 0,
-    "global": 0
+    "global": 0,
+    "shop_1788846558838": 24
   },
   "whatsappBot": {},
   "plans": [
@@ -96,5 +1660,5 @@
   ],
   "supportEnquiries": [],
   "_id": "main_state",
-  "updatedAt": "2026-09-07T14:05:20.659Z"
+  "updatedAt": "2026-09-15T08:07:00.891Z"
 }

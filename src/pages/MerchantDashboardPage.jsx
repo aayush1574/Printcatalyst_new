@@ -10,6 +10,7 @@ import QRCodeLib from 'qrcode';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { API_BASE } from '../config';
+import { downloadDocument } from '../utils/downloadHelper';
 import DocumentStudioModal from '../components/DocumentStudioModal';
 import StandeeGeneratorModal from '../components/StandeeGeneratorModal';
 import PrinterSettingsModal from '../components/PrinterSettingsModal';
@@ -203,11 +204,62 @@ export default function MerchantDashboardPage() {
     }
   };
 
+  const [downloadingDocKey, setDownloadingDocKey] = useState(null);
+
+  // Safe Universal Document Download Handler (prevents about:blank#blocked)
+  const handleDownloadDocument = async (fileUrl, fileName, docKey, e) => {
+    if (e) e.stopPropagation();
+    if (!fileUrl) return;
+    setDownloadingDocKey(docKey || 'active');
+    try {
+      await downloadDocument(fileUrl, fileName);
+    } catch (err) {
+      console.error('Download error:', err);
+    } finally {
+      setTimeout(() => setDownloadingDocKey(null), 1500);
+    }
+  };
+
   // Direct Browser Print (Zero setup / no install required)
   const executeBrowserPrint = (order) => {
     if (!order) return;
-    const fileUrl = order.items?.[0]?.fileUrl;
+    const item = order.items?.[0];
+    const fileUrl = item?.fileUrl;
     if (fileUrl) {
+      if (fileUrl.startsWith('data:')) {
+        try {
+          const parts = fileUrl.split(',');
+          const mimeMatch = parts[0].match(/:(.*?);/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'application/pdf';
+          const isBase64 = parts[0].includes('base64');
+          let u8arr;
+          if (isBase64) {
+            const bstr = atob(parts[1]);
+            let n = bstr.length;
+            u8arr = new Uint8Array(n);
+            while (n--) {
+              u8arr[n] = bstr.charCodeAt(n);
+            }
+          } else {
+            const decoded = decodeURIComponent(parts[1]);
+            u8arr = new TextEncoder().encode(decoded);
+          }
+          const blob = new Blob([u8arr], { type: mimeType });
+          const blobUrl = URL.createObjectURL(blob);
+          const printWindow = window.open(blobUrl, '_blank');
+          if (printWindow) {
+            printWindow.focus();
+            setTimeout(() => {
+              try { printWindow.print(); } catch (e) {}
+              setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+            }, 1200);
+          }
+          return;
+        } catch (e) {
+          console.error('Error opening data URL print preview:', e);
+        }
+      }
+
       const fullUrl = fileUrl.startsWith('http') ? fileUrl : `${API_BASE}${fileUrl}`;
       const printWindow = window.open(fullUrl, '_blank');
       if (printWindow) {
@@ -699,19 +751,22 @@ export default function MerchantDashboardPage() {
                                 </span>
                               </div>
 
-                              <div className="flex items-center gap-1.5">
+                                <div className="flex items-center gap-1.5">
                                 {/* Download Document Button */}
                                 {item.fileUrl && (
-                                  <a
-                                    href={item.fileUrl.startsWith('http') ? item.fileUrl : `${API_BASE}${item.fileUrl}`}
-                                    download={item.fileName || 'document'}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-cyan-200 font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all border border-slate-700 hover:border-cyan-500/40"
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleDownloadDocument(item.fileUrl, item.fileName || `order-${ord.pickupToken || ord.id}`, ord.id, e)}
+                                    className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 hover:text-cyan-200 font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all border border-slate-700 hover:border-cyan-500/40 active:scale-95"
                                     title="Download document"
                                   >
-                                    <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                                    <span className="hidden sm:inline">Download</span>
-                                  </a>
+                                    {downloadingDocKey === ord.id ? (
+                                      <RefreshCw className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin text-cyan-400" />
+                                    ) : (
+                                      <Download className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                                    )}
+                                    <span className="hidden sm:inline">{downloadingDocKey === ord.id ? 'Saving...' : 'Download'}</span>
+                                  </button>
                                 )}
 
                                 {/* Print / Reprint Button */}
@@ -777,6 +832,8 @@ export default function MerchantDashboardPage() {
                 <OrderDetailPanel
                   selectedOrder={selectedOrder}
                   printers={printers}
+                  downloadingDocKey={downloadingDocKey}
+                  onDownloadDocument={handleDownloadDocument}
                   onOpenStudio={() => { setMobileDetailOpen(false); setIsStudioOpen(true); }}
                   onRelease={(orderId) => {
                     if (printers.length > 0) {
@@ -1106,14 +1163,18 @@ export default function MerchantDashboardPage() {
                 {/* Actions */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
                   {dashboardQrDataUrl && (
-                    <a
-                      href={dashboardQrDataUrl}
-                      download={`${merchant?.slug || 'shop'}-counter-qr.png`}
-                      className="py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold text-xs border border-slate-700 flex items-center justify-center gap-2 transition-all shadow-md"
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadDocument(dashboardQrDataUrl, `${merchant?.slug || 'shop'}-counter-qr.png`, 'qr')}
+                      className="py-3 px-4 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 font-bold text-xs border border-slate-700 flex items-center justify-center gap-2 transition-all shadow-md active:scale-95"
                     >
-                      <Download className="w-4 h-4 text-cyan-400" />
-                      <span>Download QR</span>
-                    </a>
+                      {downloadingDocKey === 'qr' ? (
+                        <RefreshCw className="w-4 h-4 text-cyan-400 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4 text-cyan-400" />
+                      )}
+                      <span>{downloadingDocKey === 'qr' ? 'Saving QR...' : 'Download QR'}</span>
+                    </button>
                   )}
 
                   <Link
@@ -1361,6 +1422,8 @@ export default function MerchantDashboardPage() {
               <OrderDetailPanel
                 selectedOrder={selectedOrder}
                 printers={printers}
+                downloadingDocKey={downloadingDocKey}
+                onDownloadDocument={handleDownloadDocument}
                 onOpenStudio={() => { setMobileDetailOpen(false); setIsStudioOpen(true); }}
                 onRelease={(orderId) => {
                   if (printers.length > 0) {
@@ -1543,7 +1606,7 @@ function PrinterSelectModal({ printers, mode, onConfirm, onCancel }) {
 
 
 /* ─── Order Detail Panel (reusable between desktop sidebar and mobile slide-over) ─── */
-function OrderDetailPanel({ selectedOrder, printers, onOpenStudio, onRelease, onReject, onBrowserPrint }) {
+function OrderDetailPanel({ selectedOrder, printers, onOpenStudio, onRelease, onReject, onBrowserPrint, onDownloadDocument, downloadingDocKey }) {
   if (!selectedOrder) {
     return (
       <div className="text-center py-16 text-slate-500 text-xs">
@@ -1551,6 +1614,8 @@ function OrderDetailPanel({ selectedOrder, printers, onOpenStudio, onRelease, on
       </div>
     );
   }
+
+  const isDocDownloading = downloadingDocKey === `detail-${selectedOrder.id}`;
 
   return (
     <div className="space-y-4 text-xs">
@@ -1578,14 +1643,23 @@ function OrderDetailPanel({ selectedOrder, printers, onOpenStudio, onRelease, on
 
       {/* Download Document */}
       {selectedOrder.items?.[0]?.fileUrl && (
-        <a
-          href={selectedOrder.items[0].fileUrl.startsWith('http') ? selectedOrder.items[0].fileUrl : `${API_BASE}${selectedOrder.items[0].fileUrl}`}
-          download={selectedOrder.items[0].fileName || 'document'}
-          className="w-full py-2.5 px-3 rounded-xl bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white font-bold flex items-center justify-center gap-2 border border-cyan-500/30 hover:border-cyan-400 transition-all shadow-sm"
+        <button
+          type="button"
+          onClick={() => onDownloadDocument && onDownloadDocument(
+            selectedOrder.items[0].fileUrl,
+            selectedOrder.items[0].fileName || `order-${selectedOrder.pickupToken || selectedOrder.id}`,
+            `detail-${selectedOrder.id}`
+          )}
+          disabled={isDocDownloading}
+          className="w-full py-2.5 px-3 rounded-xl bg-cyan-600/20 hover:bg-cyan-600 text-cyan-300 hover:text-white font-bold flex items-center justify-center gap-2 border border-cyan-500/30 hover:border-cyan-400 transition-all shadow-sm active:scale-95 disabled:opacity-50"
         >
-          <Download className="w-4 h-4" />
-          <span>Download Document</span>
-        </a>
+          {isDocDownloading ? (
+            <RefreshCw className="w-4 h-4 animate-spin text-cyan-300" />
+          ) : (
+            <Download className="w-4 h-4" />
+          )}
+          <span>{isDocDownloading ? 'Downloading Document...' : 'Download Document'}</span>
+        </button>
       )}
 
       {/* Specs */}

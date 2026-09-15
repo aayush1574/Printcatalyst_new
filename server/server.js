@@ -69,14 +69,31 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '50mb' }));
 
-// Static file caching with CDN Cache-Control
+// Static file caching with CDN Cache-Control & CORS
 app.use('/uploads', (req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', '*');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, Content-Length, Content-Type');
   res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
+  if (req.query.download === '1' || req.query.download === 'true') {
+    const dlName = req.query.name || path.basename(req.path) || 'document.pdf';
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(dlName)}"`);
+  }
   next();
 }, express.static(UPLOADS_DIR));
 
 app.get('/uploads/:filename', async (req, res, next) => {
   try {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, Content-Length, Content-Type');
+
+    if (req.query.download === '1' || req.query.download === 'true') {
+      const dlName = req.query.name || req.params.filename || 'document.pdf';
+      res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(dlName)}"`);
+    }
+
     const mongoDb = db.getMongoDb ? db.getMongoDb() : null;
     if (mongoDb) {
       const doc = await mongoDb.collection('uploaded_files').findOne({ filename: req.params.filename });
@@ -87,6 +104,21 @@ app.get('/uploads/:filename', async (req, res, next) => {
         res.setHeader('Content-Type', doc.mimetype || 'application/pdf');
         res.setHeader('Cache-Control', 'public, max-age=86400, stale-while-revalidate=604800');
         return res.send(buffer);
+      }
+    }
+
+    // Check if sample or fallback file exists on disk
+    const diskPath = path.join(UPLOADS_DIR, req.params.filename);
+    if (fs.existsSync(diskPath)) {
+      return res.sendFile(diskPath);
+    }
+
+    // Fallback for sample demo PDF files if missing
+    if (req.params.filename.endsWith('.pdf') || req.params.filename.includes('sample')) {
+      const fallbackPdf = path.join(UPLOADS_DIR, 'sample_wa_doc.pdf');
+      if (fs.existsSync(fallbackPdf)) {
+        res.setHeader('Content-Type', 'application/pdf');
+        return res.sendFile(fallbackPdf);
       }
     }
   } catch (err) {
@@ -552,6 +584,93 @@ app.post('/api/v1/upload', upload.array('files', 10), (req, res) => {
     success: true,
     files: uploadedFiles
   });
+});
+
+// Universal Document Download Endpoint with forced Content-Disposition: attachment
+app.get('/api/v1/download-file', async (req, res) => {
+  try {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', '*');
+    res.setHeader('Access-Control-Expose-Headers', 'Content-Disposition, Content-Length, Content-Type');
+
+    const requestedUrl = req.query.url || req.query.fileUrl || '';
+    let filename = req.query.filename || '';
+    const downloadName = req.query.name || 'document.pdf';
+
+    if (!filename && requestedUrl) {
+      try {
+        const parsed = new URL(requestedUrl, 'http://localhost');
+        filename = path.basename(parsed.pathname);
+      } catch {
+        filename = path.basename(requestedUrl);
+      }
+    }
+
+    if (!filename) {
+      return res.status(400).json({ success: false, message: 'Filename or url parameter required' });
+    }
+
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(downloadName)}"`);
+
+    // 1. Check local uploads disk
+    const diskPath = path.join(UPLOADS_DIR, filename);
+    if (fs.existsSync(diskPath)) {
+      const ext = path.extname(filename).toLowerCase();
+      const mimeTypes = {
+        '.pdf': 'application/pdf',
+        '.png': 'image/png',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.txt': 'text/plain',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.doc': 'application/msword'
+      };
+      res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
+      return res.sendFile(diskPath);
+    }
+
+    // 2. Check MongoDB Atlas
+    const mongoDb = db.getMongoDb ? db.getMongoDb() : null;
+    if (mongoDb) {
+      const doc = await mongoDb.collection('uploaded_files').findOne({ filename });
+      if (doc && doc.data) {
+        const buffer = Buffer.from(doc.data, 'base64');
+        try { fs.writeFileSync(diskPath, buffer); } catch (_) {}
+        res.setHeader('Content-Type', doc.mimetype || 'application/octet-stream');
+        return res.send(buffer);
+      }
+    }
+
+    // 3. If requestedUrl is a remote HTTP/HTTPS URL, proxy fetch it
+    if (requestedUrl && (requestedUrl.startsWith('http://') || requestedUrl.startsWith('https://'))) {
+      try {
+        const fetchRes = await fetch(requestedUrl);
+        if (fetchRes.ok) {
+          const arrayBuffer = await fetchRes.arrayBuffer();
+          const buffer = Buffer.from(arrayBuffer);
+          const contentType = fetchRes.headers.get('content-type') || 'application/octet-stream';
+          res.setHeader('Content-Type', contentType);
+          try { fs.writeFileSync(diskPath, buffer); } catch (_) {}
+          return res.send(buffer);
+        }
+      } catch (proxyErr) {
+        console.warn('Proxy fetch failed:', proxyErr.message);
+      }
+    }
+
+    // 4. Fallback sample file
+    const samplePath = path.join(UPLOADS_DIR, 'sample_wa_doc.pdf');
+    if (fs.existsSync(samplePath)) {
+      res.setHeader('Content-Type', 'application/pdf');
+      return res.sendFile(samplePath);
+    }
+
+    return res.status(404).send('Document not found');
+  } catch (err) {
+    console.error('Download error:', err.message);
+    res.status(500).send('Failed to process document download');
+  }
 });
 
 // 5. Orders API with Pagination & Caching

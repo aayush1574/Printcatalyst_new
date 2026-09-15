@@ -2,12 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Printer, Upload, FileText, CheckCircle2, QrCode,
-  ShieldCheck, Check, Copy, ArrowRight, RefreshCw, Sparkles, FileUp, Zap, LayoutGrid, Crop
+  ShieldCheck, Check, Copy, ArrowRight, RefreshCw, Sparkles, FileUp, Zap, LayoutGrid, Crop, Sliders
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { API_BASE } from '../config';
 import MultiPhotoComposerModal from '../components/MultiPhotoComposerModal';
 import DocumentEditorModal from '../components/DocumentEditorModal';
+import ImageCropModal from '../components/ImageCropModal';
 
 export default function CustomerPortalPage() {
   const { shopId = 'printsupport-hub' } = useParams();
@@ -24,6 +25,8 @@ export default function CustomerPortalPage() {
   const [isMultiPhotoOpen, setIsMultiPhotoOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
+  const [cropItem, setCropItem] = useState(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -134,6 +137,30 @@ export default function CustomerPortalPage() {
 
   const removeItem = (id) => {
     setFiles((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const handleOpenCropModal = (item) => {
+    setCropItem(item);
+    setIsCropModalOpen(true);
+  };
+
+  const handleApplyCrop = (croppedUrl) => {
+    if (!cropItem) return;
+    setFiles((prev) =>
+      prev.map((f) =>
+        f.id === cropItem.id
+          ? {
+              ...f,
+              fileUrl: croppedUrl,
+              previewUrl: croppedUrl,
+              isEdited: true,
+              editSummary: 'Cropped & Zoomed'
+            }
+          : f
+      )
+    );
+    setIsCropModalOpen(false);
+    setCropItem(null);
   };
 
   const handleOpenEditor = (item) => {
@@ -428,15 +455,26 @@ export default function CustomerPortalPage() {
                             <p className="text-[10px] sm:text-[11px] text-slate-400">{item.fileSize} · {item.pageCount} page(s)</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 flex-wrap">
+                          {Boolean(item.fileType?.startsWith('image/') || /\.(png|jpg|jpeg|webp)$/i.test(item.fileName)) && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenCropModal(item)}
+                              className="text-xs text-cyan-300 hover:text-white font-semibold px-2.5 py-1 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 transition-colors border border-cyan-500/30 flex items-center gap-1.5"
+                              title="Dynamic Interactive Crop & Zoom"
+                            >
+                              <Crop className="w-3.5 h-3.5 text-cyan-400" />
+                              <span>Crop & Zoom</span>
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={() => handleOpenEditor(item)}
                             className="text-xs text-indigo-300 hover:text-white font-semibold px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 transition-colors border border-indigo-500/30 flex items-center gap-1.5"
-                            title="Crop, Resize, Rotate & Enhance document"
+                            title="Full Studio Document Editor (Crop, Resize, Filters, PDF)"
                           >
-                            <Crop className="w-3.5 h-3.5 text-indigo-400" />
-                            <span>Edit Document</span>
+                            <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                            <span>Edit Studio</span>
                           </button>
                           <button
                             type="button"
@@ -622,6 +660,20 @@ export default function CustomerPortalPage() {
               onClose={() => setIsMultiPhotoOpen(false)}
               onAddComposedItem={handleAddComposedItem}
             />
+
+            {/* Dynamic Image Crop & Zoom Modal */}
+            {cropItem && (
+              <ImageCropModal
+                imageUrl={cropItem.fileUrl}
+                fileName={cropItem.fileName}
+                isOpen={isCropModalOpen}
+                onClose={() => {
+                  setIsCropModalOpen(false);
+                  setCropItem(null);
+                }}
+                onApply={handleApplyCrop}
+              />
+            )}
 
             {/* Document Editor Modal for Crop / Resize / Rotate */}
             {editingItem && (

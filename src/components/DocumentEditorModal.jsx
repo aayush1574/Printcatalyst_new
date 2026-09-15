@@ -283,7 +283,7 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
 
   // Mouse & Touch Drag Handlers for Crop Frame
   const handleDragStart = (e, handle) => {
-    if (e.cancelable && e.type !== 'touchstart') {
+    if (e.cancelable) {
       e.preventDefault();
     }
     e.stopPropagation();
@@ -584,23 +584,23 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                     </div>
 
                     {[
-                      { id: 'nw', class: '-top-3 -left-3 cursor-nwse-resize' },
-                      { id: 'n',  class: '-top-3 left-1/2 -translate-x-1/2 cursor-ns-resize' },
-                      { id: 'ne', class: '-top-3 -right-3 cursor-nesw-resize' },
-                      { id: 'e',  class: 'top-1/2 -right-3 -translate-y-1/2 cursor-ew-resize' },
-                      { id: 'se', class: '-bottom-3 -right-3 cursor-nwse-resize' },
-                      { id: 's',  class: '-bottom-3 left-1/2 -translate-x-1/2 cursor-ns-resize' },
-                      { id: 'sw', class: '-bottom-3 -left-3 cursor-nesw-resize' },
-                      { id: 'w',  class: 'top-1/2 -left-3 -translate-y-1/2 cursor-ew-resize' },
+                      { id: 'nw', class: '-top-4 -left-4 cursor-nwse-resize' },
+                      { id: 'n',  class: '-top-4 left-1/2 -translate-x-1/2 cursor-ns-resize' },
+                      { id: 'ne', class: '-top-4 -right-4 cursor-nesw-resize' },
+                      { id: 'e',  class: 'top-1/2 -right-4 -translate-y-1/2 cursor-ew-resize' },
+                      { id: 'se', class: '-bottom-4 -right-4 cursor-nwse-resize' },
+                      { id: 's',  class: '-bottom-4 left-1/2 -translate-x-1/2 cursor-ns-resize' },
+                      { id: 'sw', class: '-bottom-4 -left-4 cursor-nesw-resize' },
+                      { id: 'w',  class: 'top-1/2 -left-4 -translate-y-1/2 cursor-ew-resize' },
                     ].map((h) => (
                       <div
                         key={h.id}
-                        className={`absolute w-7 h-7 sm:w-6 sm:h-6 bg-indigo-500 border-2 border-white rounded-full shadow-lg z-30 flex items-center justify-center active:scale-125 touch-none ${h.class}`}
+                        className={`absolute w-8 h-8 sm:w-6 sm:h-6 bg-indigo-500 border-2 border-white rounded-full shadow-xl z-30 flex items-center justify-center active:scale-125 touch-none cursor-pointer ${h.class}`}
                         style={{ touchAction: 'none' }}
                         onMouseDown={(e) => handleDragStart(e, h.id)}
                         onTouchStart={(e) => handleDragStart(e, h.id)}
                       >
-                        <div className="w-1.5 h-1.5 rounded-full bg-white"></div>
+                        <div className="w-2 h-2 rounded-full bg-white shadow-sm pointer-events-none"></div>
                       </div>
                     ))}
                   </div>
@@ -608,9 +608,9 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
               )}
             </div>
 
-            <p className="text-[10px] text-slate-500 mt-2 font-medium flex items-center gap-1 sm:hidden">
-              <Move className="w-3 h-3 text-indigo-400" />
-              <span>Touch handles or tabs below to customize document</span>
+            <p className="text-[10px] text-slate-400 mt-2 font-medium flex items-center gap-1 sm:hidden">
+              <Move className="w-3.5 h-3.5 text-indigo-400 flex-shrink-0" />
+              <span>Drag inside to position, or drag handles to crop</span>
             </p>
           </div>
 
@@ -877,24 +877,60 @@ export default function DocumentEditorModal({ item, isOpen, onClose, onSave }) {
                       </button>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div>
                         <label className="text-[11px] text-slate-400 block mb-1 font-medium">Width (px)</label>
-                        <input
-                          type="number"
-                          value={targetWidth}
-                          onChange={(e) => handleWidthChange(e.target.value)}
-                          className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono font-bold focus:border-indigo-500 focus:outline-none"
-                        />
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleWidthChange(targetWidth - 50)}
+                            className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-mono text-xs font-bold border border-slate-700"
+                            title="Decrease width by 50px"
+                          >
+                            -50
+                          </button>
+                          <input
+                            type="number"
+                            value={targetWidth}
+                            onChange={(e) => handleWidthChange(e.target.value)}
+                            className="w-full min-w-0 px-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono font-bold text-center focus:border-indigo-500 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleWidthChange(targetWidth + 50)}
+                            className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-mono text-xs font-bold border border-slate-700"
+                            title="Increase width by 50px"
+                          >
+                            +50
+                          </button>
+                        </div>
                       </div>
                       <div>
                         <label className="text-[11px] text-slate-400 block mb-1 font-medium">Height (px)</label>
-                        <input
-                          type="number"
-                          value={targetHeight}
-                          onChange={(e) => handleHeightChange(e.target.value)}
-                          className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono font-bold focus:border-indigo-500 focus:outline-none"
-                        />
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleHeightChange(targetHeight - 50)}
+                            className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-mono text-xs font-bold border border-slate-700"
+                            title="Decrease height by 50px"
+                          >
+                            -50
+                          </button>
+                          <input
+                            type="number"
+                            value={targetHeight}
+                            onChange={(e) => handleHeightChange(e.target.value)}
+                            className="w-full min-w-0 px-2 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs font-mono font-bold text-center focus:border-indigo-500 focus:outline-none"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleHeightChange(targetHeight + 50)}
+                            className="px-2.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-300 font-mono text-xs font-bold border border-slate-700"
+                            title="Increase height by 50px"
+                          >
+                            +50
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

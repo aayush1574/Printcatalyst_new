@@ -283,18 +283,19 @@ export default function ImageCropModal({ imageUrl, fileName, isOpen, onClose, on
     };
   }, [dispW, dispH, dispX, dispY, panX, panY, zoom, rotation, cropX, cropY, cropW, cropH, imgNatW, imgNatH]);
 
-  // Mouse handlers for crop dragging
+  // Mouse & Touch handlers for crop dragging
   const getMousePos = (e) => {
     const canvas = canvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
+    if (!canvas) return { x: 0, y: 0, isTouch: false };
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return { x: clientX - rect.left, y: clientY - rect.top };
+    const isTouch = Boolean(e.touches && e.touches.length > 0);
+    const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+    const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+    return { x: clientX - rect.left, y: clientY - rect.top, isTouch };
   };
 
   const getHitTarget = (pos) => {
-    const handleSize = 14;
+    const handleSize = pos.isTouch ? 36 : 16;
     const hx = pos.x, hy = pos.y;
 
     // Corner handles
@@ -304,10 +305,10 @@ export default function ImageCropModal({ imageUrl, fileName, isOpen, onClose, on
     if (Math.abs(hx - (cropX + cropW)) < handleSize && Math.abs(hy - (cropY + cropH)) < handleSize) return 'se';
 
     // Edge handles
-    if (Math.abs(hy - cropY) < handleSize && hx > cropX + handleSize && hx < cropX + cropW - handleSize) return 'n';
-    if (Math.abs(hy - (cropY + cropH)) < handleSize && hx > cropX + handleSize && hx < cropX + cropW - handleSize) return 's';
-    if (Math.abs(hx - cropX) < handleSize && hy > cropY + handleSize && hy < cropY + cropH - handleSize) return 'w';
-    if (Math.abs(hx - (cropX + cropW)) < handleSize && hy > cropY + handleSize && hy < cropY + cropH - handleSize) return 'e';
+    if (Math.abs(hy - cropY) < handleSize && hx > cropX - handleSize && hx < cropX + cropW + handleSize) return 'n';
+    if (Math.abs(hy - (cropY + cropH)) < handleSize && hx > cropX - handleSize && hx < cropX + cropW + handleSize) return 's';
+    if (Math.abs(hx - cropX) < handleSize && hy > cropY - handleSize && hy < cropY + cropH + handleSize) return 'w';
+    if (Math.abs(hx - (cropX + cropW)) < handleSize && hy > cropY - handleSize && hy < cropY + cropH + handleSize) return 'e';
 
     // Inside crop = move
     if (hx >= cropX && hx <= cropX + cropW && hy >= cropY && hy <= cropY + cropH) return 'move';
@@ -317,7 +318,7 @@ export default function ImageCropModal({ imageUrl, fileName, isOpen, onClose, on
   };
 
   const handlePointerDown = (e) => {
-    e.preventDefault();
+    if (e.cancelable) e.preventDefault();
     const pos = getMousePos(e);
     const target = getHitTarget(pos);
     setDragging(target);
@@ -453,11 +454,11 @@ export default function ImageCropModal({ imageUrl, fileName, isOpen, onClose, on
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl max-h-[95vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-[100] overflow-y-auto flex flex-col items-center justify-start lg:justify-center p-0 sm:p-4 bg-black/90 backdrop-blur-md animate-fadeIn" style={{ WebkitOverflowScrolling: 'touch' }}>
+      <div className="bg-slate-900 border-0 sm:border border-slate-700 rounded-none sm:rounded-2xl w-full max-w-5xl min-h-screen sm:min-h-0 sm:max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
         
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950 flex-shrink-0">
+        <div className="sticky top-0 z-40 px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950 flex-shrink-0">
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-violet-600/20 border border-violet-500/30 flex items-center justify-center text-violet-400 flex-shrink-0">
               <Crop className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -471,32 +472,34 @@ export default function ImageCropModal({ imageUrl, fileName, isOpen, onClose, on
             onClick={onClose}
             className="p-1.5 sm:p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors flex-shrink-0"
           >
-            <X className="w-4 h-4 sm:w-5 sm:h-5" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0">
+        <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden min-h-0">
           
           {/* Canvas area */}
-          <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+          <div className="flex-1 flex flex-col min-w-0 flex-shrink-0">
             
             {/* Toolbar */}
-            <div className="px-3 sm:px-4 py-2 sm:py-3 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center gap-2 sm:gap-3 text-xs flex-shrink-0">
+            <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-slate-950/70 border-b border-slate-800 flex flex-wrap items-center gap-2 sm:gap-3 text-xs flex-shrink-0">
               <button
+                type="button"
                 onClick={handleRotate}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition-colors border border-slate-700"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-medium transition-colors border border-slate-700 text-xs"
               >
                 <RotateCw className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="hidden sm:inline">Rotate</span>
+                <span>Rotate</span>
               </button>
 
               <button
+                type="button"
                 onClick={handleResetCrop}
-                className="flex items-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium transition-colors border border-slate-700"
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-medium transition-colors border border-slate-700 text-xs"
               >
                 <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="hidden sm:inline">Reset</span>
+                <span>Reset</span>
               </button>
 
               <div className="flex items-center gap-1.5 sm:gap-2 ml-auto">
@@ -507,22 +510,24 @@ export default function ImageCropModal({ imageUrl, fileName, isOpen, onClose, on
                   max="300"
                   value={zoom * 100}
                   onChange={(e) => setZoom(parseInt(e.target.value) / 100)}
-                  className="w-20 sm:w-32 accent-indigo-500 h-1.5"
+                  className="w-20 sm:w-32 accent-indigo-500 h-2 cursor-pointer"
                 />
                 <ZoomIn className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-slate-400 font-mono text-[10px] sm:text-[11px] w-10 text-right">{Math.round(zoom * 100)}%</span>
+                <span className="text-slate-400 font-mono text-[10px] sm:text-[11px] w-9 text-right">{Math.round(zoom * 100)}%</span>
               </div>
             </div>
 
             {/* Canvas container */}
             <div
               ref={containerRef}
-              className="flex-1 bg-[#0a0e17] relative overflow-hidden min-h-[250px] sm:min-h-[300px]"
+              className="bg-[#0a0e17] relative overflow-hidden h-[260px] sm:h-[320px] lg:h-full flex-1"
+              style={{ touchAction: 'none' }}
             >
               {imgLoaded ? (
                 <canvas
                   ref={canvasRef}
-                  className="absolute inset-0 w-full h-full"
+                  className="absolute inset-0 w-full h-full touch-none select-none"
+                  style={{ touchAction: 'none' }}
                   onMouseDown={handlePointerDown}
                   onMouseMove={handlePointerMove}
                   onMouseUp={handlePointerUp}
@@ -540,54 +545,52 @@ export default function ImageCropModal({ imageUrl, fileName, isOpen, onClose, on
           </div>
 
           {/* Side panel */}
-          <div className="w-full lg:w-64 bg-slate-950 border-t lg:border-t-0 lg:border-l border-slate-800 p-3 sm:p-4 flex flex-col gap-3 sm:gap-4 flex-shrink-0">
+          <div className="w-full lg:w-64 bg-slate-950 border-t lg:border-t-0 lg:border-l border-slate-800 p-3.5 sm:p-4 flex flex-col gap-3.5 sm:gap-4 flex-shrink-0">
             
             {/* Preview */}
             <div className="space-y-2">
               <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Crop Preview</h4>
-              <div className="bg-[#0a0e17] rounded-xl border border-slate-800 p-2 sm:p-3 flex items-center justify-center min-h-[100px] sm:min-h-[140px]">
+              <div className="bg-[#0a0e17] rounded-xl border border-slate-800 p-2 sm:p-3 flex items-center justify-center min-h-[90px] sm:min-h-[140px]">
                 <canvas
                   ref={previewCanvasRef}
-                  className="max-w-full max-h-[100px] sm:max-h-[130px] rounded-md shadow-lg"
+                  className="max-w-full max-h-[90px] sm:max-h-[130px] rounded-md shadow-lg"
                 />
               </div>
             </div>
 
             {/* Instructions */}
             <div className="space-y-2 text-[10px] sm:text-[11px] text-slate-400">
-              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">How to use</h4>
+              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Touch Controls</h4>
               <div className="space-y-1.5">
                 <div className="flex items-start gap-2">
-                  <Move className="w-3 h-3 text-indigo-400 mt-0.5 flex-shrink-0" />
-                  <span>Drag <strong className="text-white">inside</strong> the crop box to move it</span>
+                  <Move className="w-3.5 h-3.5 text-indigo-400 mt-0.5 flex-shrink-0" />
+                  <span>Drag <strong className="text-white">inside box</strong> to reposition</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <Crop className="w-3 h-3 text-violet-400 mt-0.5 flex-shrink-0" />
-                  <span>Drag <strong className="text-white">corners/edges</strong> to resize</span>
+                  <Crop className="w-3.5 h-3.5 text-violet-400 mt-0.5 flex-shrink-0" />
+                  <span>Drag <strong className="text-white">corner handles</strong> to resize</span>
                 </div>
                 <div className="flex items-start gap-2">
-                  <ZoomIn className="w-3 h-3 text-cyan-400 mt-0.5 flex-shrink-0" />
-                  <span>Use <strong className="text-white">zoom slider</strong> to zoom in/out</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <Move className="w-3 h-3 text-emerald-400 mt-0.5 flex-shrink-0" />
-                  <span>Drag <strong className="text-white">outside</strong> crop box to pan image</span>
+                  <ZoomIn className="w-3.5 h-3.5 text-cyan-400 mt-0.5 flex-shrink-0" />
+                  <span>Use <strong className="text-white">zoom slider</strong> to scale</span>
                 </div>
               </div>
             </div>
 
             {/* Actions */}
-            <div className="mt-auto space-y-2 pt-2">
+            <div className="sticky bottom-0 bg-slate-950/95 backdrop-blur-md pt-3 pb-4 sm:pb-0 space-y-2 mt-auto border-t lg:border-t-0 border-slate-800/80 -mx-3.5 sm:mx-0 px-3.5 sm:px-0">
               <button
+                type="button"
                 onClick={handleApply}
-                className="w-full py-2.5 sm:py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-violet-600/30 flex items-center justify-center gap-2 transition-all active:scale-95"
               >
-                <Check className="w-4 h-4" />
+                <Check className="w-4 h-4 text-emerald-300" />
                 <span>Apply Crop</span>
               </button>
               <button
+                type="button"
                 onClick={onClose}
-                className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold text-xs border border-slate-700 transition-colors"
               >
                 Cancel
               </button>

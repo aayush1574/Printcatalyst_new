@@ -62,11 +62,11 @@ async function runTests() {
 
   const serverProcess = require('child_process').fork('./server/server.js', [], {
     env: { ...process.env, PORT: String(TEST_PORT) },
-    silent: true
+    silent: false
   });
 
-  // Poll until server responds
-  function pollServer(retries = 15) {
+  // Poll until server responds (allows up to 25s for remote Atlas handshake)
+  function pollServer(retries = 50) {
     return new Promise((resolve, reject) => {
       let attempts = 0;
       const interval = setInterval(() => {

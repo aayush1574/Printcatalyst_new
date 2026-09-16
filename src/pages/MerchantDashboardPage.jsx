@@ -4,13 +4,13 @@ import {
   Printer, LayoutDashboard, QrCode, Settings, Sliders,
   TrendingUp, Download, Plus, CheckCircle, Clock, AlertTriangle,
   Play, RefreshCw, Smartphone, Layers, Eye, FileText, Check, ShieldCheck, ChevronRight,
-  Wifi, WifiOff, Sparkles, User, HelpCircle, Volume2, LogOut, Lock, X, Menu, ChevronDown, Trash2, ChevronLeft, Copy, Monitor
+  Wifi, WifiOff, Sparkles, User, HelpCircle, Volume2, LogOut, Lock, X, Menu, ChevronDown, Trash2, ChevronLeft, Copy
 } from 'lucide-react';
 import QRCodeLib from 'qrcode';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { API_BASE } from '../config';
-import { downloadDocument, executePrintWithPC } from '../utils/downloadHelper';
+import { downloadDocument } from '../utils/downloadHelper';
 import DocumentStudioModal from '../components/DocumentStudioModal';
 import StandeeGeneratorModal from '../components/StandeeGeneratorModal';
 import PrinterSettingsModal from '../components/PrinterSettingsModal';
@@ -42,7 +42,6 @@ export default function MerchantDashboardPage() {
   const [printerSelectOpen, setPrinterSelectOpen] = useState(false);
   const [printerSelectOrderId, setPrinterSelectOrderId] = useState(null);
   const [printerSelectOrder, setPrinterSelectOrder] = useState(null);
-  const [printerSelectMode, setPrinterSelectMode] = useState('spool'); // 'spool' | 'browser'
 
   // Printer Management State
   const [refreshingPrinters, setRefreshingPrinters] = useState(false);
@@ -187,21 +186,16 @@ export default function MerchantDashboardPage() {
   };
 
   // Open printer selection modal before printing (intercepts all print actions)
-  const openPrinterSelect = (orderId, order, mode = 'spool') => {
+  const openPrinterSelect = (orderId, order) => {
     setPrinterSelectOrderId(orderId);
     setPrinterSelectOrder(order || null);
-    setPrinterSelectMode(mode);
     setPrinterSelectOpen(true);
   };
 
   // After user selects printer from the modal
   const handlePrinterSelectConfirm = (selectedPrinterId) => {
     setPrinterSelectOpen(false);
-    if (printerSelectMode === 'browser') {
-      executeBrowserPrint(printerSelectOrder);
-    } else {
-      handleReleaseOrder(printerSelectOrderId, selectedPrinterId);
-    }
+    handleReleaseOrder(printerSelectOrderId, selectedPrinterId);
   };
 
   const [downloadingDocKey, setDownloadingDocKey] = useState(null);
@@ -218,17 +212,6 @@ export default function MerchantDashboardPage() {
     } finally {
       setTimeout(() => setDownloadingDocKey(null), 1500);
     }
-  };
-
-  // Direct Browser / PC Print (Opens classic native OS / browser printer selection dialog)
-  const executeBrowserPrint = (order) => {
-    executePrintWithPC(order);
-  };
-
-  // Legacy wrapper (for calls that still use handleBrowserPrint)
-  const handleBrowserPrint = (order) => {
-    if (!order) return;
-    executePrintWithPC(order);
   };
 
   // Save Printer
@@ -717,22 +700,6 @@ export default function MerchantDashboardPage() {
                                   </button>
                                 )}
 
-                                {/* Print with PC Button (Direct Native Browser / System Dialog) */}
-                                {ord.status !== 'CANCELLED' && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      executeBrowserPrint(ord);
-                                    }}
-                                    className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-indigo-950/90 hover:bg-indigo-900 text-indigo-300 hover:text-white font-bold text-[10px] sm:text-xs shadow-sm flex items-center gap-1 transition-all border border-indigo-700/60 hover:border-indigo-500 active:scale-95"
-                                    title="Print with PC (Opens classic browser print dialog to easily select any local printer)"
-                                  >
-                                    <Monitor className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400" />
-                                    <span>Print with PC</span>
-                                  </button>
-                                )}
-
                                 {/* Print / Reprint Button (Silent Hardware Spooler) */}
                                 {ord.status !== 'CANCELLED' && (
                                   <button
@@ -740,7 +707,7 @@ export default function MerchantDashboardPage() {
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       if (printers.length > 0) {
-                                        openPrinterSelect(ord.id, ord, 'spool');
+                                        openPrinterSelect(ord.id, ord);
                                       } else {
                                         handleReleaseOrder(ord.id);
                                       }
@@ -803,13 +770,12 @@ export default function MerchantDashboardPage() {
                   onOpenStudio={() => { setMobileDetailOpen(false); setIsStudioOpen(true); }}
                   onRelease={(orderId) => {
                     if (printers.length > 0) {
-                      openPrinterSelect(orderId, selectedOrder, 'spool');
+                      openPrinterSelect(orderId, selectedOrder);
                     } else {
                       handleReleaseOrder(orderId);
                     }
                   }}
                   onReject={handleRejectOrder}
-                  onBrowserPrint={handleBrowserPrint}
                 />
               </div>
             </div>
@@ -1393,13 +1359,12 @@ export default function MerchantDashboardPage() {
                 onOpenStudio={() => { setMobileDetailOpen(false); setIsStudioOpen(true); }}
                 onRelease={(orderId) => {
                   if (printers.length > 0) {
-                    openPrinterSelect(orderId, selectedOrder, 'spool');
+                    openPrinterSelect(orderId, selectedOrder);
                   } else {
                     handleReleaseOrder(orderId);
                   }
                 }}
                 onReject={handleRejectOrder}
-                onBrowserPrint={handleBrowserPrint}
               />
             </div>
           </div>
@@ -1413,7 +1378,6 @@ export default function MerchantDashboardPage() {
         isOpen={isStudioOpen}
         onClose={() => setIsStudioOpen(false)}
         onRelease={handleReleaseOrder}
-        onBrowserPrint={executeBrowserPrint}
       />
 
       <StandeeGeneratorModal
@@ -1573,7 +1537,7 @@ function PrinterSelectModal({ printers, mode, onConfirm, onCancel }) {
 
 
 /* ─── Order Detail Panel (reusable between desktop sidebar and mobile slide-over) ─── */
-function OrderDetailPanel({ selectedOrder, printers, onOpenStudio, onRelease, onReject, onBrowserPrint, onDownloadDocument, downloadingDocKey }) {
+function OrderDetailPanel({ selectedOrder, printers, onOpenStudio, onRelease, onReject, onDownloadDocument, downloadingDocKey }) {
   if (!selectedOrder) {
     return (
       <div className="text-center py-16 text-slate-500 text-xs">
@@ -1668,28 +1632,17 @@ function OrderDetailPanel({ selectedOrder, printers, onOpenStudio, onRelease, on
       {/* Action Buttons */}
       <div className="space-y-2 pt-2">
         {selectedOrder.status !== 'CANCELLED' && (
-          <div className="space-y-2">
-            <button
-              onClick={() => onRelease(selectedOrder.id)}
-              className={`w-full py-2.5 rounded-xl font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${
-                selectedOrder.status === 'COMPLETED'
-                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
-                  : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
-              }`}
-            >
-              <Printer className="w-4 h-4" />
-              <span>{selectedOrder.status === 'PRINTING' || selectedOrder.status === 'IN_SPOOL' ? 'Printing...' : selectedOrder.status === 'COMPLETED' ? 'Reprint (Silent Spool)' : 'Print Now (Silent Spool)'}</span>
-            </button>
-
-            <button
-              onClick={() => onBrowserPrint && onBrowserPrint(selectedOrder)}
-              className="w-full py-2.5 rounded-xl bg-indigo-950/90 hover:bg-indigo-900 text-indigo-200 hover:text-white border border-indigo-700/60 hover:border-indigo-500 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
-              title="Opens classic browser print dialog to easily select any PC printer"
-            >
-              <Monitor className="w-4 h-4 text-indigo-400" />
-              <span>Print with PC (Select Printer Dialog)</span>
-            </button>
-          </div>
+          <button
+            onClick={() => onRelease(selectedOrder.id)}
+            className={`w-full py-2.5 rounded-xl font-bold text-xs shadow-lg flex items-center justify-center gap-2 transition-all active:scale-95 ${
+              selectedOrder.status === 'COMPLETED'
+                ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+            }`}
+          >
+            <Printer className="w-4 h-4" />
+            <span>{selectedOrder.status === 'PRINTING' || selectedOrder.status === 'IN_SPOOL' ? 'Printing...' : selectedOrder.status === 'COMPLETED' ? 'Reprint (Silent Spool)' : 'Print Now (Silent Spool)'}</span>
+          </button>
         )}
 
         {selectedOrder.status !== 'CANCELLED' && (

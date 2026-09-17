@@ -21,7 +21,7 @@
       "planExpiresAt": "2027-09-08T05:49:18.839Z",
       "printCredits": 10000,
       "createdAt": "2026-09-08T05:49:18.839Z",
-      "agentLastHeartbeat": "2026-09-17T06:39:28.490Z"
+      "agentLastHeartbeat": "2026-09-17T06:48:16.028Z"
     }
   ],
   "pricing": {
@@ -262,17 +262,17 @@
       "status": "READY_TO_PRINT",
       "paymentStatus": "PAID",
       "paymentMethod": "UPI",
-      "upiRef": "UPI-627171029",
+      "upiRef": "UPI-627883449",
       "totalAmount": 8,
       "discountApplied": 0,
       "finalAmount": 8,
-      "createdAt": "2026-09-17T06:39:31.029Z",
-      "updatedAt": "2026-09-17T06:39:31.029Z",
+      "createdAt": "2026-09-17T06:51:23.449Z",
+      "updatedAt": "2026-09-17T06:51:23.449Z",
       "pickupToken": "31",
       "items": [
         {
           "fileName": "IMG-20260915-WA0009.png",
-          "fileUrl": "/uploads/files-1789627171028-516709576.png",
+          "fileUrl": "/uploads/files-1789627883448-629111126.png",
           "dataUrl": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
           "pageCount": 1,
           "copies": 1,
@@ -288,11 +288,11 @@
       "assignedPrinterName": "Canon Inkjet Type1 Class Driver",
       "logs": [
         {
-          "timestamp": "2026-09-17T06:39:31.029Z",
+          "timestamp": "2026-09-17T06:51:23.449Z",
           "text": "Order created via QR_PORTAL"
         },
         {
-          "timestamp": "2026-09-17T06:39:31.029Z",
+          "timestamp": "2026-09-17T06:51:23.449Z",
           "text": "UPI Payment of ₹8 verified"
         }
       ]
@@ -2172,5 +2172,5 @@
   ],
   "supportEnquiries": [],
   "_id": "main_state",
-  "updatedAt": "2026-09-17T06:39:29.496Z"
+  "updatedAt": "2026-09-17T06:48:17.032Z"
 }

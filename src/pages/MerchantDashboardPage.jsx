@@ -17,6 +17,32 @@ import PrinterSettingsModal from '../components/PrinterSettingsModal';
 import ManualOrderModal from '../components/ManualOrderModal';
 import { OrderCardSkeleton, MetricsSkeleton } from '../components/LoadingSkeleton';
 
+// Helper to filter and keep ONLY currently connected, physical hardware printers
+export function isPhysicalConnectedPrinter(p) {
+  if (!p || !p.name) return false;
+  const name = p.name.toLowerCase();
+  
+  // Filter out software virtual printers (OneNote, PDF writers, XPS, Fax, etc.)
+  if (
+    name.includes('onenote') ||
+    name.includes('print to pdf') ||
+    name.includes('xps document') ||
+    name.includes('fax') ||
+    name.includes('pdf writer') ||
+    name.includes('microsoft print') ||
+    name.includes('root print')
+  ) {
+    return false;
+  }
+
+  // Must not be offline
+  if (p.status === 'OFFLINE' || p.connected === false) {
+    return false;
+  }
+
+  return true;
+}
+
 export default function MerchantDashboardPage() {
   const { merchant, setMerchant, token, logout } = useAuth();
   const { connected, latestEvent, playOrderChime } = useSocket();
@@ -30,6 +56,11 @@ export default function MerchantDashboardPage() {
   const [copiedPortalLink, setCopiedPortalLink] = useState(false);
   const [mobileDetailOpen, setMobileDetailOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Filter out virtual/software and offline printers so ONLY currently connected printers are displayed
+  const connectedPrinters = useMemo(() => {
+    return printers.filter(isPhysicalConnectedPrinter);
+  }, [printers]);
 
   // Modals
   const [isStudioOpen, setIsStudioOpen] = useState(false);
@@ -728,7 +759,7 @@ export default function MerchantDashboardPage() {
                                     type="button"
                                     onClick={(e) => {
                                       e.stopPropagation();
-                                      if (printers.length > 0) {
+                                      if (connectedPrinters.length > 0) {
                                         openPrinterSelect(ord.id, ord);
                                       } else {
                                         handleReleaseOrder(ord.id);
@@ -786,12 +817,12 @@ export default function MerchantDashboardPage() {
               <div className="hidden lg:flex w-96 bg-slate-950 p-5 overflow-y-auto flex-col space-y-5 flex-shrink-0 border-l border-slate-800/80">
                 <OrderDetailPanel
                   selectedOrder={selectedOrder}
-                  printers={printers}
+                  printers={connectedPrinters}
                   downloadingDocKey={downloadingDocKey}
                   onDownloadDocument={handleDownloadDocument}
                   onOpenStudio={() => { setMobileDetailOpen(false); setIsStudioOpen(true); }}
                   onRelease={(orderId) => {
-                    if (printers.length > 0) {
+                    if (connectedPrinters.length > 0) {
                       openPrinterSelect(orderId, selectedOrder);
                     } else {
                       handleReleaseOrder(orderId);
@@ -811,9 +842,9 @@ export default function MerchantDashboardPage() {
                 <div>
                   <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
                     <Printer className="w-5 h-5 text-indigo-400" />
-                    Connected Printers & Auto-Routing
+                    Connected Printers ({connectedPrinters.length})
                   </h2>
-                  <p className="text-slate-400 text-xs">Manage local USB / Wi-Fi printers, queues, status checks and 1-click silent spooling</p>
+                  <p className="text-slate-400 text-xs">Only currently connected, physical hardware printers are displayed and active for spooling</p>
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
@@ -907,14 +938,14 @@ export default function MerchantDashboardPage() {
               </div>
 
               {/* Empty State */}
-              {printers.length === 0 && (
+              {connectedPrinters.length === 0 && (
                 <div className="p-8 sm:p-12 rounded-2xl bg-slate-950/80 border border-slate-800 text-center space-y-3 max-w-lg mx-auto shadow-xl">
                   <div className="w-14 h-14 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center mx-auto border border-indigo-500/30">
                     <Printer className="w-7 h-7" />
                   </div>
-                  <h3 className="text-base font-bold text-white">No Printers Added Yet</h3>
+                  <h3 className="text-base font-bold text-white">No Connected Printers Found</h3>
                   <p className="text-xs text-slate-400 leading-relaxed max-w-md mx-auto">
-                    Add your printer manually or download the 1-click Windows connector to auto-detect your connected HP, Canon, Epson or Brother printers.
+                    Ensure your printer is plugged in and powered on, or run the 1-click Windows connector to automatically detect your connected printers.
                   </p>
                   <div className="flex items-center justify-center gap-3 pt-3 flex-wrap">
                     <button
@@ -941,7 +972,7 @@ export default function MerchantDashboardPage() {
 
               {/* Printer Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                {printers.map((p) => (
+                {connectedPrinters.map((p) => (
                   <div key={p.id} className="bg-slate-950 p-4 sm:p-5 rounded-2xl border border-slate-800 space-y-3 shadow-md hover:border-slate-700 transition-all flex flex-col justify-between">
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">
@@ -1229,7 +1260,7 @@ export default function MerchantDashboardPage() {
 
                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-1">
                   <span className="text-slate-400 font-medium text-[11px]">Printers</span>
-                  <div className="text-2xl font-black text-cyan-400 font-mono">{printers.length}</div>
+                  <div className="text-2xl font-black text-cyan-400 font-mono">{connectedPrinters.length}</div>
                   <span className="text-[10px] text-cyan-300">Connected</span>
                 </div>
               </div>
@@ -1375,12 +1406,12 @@ export default function MerchantDashboardPage() {
             <div className="flex-1 overflow-y-auto p-4">
               <OrderDetailPanel
                 selectedOrder={selectedOrder}
-                printers={printers}
+                printers={connectedPrinters}
                 downloadingDocKey={downloadingDocKey}
                 onDownloadDocument={handleDownloadDocument}
                 onOpenStudio={() => { setMobileDetailOpen(false); setIsStudioOpen(true); }}
                 onRelease={(orderId) => {
-                  if (printers.length > 0) {
+                  if (connectedPrinters.length > 0) {
                     openPrinterSelect(orderId, selectedOrder);
                   } else {
                     handleReleaseOrder(orderId);
@@ -1396,7 +1427,7 @@ export default function MerchantDashboardPage() {
       {/* Modals */}
       <DocumentStudioModal
         order={selectedOrder}
-        printers={printers}
+        printers={connectedPrinters}
         isOpen={isStudioOpen}
         onClose={() => setIsStudioOpen(false)}
         onRelease={handleReleaseOrder}
@@ -1409,7 +1440,7 @@ export default function MerchantDashboardPage() {
       />
 
       <PrinterSettingsModal
-        printers={printers}
+        printers={connectedPrinters}
         initialPrinter={selectedEditPrinter}
         isOpen={isPrinterSettingsOpen}
         onClose={() => {
@@ -1422,7 +1453,7 @@ export default function MerchantDashboardPage() {
       />
 
       <ManualOrderModal
-        printers={printers}
+        printers={connectedPrinters}
         isOpen={isManualOrderOpen}
         onClose={() => setIsManualOrderOpen(false)}
         onCreateOrder={async (orderPayload) => {
@@ -1442,7 +1473,7 @@ export default function MerchantDashboardPage() {
       {/* Printer Select Modal */}
       {printerSelectOpen && (
         <PrinterSelectModal
-          printers={printers}
+          printers={connectedPrinters}
           mode={printerSelectMode}
           onConfirm={handlePrinterSelectConfirm}
           onCancel={() => setPrinterSelectOpen(false)}

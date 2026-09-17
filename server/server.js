@@ -251,6 +251,30 @@ function enqueuePrintAction(shopId, action) {
   }
 }
 
+// Helper to identify virtual/software print drivers that are not real physical printers
+function isVirtualPrinterName(name = '') {
+  if (!name) return false;
+  const lower = name.toLowerCase();
+  return (
+    lower.includes('onenote') ||
+    lower.includes('print to pdf') ||
+    lower.includes('xps document') ||
+    lower.includes('fax') ||
+    lower.includes('pdf writer') ||
+    lower.includes('microsoft print') ||
+    lower.includes('root print')
+  );
+}
+
+function getConnectedPhysicalPrinters(shopId) {
+  const printers = db.getPrinters(shopId);
+  return printers.filter(p => 
+    !isVirtualPrinterName(p.name) && 
+    p.status !== 'OFFLINE' && 
+    p.connected !== false
+  );
+}
+
 function broadcastToShop(shopId, payload) {
   try {
     const msg = JSON.stringify(payload);
@@ -322,22 +346,31 @@ wss.on('connection', (ws, req) => {
         }
       } else if (data.type === 'AUTO_DISCOVERED_PRINTERS') {
         const shopId = data.shopId || 'shop_demo';
-        const discovered = Array.isArray(data.printers) ? data.printers : [];
+        const rawDiscovered = Array.isArray(data.printers) ? data.printers : [];
+        const discovered = rawDiscovered.filter(p => !isVirtualPrinterName(p.name));
         const currentPrinters = db.getPrinters(shopId);
 
+        // Delete any virtual printers in db
+        currentPrinters.forEach((cp) => {
+          if (isVirtualPrinterName(cp.name)) {
+            db.deletePrinter(cp.id);
+          }
+        });
+
         discovered.forEach((disc) => {
-          const existing = currentPrinters.find((p) => p.name === disc.name || p.id === disc.id);
+          const existing = currentPrinters.find((p) => p.name.toLowerCase() === disc.name.toLowerCase() || p.id === disc.id);
           if (!existing) {
             db.addPrinter({
               id: disc.id || 'prn_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
               shopId,
               name: disc.name,
-              type: disc.type || 'MONO_LASER',
+              type: disc.type || (disc.name.match(/color|photo|tank/i) ? 'COLOR_INKJET_PHOTO' : 'MONO_LASER'),
               connection: disc.connection || 'LOCAL_USB',
               status: 'READY',
+              connected: true,
               isDefaultMono: disc.isDefaultMono ?? true,
               isDefaultColor: disc.isDefaultColor ?? false,
-              supportsColor: disc.supportsColor ?? false,
+              supportsColor: disc.supportsColor ?? (disc.name.match(/color|photo|tank/i) !== null),
               supportsDuplex: disc.supportsDuplex ?? true,
               autoDetected: true,
               lastSeen: new Date().toISOString()
@@ -345,6 +378,7 @@ wss.on('connection', (ws, req) => {
           } else {
             db.updatePrinter(existing.id, {
               status: 'READY',
+              connected: true,
               autoDetected: true,
               lastSeen: new Date().toISOString()
             });
@@ -353,7 +387,7 @@ wss.on('connection', (ws, req) => {
 
         broadcastToShop(shopId, {
           type: 'PRINTERS_UPDATED',
-          printers: db.getPrinters(shopId),
+          printers: getConnectedPhysicalPrinters(shopId),
           autoDetectedCount: discovered.length
         });
       }
@@ -941,8 +975,8 @@ app.post('/api/v1/jobs', async (req, res) => {
 
     const finalAmount = Math.max(pricing.minOrderAmount || 5, parseFloat((totalAmount - discountApplied).toFixed(2)));
 
-    // Auto assign intelligent printer
-    const printers = db.getPrinters(targetShopId);
+    // Auto assign intelligent printer (only currently connected physical hardware printer)
+    const printers = getConnectedPhysicalPrinters(targetShopId);
     const requiresColor = (items || []).some(i => i.colorMode === 'COLOR');
     const assignedPrinter = printers.find(p => requiresColor ? p.supportsColor : (p.isDefaultMono || p.supportsColor)) || printers[0];
 
@@ -1014,7 +1048,7 @@ app.post('/api/v1/jobs/release/:id', (req, res) => {
   if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
   const { targetPrinterId } = req.body;
-  const printers = db.getPrinters(order.shopId);
+  const printers = getConnectedPhysicalPrinters(order.shopId);
   const targetPrinter = targetPrinterId ? printers.find(p => p.id === targetPrinterId) : printers.find(p => p.id === order.assignedPrinterId) || printers[0];
 
   const updatedLogs = [
@@ -1077,11 +1111,20 @@ app.post('/api/v1/jobs/reject/:id', (req, res) => {
   res.json({ success: true, order: updated });
 });
 
-// 6. Printers & Routing Hub API
+
+// 6. Printers & Routing Hub API - returns only currently connected physical printers
 app.get('/api/v1/printers/list', (req, res) => {
   const shopId = req.query.shopId || 'shop_demo';
+  const showAll = req.query.all === 'true';
   const printers = db.getPrinters(shopId);
-  res.json(printers);
+
+  if (showAll) {
+    return res.json(printers);
+  }
+
+  // Only return currently connected, non-virtual physical printers
+  const connected = getConnectedPhysicalPrinters(shopId);
+  res.json(connected);
 });
 
 app.post('/api/v1/printers/add', (req, res) => {
@@ -1093,6 +1136,7 @@ app.post('/api/v1/printers/add', (req, res) => {
     type: req.body.type || 'MONO_LASER',
     connection: req.body.connection || 'LOCAL_USB',
     status: 'READY',
+    connected: true,
     isDefaultMono: req.body.isDefaultMono || false,
     isDefaultColor: req.body.isDefaultColor || false,
     supportsColor: req.body.supportsColor || false,
@@ -1107,14 +1151,14 @@ app.post('/api/v1/printers/add', (req, res) => {
   };
 
   const added = db.addPrinter(newPrinter);
-  broadcastToShop(shopId, { type: 'PRINTERS_UPDATED', printers: db.getPrinters(shopId) });
+  broadcastToShop(shopId, { type: 'PRINTERS_UPDATED', printers: getConnectedPhysicalPrinters(shopId) });
   res.json({ success: true, printer: added });
 });
 
 app.put('/api/v1/printers/:id', (req, res) => {
   const updated = db.updatePrinter(req.params.id, req.body);
   if (updated) {
-    broadcastToShop(updated.shopId, { type: 'PRINTERS_UPDATED', printers: db.getPrinters(updated.shopId) });
+    broadcastToShop(updated.shopId, { type: 'PRINTERS_UPDATED', printers: getConnectedPhysicalPrinters(updated.shopId) });
     return res.json({ success: true, printer: updated });
   }
   res.status(404).json({ success: false, message: 'Printer not found' });
@@ -1124,16 +1168,15 @@ app.delete('/api/v1/printers/:id', (req, res) => {
   const printer = db.getPrinterById(req.params.id);
   if (printer) {
     db.deletePrinter(req.params.id);
-    broadcastToShop(printer.shopId, { type: 'PRINTERS_UPDATED', printers: db.getPrinters(printer.shopId) });
+    broadcastToShop(printer.shopId, { type: 'PRINTERS_UPDATED', printers: getConnectedPhysicalPrinters(printer.shopId) });
     return res.json({ success: true });
   }
   res.status(404).json({ success: false, message: 'Printer not found' });
 });
 
-// Refresh printer status endpoint
+// Refresh printer status endpoint - returns and broadcasts only connected physical printers
 app.post('/api/v1/printers/refresh', (req, res) => {
   const shopId = req.query.shopId || req.body.shopId || 'shop_demo';
-  const printers = db.getPrinters(shopId);
   const shop = db.getShopById(shopId);
 
   // Check agent heartbeat age
@@ -1146,15 +1189,17 @@ app.post('/api/v1/printers/refresh', (req, res) => {
     }
   }
 
+  const connectedPrinters = getConnectedPhysicalPrinters(shopId);
+
   broadcastToShop(shopId, {
     type: 'PRINTERS_UPDATED',
-    printers,
+    printers: connectedPrinters,
     agentStatus
   });
 
   res.json({
     success: true,
-    printers,
+    printers: connectedPrinters,
     agentStatus,
     timestamp: new Date().toISOString()
   });
@@ -1213,8 +1258,24 @@ app.post('/api/v1/printers/auto-detect', (req, res) => {
   const { shopId = 'shop_demo', hostname, printers = [] } = req.body;
   const currentPrinters = db.getPrinters(shopId);
 
+  // Filter out any virtual printers from payload
+  const physicalReported = printers.filter(p => !isVirtualPrinterName(p.name));
+  const reportedNames = new Set(physicalReported.map(p => p.name.toLowerCase()));
+
+  // 1. Clean up virtual printers and mark any unattached auto-detected printers as OFFLINE
+  currentPrinters.forEach((cp) => {
+    if (isVirtualPrinterName(cp.name)) {
+      db.deletePrinter(cp.id);
+    } else if (cp.autoDetected && !reportedNames.has(cp.name.toLowerCase())) {
+      db.updatePrinter(cp.id, {
+        status: 'OFFLINE',
+        connected: false
+      });
+    }
+  });
+
   let addedCount = 0;
-  printers.forEach((disc) => {
+  physicalReported.forEach((disc) => {
     if (!disc.name) return;
     const existing = currentPrinters.find((p) => p.name.toLowerCase() === disc.name.toLowerCase());
     if (!existing) {
@@ -1225,6 +1286,7 @@ app.post('/api/v1/printers/auto-detect', (req, res) => {
         type: disc.type || (disc.name.match(/color|photo|tank/i) ? 'COLOR_INKJET_PHOTO' : 'MONO_LASER'),
         connection: 'LOCAL_USB',
         status: 'READY',
+        connected: true,
         isDefaultMono: disc.isDefault ?? true,
         isDefaultColor: disc.supportsColor ?? false,
         supportsColor: disc.supportsColor ?? (disc.name.match(/color|photo|tank/i) !== null),
@@ -1236,6 +1298,7 @@ app.post('/api/v1/printers/auto-detect', (req, res) => {
     } else {
       db.updatePrinter(existing.id, {
         status: 'READY',
+        connected: true,
         autoDetected: true,
         lastSeen: new Date().toISOString()
       });
@@ -1253,18 +1316,18 @@ app.post('/api/v1/printers/auto-detect', (req, res) => {
     status: 'ONLINE'
   });
 
-  const allPrinters = db.getPrinters(shopId);
+  const allConnected = db.getPrinters(shopId).filter(p => !isVirtualPrinterName(p.name) && p.status !== 'OFFLINE' && p.connected !== false);
   broadcastToShop(shopId, {
     type: 'PRINTERS_UPDATED',
-    printers: allPrinters,
-    autoDetectedCount: printers.length
+    printers: allConnected,
+    autoDetectedCount: physicalReported.length
   });
 
   res.json({
     success: true,
-    message: `Discovered ${printers.length} printer(s)`,
+    message: `Discovered ${physicalReported.length} physical printer(s)`,
     addedCount,
-    totalPrinters: allPrinters.length
+    totalPrinters: allConnected.length
   });
 });
 
@@ -1293,9 +1356,13 @@ Write-Host "  Scanning Windows for installed USB, Wi-Fi and Network Printers..."
 Write-Host "----------------------------------------------------------------------" -ForegroundColor DarkGray
 Write-Host ""
 
-$installed = Get-Printer | Select-Object Name, DriverName, Default
-if (-not $installed) {
-  Write-Host " [!] No printers found. Please ensure your printer is turned on and connected." -ForegroundColor Yellow
+$installed = Get-CimInstance Win32_Printer | Where-Object {
+  $isVirtual = ($_.Name -match '(?i)pdf|xps|fax|onenote|writer|document writer|prompt|nul' -or $_.PortName -match '(?i)nul|prompt|file')
+  $isOffline = $_.WorkOffline
+  -not $isVirtual -and -not $isOffline
+}
+if (-not $installed -or $installed.Count -eq 0) {
+  Write-Host " [!] No physical connected printers found. Please ensure your printer is powered on and connected via USB/LAN." -ForegroundColor Yellow
 } else {
   $list = @()
   foreach ($p in $installed) {
@@ -1304,11 +1371,11 @@ if (-not $installed) {
     $list += @{
       name = $p.Name
       driver = $p.DriverName
-      isDefault = [bool]$p.Default
+      isDefault = [bool]($p.Default -or $p.PrinterStatus -eq 3)
       supportsColor = [bool]$isColor
       type = $type
     }
-    Write-Host ("   [+] Detected: " + $p.Name + " (" + $(if ($isColor) {'Color'} else {'Monochrome'}) + ")") -ForegroundColor Green
+    Write-Host ("   [+] Connected Physical Printer: " + $p.Name + " (" + $(if ($isColor) {'Color'} else {'Monochrome'}) + ") [Port: " + $p.PortName + "]") -ForegroundColor Green
   }
 
   $payload = @{

@@ -138,6 +138,27 @@ function printJob(order, targetPrinter, ws) {
           const copies = item.copies || 1;
           let copyNum = 0;
 
+          const ext = path.extname(localPath).toLowerCase();
+          const isImage = ['.jpg', '.jpeg', '.png', '.webp', '.bmp', '.gif', '.tiff', '.tif', '.ico'].includes(ext);
+
+          if (isImage) {
+            // High-Fidelity Fit-To-Page Native Windows Image Print Engine
+            const safeLocal = localPath.replace(/'/g, "''");
+            const safePrinter = pName.replace(/'/g, "''");
+            const psCmd = `powershell -NoProfile -Command "Add-Type -AssemblyName System.Drawing; $img=[System.Drawing.Image]::FromFile('${safeLocal}'); $pd=New-Object System.Drawing.Printing.PrintDocument; $pd.PrinterSettings.PrinterName='${safePrinter}'; if ($img.Width -gt $img.Height) { $pd.DefaultPageSettings.Landscape=$true } else { $pd.DefaultPageSettings.Landscape=$false }; $pd.DefaultPageSettings.Margins=New-Object System.Drawing.Printing.Margins(40,40,40,40); $pd.add_PrintPage({ param($s,$ev); $b=$ev.MarginBounds; $sc=[Math]::Min($b.Width/$img.Width, $b.Height/$img.Height); $dw=[int]($img.Width*$sc); $dh=[int]($img.Height*$sc); $dx=$b.Left+[int](($b.Width-$dw)/2); $dy=$b.Top+[int](($b.Height-$dh)/2); $ev.Graphics.InterpolationMode=[System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic; $ev.Graphics.SmoothingMode=[System.Drawing.Drawing2D.SmoothingMode]::HighQuality; $ev.Graphics.PixelOffsetMode=[System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality; $ev.Graphics.CompositingQuality=[System.Drawing.Drawing2D.CompositingQuality]::HighQuality; $ev.Graphics.DrawImage($img, (New-Object System.Drawing.Rectangle($dx,$dy,$dw,$dh))); $ev.HasMorePages=$false }); for ($i=1; $i -le ${copies}; $i++) { $pd.Print(); Start-Sleep -Milliseconds 400 }; $img.Dispose(); $pd.Dispose()"`;
+
+            exec(psCmd, (err) => {
+              if (err) {
+                console.error(`   ❌ Image print error: ${err.message}`);
+              } else {
+                printed++;
+                console.log(`   ✅ Image printed with Fit-To-Page (${copies} copy/copies): ${fileName}`);
+              }
+              printNext(idx + 1);
+            });
+            return;
+          }
+
           const sumatraPath = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'PrintCatalyst', 'bin', 'SumatraPDF.exe');
           if (fs.existsSync(sumatraPath)) {
             const paper = item.paperSize || 'A4';

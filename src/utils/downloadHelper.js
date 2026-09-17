@@ -322,9 +322,12 @@ export async function resolveImageToDataUrl(fileUrl, fileName = 'image.jpg', ord
     return fileUrl;
   }
 
-  // Fetch as Blob and convert to Base64
+  // Fetch as Blob and convert to Base64 or local Blob URL
   try {
     const blobData = await getBlobUrl(fileUrl, 'image/jpeg', order);
+    if (blobData?.blobUrl) {
+      return blobData.blobUrl;
+    }
     if (blobData?.dataUrl && blobData.dataUrl.startsWith('data:image/')) {
       return blobData.dataUrl;
     }
@@ -392,7 +395,7 @@ export async function executePrintWithPC(order) {
 
     // ─── 1. IMAGE PRINTING (ALL IMAGE FORMATS: JPG, PNG, WEBP, BMP, SVG, HEIC) ───
     if (isImage) {
-      // Pre-resolve all order item images in parallel into verified Data URLs
+      // Pre-resolve all order item images in parallel into verified Data URLs or Blob URLs
       const resolvedImages = await Promise.all(
         items.map(async (it) => {
           const u = it.dataUrl || it.previewUrl || it.fileUrl;
@@ -424,9 +427,13 @@ export async function executePrintWithPC(order) {
   <style>
     @page {
       size: auto;
-      margin: 0;
+      margin: 8mm;
     }
-    * { box-sizing: border-box; }
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
     body {
       margin: 0;
       padding: 16px;
@@ -441,17 +448,17 @@ export async function executePrintWithPC(order) {
     }
     .no-print {
       width: 100%;
-      max-width: 900px;
+      max-width: 850px;
       margin-bottom: 16px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 14px 22px;
+      padding: 12px 20px;
       background: #1e293b;
-      border-radius: 14px;
+      border-radius: 12px;
       border: 1px solid #334155;
       font-size: 13px;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.4);
     }
     .badge {
       background: #4f46e5;
@@ -467,7 +474,7 @@ export async function executePrintWithPC(order) {
       background: linear-gradient(135deg, #4f46e5, #6366f1);
       color: white;
       border: none;
-      padding: 9px 20px;
+      padding: 8px 18px;
       border-radius: 8px;
       font-weight: 700;
       cursor: pointer;
@@ -475,10 +482,10 @@ export async function executePrintWithPC(order) {
       box-shadow: 0 4px 12px rgba(79,70,229,0.4);
       transition: all 0.2s;
     }
-    .print-btn:hover { background: #4338ca; transform: translateY(-1px); }
+    .print-btn:hover { background: #4338ca; }
     .print-container {
       width: 100%;
-      max-width: 900px;
+      max-width: 850px;
       display: flex;
       flex-direction: column;
       gap: 20px;
@@ -487,7 +494,7 @@ export async function executePrintWithPC(order) {
     .print-page {
       width: 100%;
       background: white;
-      padding: 12px;
+      padding: 16px;
       border-radius: 12px;
       display: flex;
       justify-content: center;
@@ -496,51 +503,57 @@ export async function executePrintWithPC(order) {
     }
     .doc-img {
       max-width: 100%;
+      max-height: 80vh;
+      width: auto;
       height: auto;
-      max-height: 85vh;
       object-fit: contain;
       display: block;
       margin: 0 auto;
       border-radius: 4px;
     }
     @media print {
-      body {
-        margin: 0;
-        padding: 0;
-        background: transparent !important;
-        min-height: unset;
-        display: block;
+      html, body {
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        overflow: visible !important;
       }
       .no-print { display: none !important; }
       .print-container {
-        width: 100%;
-        max-width: 100%;
-        gap: 0;
-        display: block;
+        width: 100% !important;
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
       }
       .print-page {
-        width: 100vw;
-        height: 100vh;
-        max-width: 100vw;
-        max-height: 100vh;
-        padding: 0;
-        margin: 0;
+        width: 100% !important;
+        height: 100% !important;
+        max-height: 98vh !important;
+        padding: 0 !important;
+        margin: 0 !important;
         background: transparent !important;
-        box-shadow: none;
-        border-radius: 0;
-        page-break-after: always;
-        page-break-inside: avoid;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        page-break-after: always !important;
+        page-break-inside: avoid !important;
+        break-after: page !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        box-sizing: border-box !important;
       }
       .doc-img {
-        max-width: 100vw;
-        max-height: 100vh;
-        width: auto;
-        height: auto;
-        object-fit: contain;
-        border-radius: 0;
+        max-width: 100% !important;
+        max-height: 96vh !important;
+        width: auto !important;
+        height: auto !important;
+        object-fit: contain !important;
+        display: block !important;
+        margin: auto !important;
         image-rendering: -webkit-optimize-contrast;
       }
     }

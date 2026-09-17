@@ -1468,10 +1468,74 @@ while ($true) {
                 $ext = [System.IO.Path]::GetExtension($localPath).ToLower()
                 $printedThisFile = $false
 
-                # Method 1: SumatraPDF high-fidelity silent printing (PDFs, Images, XPS)
-                if (Test-Path $sumatraExe) {
+                # Method 1: High-Fidelity Fit-To-Page Native Windows Image Print Engine
+                # Scales any photo, screenshot or scan to fit the printable page area with crisp bicubic smoothing
+                $isImage = $ext -in @('.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp', '.tiff', '.tif', '.ico', '.svg', '.heic', '.heif', '.avif')
+                if ($isImage) {
                   try {
-                    Write-Host ("   [*] Sending to spooler: " + $pName + " (" + $copies + " copy/copies)") -ForegroundColor Cyan
+                    Write-Host ("   [*] Printing image (Fit-To-Page): " + $item.fileName + " (" + $copies + " copy/copies)") -ForegroundColor Cyan
+                    
+                    Add-Type -AssemblyName System.Drawing
+                    $img = [System.Drawing.Image]::FromFile($localPath)
+                    $pd = New-Object System.Drawing.Printing.PrintDocument
+                    $pd.PrinterSettings.PrinterName = $pName
+
+                    # Auto orientation: Landscape if image is wider than tall, else Portrait
+                    if ($img.Width -gt $img.Height) {
+                      $pd.DefaultPageSettings.Landscape = $true
+                    } else {
+                      $pd.DefaultPageSettings.Landscape = $false
+                    }
+
+                    # Safe 10mm margins (40/100 inch) to prevent hardware margin clipping
+                    $pd.DefaultPageSettings.Margins = New-Object System.Drawing.Printing.Margins(40, 40, 40, 40)
+
+                    $pd.add_PrintPage({
+                      param($sender, $ev)
+                      $bounds = $ev.MarginBounds
+                      
+                      # Calculate scale ratio to fit image completely within printable bounds without cropping
+                      $wRatio = $bounds.Width / $img.Width
+                      $hRatio = $bounds.Height / $img.Height
+                      $scale = [Math]::Min($wRatio, $hRatio)
+                      
+                      $destWidth = [int]($img.Width * $scale)
+                      $destHeight = [int]($img.Height * $scale)
+                      
+                      # Center on page
+                      $destX = $bounds.Left + [int](($bounds.Width - $destWidth) / 2)
+                      $destY = $bounds.Top + [int](($bounds.Height - $destHeight) / 2)
+                      
+                      # Studio-grade high-fidelity interpolation
+                      $ev.Graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+                      $ev.Graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
+                      $ev.Graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
+                      $ev.Graphics.CompositingQuality = [System.Drawing.Drawing2D.CompositingQuality]::HighQuality
+                      
+                      $destRect = New-Object System.Drawing.Rectangle($destX, $destY, $destWidth, $destHeight)
+                      $ev.Graphics.DrawImage($img, $destRect)
+                      $ev.HasMorePages = $false
+                    })
+
+                    for ($c = 1; $c -le $copies; $c++) {
+                      $pd.Print()
+                      if ($copies -gt 1) { Start-Sleep -Milliseconds 400 }
+                    }
+
+                    $img.Dispose()
+                    $pd.Dispose()
+
+                    $printedThisFile = $true
+                    Write-Host ("   [+] Image printed cleanly (Fit to Page): " + $item.fileName) -ForegroundColor Green
+                  } catch {
+                    Write-Host ("   [!] Native image print note: " + $_.Exception.Message) -ForegroundColor DarkGray
+                  }
+                }
+
+                # Method 2: SumatraPDF high-fidelity silent printing (PDFs, Documents)
+                if (-not $printedThisFile -and (Test-Path $sumatraExe)) {
+                  try {
+                    Write-Host ("   [*] Sending to SumatraPDF spooler: " + $pName + " (" + $copies + " copy/copies)") -ForegroundColor Cyan
                     $paper = if ($item.paperSize) { $item.paperSize } else { "A4" }
                     $copySetting = "fit,paper=" + $paper
                     $argStr = '-console -print-to "' + $pName + '" -print-settings "' + $copySetting + '" "' + $localPath + '"'
@@ -1488,17 +1552,6 @@ while ($true) {
                   } catch {
                     Write-Host ("   [!] Spool engine note: " + $_.Exception.Message) -ForegroundColor DarkGray
                   }
-                }
-
-                # Method 2: Image fallback via mspaint /pt
-                if (-not $printedThisFile -and ($ext -in @('.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp', '.tiff', '.tif', '.ico', '.svg', '.heic', '.heif', '.avif'))) {
-                  try {
-                    for ($c = 1; $c -le $copies; $c++) {
-                      Start-Process -FilePath "mspaint.exe" -ArgumentList @("/pt", $localPath, $pName) -Wait
-                    }
-                    $printedThisFile = $true
-                    Write-Host ("   [+] Dispatched via Windows Paint: " + $item.fileName) -ForegroundColor Green
-                  } catch {}
                 }
 
                 # Method 3: Plain text / CSV file fallback

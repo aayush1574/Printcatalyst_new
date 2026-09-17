@@ -2,14 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   Printer, Upload, FileText, CheckCircle2, QrCode,
-  ShieldCheck, Check, Copy, ArrowRight, RefreshCw, Sparkles, FileUp, Zap, LayoutGrid, Crop, Sliders
+  ShieldCheck, Check, Copy, ArrowRight, RefreshCw, Sparkles, FileUp, Zap, LayoutGrid, Sliders
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { API_BASE } from '../config';
 import { FILE_INPUT_ACCEPT_STR, isImageFile } from '../utils/downloadHelper';
 import MultiPhotoComposerModal from '../components/MultiPhotoComposerModal';
 import DocumentEditorModal from '../components/DocumentEditorModal';
-import ImageCropModal from '../components/ImageCropModal';
 import { compressFiles } from '../utils/imageCompressor';
 
 export default function CustomerPortalPage() {
@@ -27,8 +26,6 @@ export default function CustomerPortalPage() {
   const [isMultiPhotoOpen, setIsMultiPhotoOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
-  const [cropItem, setCropItem] = useState(null);
-  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -166,30 +163,6 @@ export default function CustomerPortalPage() {
 
   const removeItem = (id) => {
     setFiles((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const handleOpenCropModal = (item) => {
-    setCropItem(item);
-    setIsCropModalOpen(true);
-  };
-
-  const handleApplyCrop = (croppedUrl) => {
-    if (!cropItem) return;
-    setFiles((prev) =>
-      prev.map((f) =>
-        f.id === cropItem.id
-          ? {
-              ...f,
-              fileUrl: croppedUrl,
-              previewUrl: croppedUrl,
-              isEdited: true,
-              editSummary: 'Cropped & Zoomed'
-            }
-          : f
-      )
-    );
-    setIsCropModalOpen(false);
-    setCropItem(null);
   };
 
   const handleOpenEditor = (item) => {
@@ -485,22 +458,11 @@ export default function CustomerPortalPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 flex-wrap">
-                          {isImageFile(item.fileName, item.fileType) && (
-                            <button
-                              type="button"
-                              onClick={() => handleOpenCropModal(item)}
-                              className="text-xs text-cyan-300 hover:text-white font-semibold px-2.5 py-1 rounded-lg bg-cyan-600/30 hover:bg-cyan-600/50 transition-colors border border-cyan-500/30 flex items-center gap-1.5"
-                              title="Dynamic Interactive Crop & Zoom"
-                            >
-                              <Crop className="w-3.5 h-3.5 text-cyan-400" />
-                              <span>Crop & Zoom</span>
-                            </button>
-                          )}
                           <button
                             type="button"
                             onClick={() => handleOpenEditor(item)}
                             className="text-xs text-indigo-300 hover:text-white font-semibold px-2.5 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 transition-colors border border-indigo-500/30 flex items-center gap-1.5"
-                            title="Full Studio Document Editor (Crop, Resize, Filters, PDF)"
+                            title="Document Studio Editor (Rotate, Flip, Filters, Scan, PDF)"
                           >
                             <Sliders className="w-3.5 h-3.5 text-indigo-400" />
                             <span>Edit Studio</span>
@@ -572,38 +534,6 @@ export default function CustomerPortalPage() {
                           />
                         </div>
 
-                      </div>
-
-                      {/* Finishing & Paper GSM */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 text-xs pt-2 border-t border-white/5">
-                        <div>
-                          <label className="text-slate-400 block mb-1 font-medium text-[11px]">Paper Quality</label>
-                          <select
-                            value={item.paperType}
-                            onChange={(e) => updateItem(item.id, { paperType: e.target.value })}
-                            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
-                          >
-                            <option value="standard_75gsm">Standard 75 GSM Paper</option>
-                            <option value="bond_85gsm">Executive Bond 85 GSM</option>
-                            <option value="glossy_180gsm">Glossy Photo 180 GSM</option>
-                            <option value="cardstock_250gsm">Heavy Cardstock 250 GSM</option>
-                          </select>
-                        </div>
-
-                        <div>
-                          <label className="text-slate-400 block mb-1 font-medium text-[11px]">Finishing & Binding</label>
-                          <select
-                            value={item.finishing}
-                            onChange={(e) => updateItem(item.id, { finishing: e.target.value })}
-                            className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white text-xs focus:border-indigo-500 focus:outline-none"
-                          >
-                            <option value="none">No Finishing</option>
-                            <option value="stapling">Corner Staple</option>
-                            <option value="spiral_binding">Spiral Binding</option>
-                            <option value="hard_binding">Hard Project Binding</option>
-                            <option value="lamination_a4">A4 Lamination</option>
-                          </select>
-                        </div>
                       </div>
 
                     </div>
@@ -690,21 +620,7 @@ export default function CustomerPortalPage() {
               onAddComposedItem={handleAddComposedItem}
             />
 
-            {/* Dynamic Image Crop & Zoom Modal */}
-            {cropItem && (
-              <ImageCropModal
-                imageUrl={cropItem.fileUrl}
-                fileName={cropItem.fileName}
-                isOpen={isCropModalOpen}
-                onClose={() => {
-                  setIsCropModalOpen(false);
-                  setCropItem(null);
-                }}
-                onApply={handleApplyCrop}
-              />
-            )}
-
-            {/* Document Editor Modal for Crop / Resize / Rotate */}
+            {/* Document Editor Modal for Rotate / Filters / PDF */}
             {editingItem && (
               <DocumentEditorModal
                 item={editingItem}

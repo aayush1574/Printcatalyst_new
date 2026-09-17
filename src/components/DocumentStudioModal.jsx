@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Printer, RotateCw, Eye, CheckCircle, FileText, Settings, Sliders, AlertTriangle, Crop } from 'lucide-react';
+import { X, Printer, RotateCw, Eye, CheckCircle, FileText, Settings, Sliders, AlertTriangle } from 'lucide-react';
 import DocumentEditorModal from './DocumentEditorModal';
 
 export default function DocumentStudioModal({ order, printers, isOpen, onClose, onRelease }) {
@@ -90,10 +90,10 @@ export default function DocumentStudioModal({ order, printers, isOpen, onClose, 
                 <button
                   onClick={() => setIsEditorOpen(true)}
                   className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-200 font-medium transition-colors border border-indigo-500/30"
-                  title="Crop, Resize, Rotate & Enhance document"
+                  title="Rotate, Filter & Enhance document"
                 >
-                  <Crop className="w-3.5 h-3.5 text-indigo-400" />
-                  <span>Crop & Edit Studio</span>
+                  <Sliders className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>Edit Studio</span>
                 </button>
               </div>
 
@@ -179,7 +179,7 @@ export default function DocumentStudioModal({ order, printers, isOpen, onClose, 
               
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400">Paper Format:</span>
-                <span className="text-white font-medium">{item.paperSize} ({item.paperType})</span>
+                <span className="text-white font-medium">{item.paperSize || 'A4'}</span>
               </div>
 
               <div className="flex justify-between py-1 border-b border-slate-800">
@@ -199,13 +199,6 @@ export default function DocumentStudioModal({ order, printers, isOpen, onClose, 
               <div className="flex justify-between py-1 border-b border-slate-800">
                 <span className="text-slate-400">Copies:</span>
                 <span className="text-white font-medium">{item.copies || 1}</span>
-              </div>
-
-              <div className="flex justify-between py-1 border-b border-slate-800">
-                <span className="text-slate-400">Finishing:</span>
-                <span className="text-indigo-400 font-medium capitalize">
-                  {item.finishing?.replace('_', ' ') || 'None'}
-                </span>
               </div>
 
               <div className="flex justify-between py-1 pt-2 text-sm font-bold">

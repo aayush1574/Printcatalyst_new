@@ -1652,11 +1652,10 @@ function OrderDetailPanel({ selectedOrder, printers, onOpenStudio, onRelease, on
         <div className="bg-slate-900/80 p-3 rounded-xl border border-slate-800 space-y-2 text-xs">
           {[
             ['File', selectedOrder.items?.[0]?.fileName],
-            ['Paper', `${selectedOrder.items?.[0]?.paperSize} (${selectedOrder.items?.[0]?.paperType})`],
+            ['Paper', selectedOrder.items?.[0]?.paperSize || 'A4'],
             ['Color', selectedOrder.items?.[0]?.colorMode === 'COLOR' ? 'Full Color' : 'B&W'],
             ['Sides', selectedOrder.items?.[0]?.duplex === 'DOUBLE_SIDED' ? 'Double Sided' : 'Single'],
             ['Copies', selectedOrder.items?.[0]?.copies],
-            ['Finishing', selectedOrder.items?.[0]?.finishing?.replace('_', ' ') || 'None'],
             ['Printer', selectedOrder.assignedPrinterName],
           ].map(([label, value]) => (
             <div key={label} className="flex justify-between">

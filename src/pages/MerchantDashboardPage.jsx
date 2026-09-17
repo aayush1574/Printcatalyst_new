@@ -1497,8 +1497,16 @@ export default function MerchantDashboardPage() {
 
 
 /* ─── Printer Select Modal (shown before every print action) ─── */
-function PrinterSelectModal({ printers, mode, onConfirm, onCancel }) {
+function PrinterSelectModal({ printers = [], mode, onConfirm, onCancel }) {
   const [selectedId, setSelectedId] = useState(printers[0]?.id || '');
+
+  useEffect(() => {
+    if (printers.length > 0 && (!selectedId || !printers.some((p) => p.id === selectedId))) {
+      setSelectedId(printers[0].id);
+    }
+  }, [printers, selectedId]);
+
+  const hasPrinters = printers.length > 0;
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
@@ -1514,7 +1522,7 @@ function PrinterSelectModal({ printers, mode, onConfirm, onCancel }) {
               <h3 className="text-sm font-bold text-white">
                 {mode === 'browser' ? 'Select Printer — Browser Print' : 'Select Printer — Print Job'}
               </h3>
-              <p className="text-[11px] text-slate-400">Choose a printer before sending the job</p>
+              <p className="text-[11px] text-slate-400">Only currently connected printers are displayed</p>
             </div>
           </div>
           <button
@@ -1527,44 +1535,55 @@ function PrinterSelectModal({ printers, mode, onConfirm, onCancel }) {
 
         {/* Body */}
         <div className="p-5 space-y-4">
-          <div>
-            <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-2">Available Printers</label>
-            <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
-            >
-              {printers.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} ({p.supportsColor ? 'Color' : 'Mono'} · {p.status || 'Ready'})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Selected printer details */}
-          {selectedId && (() => {
-            const p = printers.find((pr) => pr.id === selectedId);
-            if (!p) return null;
-            return (
-              <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-[11px]">
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Connection:</span>
-                  <span className="text-white font-medium">{p.connection || 'USB/LAN'}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Color:</span>
-                  <span className={p.supportsColor ? 'text-amber-400 font-bold' : 'text-slate-300'}>
-                    {p.supportsColor ? 'Color + B&W' : 'Mono Only'}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-400">Duplex:</span>
-                  <span className="text-white font-medium">{p.supportsDuplex ? 'Auto Duplex' : 'Single Side'}</span>
-                </div>
+          {hasPrinters ? (
+            <>
+              <div>
+                <label className="text-xs font-semibold text-slate-300 uppercase tracking-wider block mb-2">Connected Printers ({printers.length})</label>
+                <select
+                  value={selectedId}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-700 text-white text-sm focus:outline-none focus:border-indigo-500 transition-colors"
+                >
+                  {printers.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} ({p.supportsColor ? 'Color' : 'Mono'} · {p.status || 'Ready'})
+                    </option>
+                  ))}
+                </select>
               </div>
-            );
-          })()}
+
+              {/* Selected printer details */}
+              {selectedId && (() => {
+                const p = printers.find((pr) => pr.id === selectedId);
+                if (!p) return null;
+                return (
+                  <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 space-y-1.5 text-[11px]">
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Connection:</span>
+                      <span className="text-white font-medium">{p.connection || 'USB/LAN'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Color:</span>
+                      <span className={p.supportsColor ? 'text-amber-400 font-bold' : 'text-slate-300'}>
+                        {p.supportsColor ? 'Color + B&W' : 'Mono Only'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-400">Duplex:</span>
+                      <span className="text-white font-medium">{p.supportsDuplex ? 'Auto Duplex' : 'Single Side'}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+            </>
+          ) : (
+            <div className="p-4 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs space-y-2 text-center">
+              <p className="font-semibold">No physically connected printers detected.</p>
+              <p className="text-[11px] text-amber-200/80">
+                Please plug in your printer via USB or run the 1-Click Connector on your PC.
+              </p>
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div className="flex items-center gap-3 pt-2">
@@ -1576,7 +1595,8 @@ function PrinterSelectModal({ printers, mode, onConfirm, onCancel }) {
             </button>
             <button
               onClick={() => onConfirm(selectedId)}
-              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+              disabled={!hasPrinters && mode !== 'browser'}
+              className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-50 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition-all active:scale-95"
             >
               <Printer className="w-3.5 h-3.5" />
               <span>{mode === 'browser' ? 'Print in Browser' : 'Send to Printer'}</span>

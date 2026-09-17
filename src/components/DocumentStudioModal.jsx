@@ -1,9 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Printer, RotateCw, Eye, CheckCircle, FileText, Settings, Sliders, AlertTriangle } from 'lucide-react';
 import DocumentEditorModal from './DocumentEditorModal';
 
-export default function DocumentStudioModal({ order, printers, isOpen, onClose, onRelease }) {
-  const [selectedPrinterId, setSelectedPrinterId] = useState(order?.assignedPrinterId || (printers[0]?.id || ''));
+export default function DocumentStudioModal({ order, printers = [], isOpen, onClose, onRelease }) {
+  const validInitialId = (printers || []).find((p) => p.id === order?.assignedPrinterId)?.id || printers?.[0]?.id || '';
+  const [selectedPrinterId, setSelectedPrinterId] = useState(validInitialId);
+
+  useEffect(() => {
+    if (order) {
+      const match = (printers || []).find((p) => p.id === order.assignedPrinterId);
+      setSelectedPrinterId(match ? match.id : (printers?.[0]?.id || ''));
+    }
+  }, [order?.id, printers]);
   const [rotation, setRotation] = useState(0);
   const [previewMono, setPreviewMono] = useState(order?.items[0]?.colorMode === 'BLACK_AND_WHITE');
   const [selectedPages, setSelectedPages] = useState('ALL');

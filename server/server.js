@@ -545,8 +545,8 @@ app.post('/api/v1/merchants/register', (req, res) => {
     password: password || '123456',
     address: address || '',
     upiId: upiId || 'merchant@upi',
-    autoPrintEnabled: true,
-    instantReleaseOnPayment: true,
+    autoPrintEnabled: false,
+    instantReleaseOnPayment: false,
     whatsappAutomationEnabled: true,
     whatsappPhoneNumber: phone || '',
     whatsappSessionStatus: 'CONNECTED',
@@ -616,7 +616,7 @@ app.get('/api/v1/portal/shop/:slugOrId', async (req, res) => {
         address: 'Contact shop for address',
         phone: '',
         upiId: '',
-        autoPrintEnabled: true
+        autoPrintEnabled: false
       },
       pricing: {},
       portalUrl: `${req.protocol}://${req.get('host')}/portal/${slugOrId}`,
@@ -1007,20 +1007,6 @@ app.post('/api/v1/jobs', async (req, res) => {
 
     db.addOrder(newOrder);
 
-    // Auto print if shop has auto print enabled
-    if (shop && shop.autoPrintEnabled && newOrder.paymentStatus === 'PAID') {
-      enqueuePrintAction(targetShopId, {
-        type: 'PRINT_JOB',
-        order: newOrder,
-        targetPrinter: assignedPrinter
-      });
-      broadcastToAgent(targetShopId, {
-        type: 'DISPATCH_PRINT_JOB',
-        order: newOrder,
-        targetPrinter: assignedPrinter
-      });
-    }
-
     broadcastToShop(targetShopId, {
       type: 'NEW_ORDER',
       order: newOrder
@@ -1047,6 +1033,12 @@ app.post('/api/v1/jobs/release/:id', (req, res) => {
   const order = db.getOrderById(req.params.id);
   if (!order) return res.status(404).json({ success: false, message: 'Order not found' });
 
+  // Debounce duplicate rapid releases for the same order within 4 seconds
+  const now = Date.now();
+  if (order.lastReleasedAt && (now - new Date(order.lastReleasedAt).getTime()) < 4000) {
+    return res.json({ success: true, order, message: 'Print command already in progress' });
+  }
+
   const { targetPrinterId } = req.body;
   const printers = getConnectedPhysicalPrinters(order.shopId);
   const targetPrinter = targetPrinterId ? printers.find(p => p.id === targetPrinterId) : printers.find(p => p.id === order.assignedPrinterId) || printers[0];
@@ -1060,6 +1052,7 @@ app.post('/api/v1/jobs/release/:id', (req, res) => {
     status: 'PRINTING',
     assignedPrinterId: targetPrinter ? targetPrinter.id : order.assignedPrinterId,
     assignedPrinterName: targetPrinter ? targetPrinter.name : order.assignedPrinterName,
+    lastReleasedAt: new Date().toISOString(),
     logs: updatedLogs
   });
 
@@ -1453,12 +1446,20 @@ if (Test-Path $sumatraExe) {
 }
 
 $pollUrl = "${serverUrl}/api/v1/agent/pending?shopId=${shopId}"
+$processedActionIds = @{}
 
 while ($true) {
   try {
     $resp = Invoke-RestMethod -Uri $pollUrl -Method Get -TimeoutSec 10
     if ($resp -and $resp.actions -and $resp.actions.Count -gt 0) {
       foreach ($act in $resp.actions) {
+        $actKey = "$($act.id)"
+        if ($act.order -and $act.order.id) { $actKey = "$($act.id)_$($act.order.id)" }
+        if ($processedActionIds.ContainsKey($actKey)) {
+          continue
+        }
+        $processedActionIds[$actKey] = $true
+        if ($processedActionIds.Count -gt 500) { $processedActionIds.Clear(); $processedActionIds[$actKey] = $true }
         if ($act.type -eq 'TEST_PRINT') {
           Write-Host ""
           Write-Host ("[" + (Get-Date -Format 'HH:mm:ss') + "] [TEST PRINT] Received diagnostic test for: " + $act.printerName) -ForegroundColor Cyan
@@ -1651,19 +1652,7 @@ while ($true) {
           }
 
           if ($filesPrinted -eq 0) {
-            Write-Host "   [!] No files could be printed, printing order summary slip instead" -ForegroundColor Yellow
-            $ticketLines = @(
-              "========================================",
-              " PRINT CATALYST - ORDER TICKET",
-              "========================================",
-              " Order ID: #" + $ord.id,
-              " Customer: " + $ord.customerName,
-              " Phone   : " + $ord.customerPhone,
-              " Amount  : Rs. " + $ord.finalAmount,
-              " Time    : " + (Get-Date),
-              "========================================"
-            )
-            $ticketLines -join [Environment]::NewLine | Out-Printer -Name "$pName"
+            Write-Host "   [!] Notice: No valid file available to print for this order." -ForegroundColor Yellow
           } else {
             Write-Host ("   [SUCCESS] " + $filesPrinted + " document(s) printed on: " + $pName) -ForegroundColor Green
           }
@@ -1922,8 +1911,8 @@ app.post('/api/v1/admin/shops', (req, res) => {
     password: password || '123456',
     address: address || '',
     upiId: upiId || 'merchant@upi',
-    autoPrintEnabled: true,
-    instantReleaseOnPayment: true,
+    autoPrintEnabled: false,
+    instantReleaseOnPayment: false,
     whatsappAutomationEnabled: true,
     whatsappPhoneNumber: phone || '',
     whatsappSessionStatus: 'CONNECTED',

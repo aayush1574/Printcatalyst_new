@@ -10,7 +10,7 @@ import QRCodeLib from 'qrcode';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { API_BASE } from '../config';
-import { downloadDocument } from '../utils/downloadHelper';
+import { downloadDocument, executePrintWithPC } from '../utils/downloadHelper';
 import DocumentStudioModal from '../components/DocumentStudioModal';
 import StandeeGeneratorModal from '../components/StandeeGeneratorModal';
 import PrinterSettingsModal from '../components/PrinterSettingsModal';
@@ -42,6 +42,7 @@ export default function MerchantDashboardPage() {
   const [printerSelectOpen, setPrinterSelectOpen] = useState(false);
   const [printerSelectOrderId, setPrinterSelectOrderId] = useState(null);
   const [printerSelectOrder, setPrinterSelectOrder] = useState(null);
+  const [printerSelectMode, setPrinterSelectMode] = useState('print');
 
   // Printer Management State
   const [refreshingPrinters, setRefreshingPrinters] = useState(false);
@@ -137,18 +138,38 @@ export default function MerchantDashboardPage() {
     }
   }, [latestEvent]);
 
-  // Release Order to printer — also trigger browser print for the actual document
+  // Release / Reprint Order to printer — triggers direct native document print & dispatches to agent
   const handleReleaseOrder = async (orderId, targetPrinterId) => {
     try {
+      const orderToPrint = orders.find((o) => o.id === orderId) || (selectedOrder?.id === orderId ? selectedOrder : null);
+      
+      // 1. Optimistically update order status to PRINTING so user gets immediate visual feedback
+      if (orderToPrint) {
+        const optimisticOrder = { ...orderToPrint, status: 'PRINTING' };
+        setOrders((prev) => prev.map((o) => (o.id === orderId ? optimisticOrder : o)));
+        if (selectedOrder?.id === orderId) setSelectedOrder(optimisticOrder);
+      }
+
+      setRefreshNotice(`Dispatching print for Order #${orderToPrint?.pickupToken || orderId}...`);
+      setTimeout(() => setRefreshNotice(''), 3500);
+
+      // 2. Trigger instant native browser print dialog for the actual document
+      if (orderToPrint) {
+        executePrintWithPC(orderToPrint);
+      }
+
+      // 3. Dispatch to backend API / agent spooler
       const res = await fetch(`${API_BASE}/api/v1/jobs/release/${orderId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ targetPrinterId })
       });
-      const data = await res.json();
-      if (data.success) {
+      const data = await res.json().catch(() => null);
+      if (data && data.success && data.order) {
         setOrders((prev) => prev.map((o) => (o.id === orderId ? data.order : o)));
-        setSelectedOrder(data.order);
+        if (selectedOrder?.id === orderId) {
+          setSelectedOrder(data.order);
+        }
       }
     } catch (e) {
       console.error('Release error:', e);
@@ -164,8 +185,8 @@ export default function MerchantDashboardPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: 'Merchant cancelled from dashboard' })
       });
-      const data = await res.json();
-      if (data.success) {
+      const data = await res.json().catch(() => null);
+      if (data && data.success && data.order) {
         setOrders((prev) => prev.map((o) => (o.id === orderId ? data.order : o)));
         setSelectedOrder(data.order);
       }
@@ -186,9 +207,10 @@ export default function MerchantDashboardPage() {
   };
 
   // Open printer selection modal before printing (intercepts all print actions)
-  const openPrinterSelect = (orderId, order) => {
+  const openPrinterSelect = (orderId, order, mode = 'print') => {
     setPrinterSelectOrderId(orderId);
-    setPrinterSelectOrder(order || null);
+    setPrinterSelectOrder(order || orders.find(o => o.id === orderId) || selectedOrder || null);
+    setPrinterSelectMode(mode);
     setPrinterSelectOpen(true);
   };
 
@@ -1641,7 +1663,7 @@ function OrderDetailPanel({ selectedOrder, printers, onOpenStudio, onRelease, on
             }`}
           >
             <Printer className="w-4 h-4" />
-            <span>{selectedOrder.status === 'PRINTING' || selectedOrder.status === 'IN_SPOOL' ? 'Printing...' : selectedOrder.status === 'COMPLETED' ? 'Reprint (Silent Spool)' : 'Print Now (Silent Spool)'}</span>
+            <span>{selectedOrder.status === 'PRINTING' || selectedOrder.status === 'IN_SPOOL' ? 'Printing...' : selectedOrder.status === 'COMPLETED' ? 'Reprint Document' : 'Print Now'}</span>
           </button>
         )}
 

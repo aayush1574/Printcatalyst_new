@@ -4,18 +4,39 @@ import LandingPage from './pages/LandingPage';
 import { LoginPage, RegisterPage } from './pages/AuthPages';
 import { GuidePage, LegalPage, ContactPage } from './pages/GuidesAndLegalPages';
 import { useAuth } from './context/AuthContext';
+import ErrorBoundary from './components/ErrorBoundary';
+
+// Helper to auto-retry and reload stale dynamic chunk imports on new deployments
+function lazyWithRetry(componentImport) {
+  return lazy(async () => {
+    try {
+      return await componentImport();
+    } catch (error) {
+      const isChunkError =
+        error?.message?.includes('Failed to fetch dynamically imported module') ||
+        error?.message?.includes('Loading chunk') ||
+        error?.message?.includes('Importing a module script failed');
+
+      if (isChunkError && !sessionStorage.getItem('chunk_retry_attempted')) {
+        sessionStorage.setItem('chunk_retry_attempted', 'true');
+        window.location.reload();
+      }
+      throw error;
+    }
+  });
+}
 
 // Code-split heavy interactive dashboards and secondary routes
-const MerchantDashboardPage = lazy(() => import('./pages/MerchantDashboardPage'));
-const CustomerPortalPage = lazy(() => import('./pages/CustomerPortalPage'));
-const SuperAdminPage = lazy(() => import('./pages/SuperAdminPage'));
-const ProductTourPage = lazy(() => import('./pages/ProductTourPage'));
-const WhatsAppTourPage = lazy(() => import('./pages/WhatsAppTourPage'));
-const QROrdersTourPage = lazy(() => import('./pages/QROrdersTourPage'));
-const HowItWorksPage = lazy(() => import('./pages/HowItWorksPage'));
-const FAQPage = lazy(() => import('./pages/FAQPage'));
-const OrderManagementPage = lazy(() => import('./pages/FeaturePages').then(m => ({ default: m.OrderManagementPage })));
-const PrinterRoutingPage = lazy(() => import('./pages/FeaturePages').then(m => ({ default: m.PrinterRoutingPage })));
+const MerchantDashboardPage = lazyWithRetry(() => import('./pages/MerchantDashboardPage'));
+const CustomerPortalPage = lazyWithRetry(() => import('./pages/CustomerPortalPage'));
+const SuperAdminPage = lazyWithRetry(() => import('./pages/SuperAdminPage'));
+const ProductTourPage = lazyWithRetry(() => import('./pages/ProductTourPage'));
+const WhatsAppTourPage = lazyWithRetry(() => import('./pages/WhatsAppTourPage'));
+const QROrdersTourPage = lazyWithRetry(() => import('./pages/QROrdersTourPage'));
+const HowItWorksPage = lazyWithRetry(() => import('./pages/HowItWorksPage'));
+const FAQPage = lazyWithRetry(() => import('./pages/FAQPage'));
+const OrderManagementPage = lazyWithRetry(() => import('./pages/FeaturePages').then(m => ({ default: m.OrderManagementPage })));
+const PrinterRoutingPage = lazyWithRetry(() => import('./pages/FeaturePages').then(m => ({ default: m.PrinterRoutingPage })));
 
 function PageLoader() {
   return (
@@ -31,33 +52,32 @@ function PageLoader() {
 export default function App() {
   const { loading } = useAuth();
 
-  // Wait for auth session check to finish before rendering routes
-  // This prevents blank pages from lazy-loaded pages reading stale auth state
   if (loading) {
     return <PageLoader />;
   }
 
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/print-shop-automation-software" element={<ProductTourPage />} />
-        <Route path="/whatsapp-printing-software" element={<WhatsAppTourPage />} />
-        <Route path="/qr-code-printing-system" element={<QROrdersTourPage />} />
-        <Route path="/how-it-works" element={<HowItWorksPage />} />
-        <Route path="/faq" element={<FAQPage />} />
-        <Route path="/print-order-management-software" element={<OrderManagementPage />} />
-        <Route path="/automatic-printer-routing" element={<PrinterRoutingPage />} />
-        <Route path="/merchant" element={<MerchantDashboardPage />} />
-        <Route path="/portal/:shopId" element={<CustomerPortalPage />} />
-        <Route path="/admin" element={<SuperAdminPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/contact" element={<ContactPage />} />
+    <ErrorBoundary>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/print-shop-automation-software" element={<ProductTourPage />} />
+          <Route path="/whatsapp-printing-software" element={<WhatsAppTourPage />} />
+          <Route path="/qr-code-printing-system" element={<QROrdersTourPage />} />
+          <Route path="/how-it-works" element={<HowItWorksPage />} />
+          <Route path="/faq" element={<FAQPage />} />
+          <Route path="/print-order-management-software" element={<OrderManagementPage />} />
+          <Route path="/automatic-printer-routing" element={<PrinterRoutingPage />} />
+          <Route path="/merchant" element={<MerchantDashboardPage />} />
+          <Route path="/portal/:shopId" element={<CustomerPortalPage />} />
+          <Route path="/admin" element={<SuperAdminPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/contact" element={<ContactPage />} />
 
-        {/* Guides */}
-        <Route
-          path="/guides/automate-whatsapp-print-orders"
+          {/* Guides */}
+          <Route
+            path="/guides/automate-whatsapp-print-orders"
           element={
             <GuidePage
               title="How to Automate WhatsApp Print Orders"
@@ -143,5 +163,6 @@ export default function App() {
         <Route path="*" element={<LandingPage />} />
       </Routes>
     </Suspense>
+    </ErrorBoundary>
   );
 }

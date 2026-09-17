@@ -4,15 +4,22 @@ import { API_BASE } from '../config';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [merchant, setMerchant] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('pc_token') || null);
+  const [merchant, setMerchant] = useState(() => {
+    try {
+      const cached = localStorage.getItem('pc_merchant_data');
+      return cached ? JSON.parse(cached) : null;
+    } catch (_) {
+      return null;
+    }
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('pc_token') || null);
   
   const [admin, setAdmin] = useState(null);
-  const [adminToken, setAdminToken] = useState(localStorage.getItem('pc_admin_token') || null);
+  const [adminToken, setAdminToken] = useState(() => localStorage.getItem('pc_admin_token') || null);
   
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Check merchant & admin sessions on mount
+  // Check merchant & admin sessions on mount in background
   useEffect(() => {
     const loadSessions = async () => {
       try {
@@ -21,18 +28,32 @@ export function AuthProvider({ children }) {
         if (savedToken) {
           try {
             const controller = new AbortController();
-            const tid = setTimeout(() => controller.abort(), 2500);
+            const tid = setTimeout(() => controller.abort(), 6000);
             const res = await fetch(`${API_BASE}/api/v1/merchants/session`, {
               headers: { 'Authorization': `Bearer ${savedToken}` },
               signal: controller.signal
             });
             clearTimeout(tid);
-            const data = await res.json();
-            if (data && data.authenticated && data.shop) {
-              setMerchant(data.shop);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.authenticated && data.shop) {
+                setMerchant(data.shop);
+                localStorage.setItem('pc_merchant_data', JSON.stringify(data.shop));
+              } else {
+                // Token invalid
+                setMerchant(null);
+                setToken(null);
+                localStorage.removeItem('pc_token');
+                localStorage.removeItem('pc_merchant_data');
+              }
+            } else if (res.status === 401) {
+              setMerchant(null);
+              setToken(null);
+              localStorage.removeItem('pc_token');
+              localStorage.removeItem('pc_merchant_data');
             }
           } catch (e) {
-            // Ignore session check error
+            // Ignore offline/timeout error, keep cached state
           }
         }
 
@@ -41,15 +62,17 @@ export function AuthProvider({ children }) {
         if (savedAdminToken) {
           try {
             const controller = new AbortController();
-            const tid = setTimeout(() => controller.abort(), 2500);
+            const tid = setTimeout(() => controller.abort(), 6000);
             const res = await fetch(`${API_BASE}/api/v1/admin/session`, {
               headers: { 'Authorization': `Bearer ${savedAdminToken}` },
               signal: controller.signal
             });
             clearTimeout(tid);
-            const data = await res.json();
-            if (data && data.authenticated && data.admin) {
-              setAdmin(data.admin);
+            if (res.ok) {
+              const data = await res.json();
+              if (data && data.authenticated && data.admin) {
+                setAdmin(data.admin);
+              }
             }
           } catch (e) {
             // Ignore admin check error
@@ -76,6 +99,7 @@ export function AuthProvider({ children }) {
         setMerchant(data.shop);
         setToken(data.token);
         localStorage.setItem('pc_token', data.token);
+        localStorage.setItem('pc_merchant_data', JSON.stringify(data.shop));
         return { success: true, shop: data.shop };
       }
       return { success: false, message: data.message || 'Invalid credentials' };
@@ -96,6 +120,7 @@ export function AuthProvider({ children }) {
         setMerchant(data.shop);
         setToken(data.token);
         localStorage.setItem('pc_token', data.token);
+        localStorage.setItem('pc_merchant_data', JSON.stringify(data.shop));
         return { success: true, shop: data.shop };
       }
       return { success: false, message: data.message || 'Registration failed' };
@@ -108,6 +133,7 @@ export function AuthProvider({ children }) {
     setMerchant(null);
     setToken(null);
     localStorage.removeItem('pc_token');
+    localStorage.removeItem('pc_merchant_data');
   };
 
   // --- SUPER ADMIN AUTH ---

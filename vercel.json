@@ -21,6 +21,14 @@
   ],
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://printcatalyst-new.onrender.com/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://printcatalyst-new.onrender.com/uploads/:path*"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
